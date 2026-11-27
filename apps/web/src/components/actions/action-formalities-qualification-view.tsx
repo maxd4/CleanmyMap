@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ActionFormalitiesMetropolitanContacts } from "./action-formalities-metropolitan-contacts";
+import { SUPPORT_NEEDS, MUNICIPAL_CLEANING_NEEDS, normalizeSupportNeeds, resolveLocalSupport, type SupportNeed } from "@/lib/actions/formalities/accompaniment";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
@@ -113,7 +115,7 @@ function DocumentRequirements({ formality }: { formality: Formality }) {
 
 function ActionFormalityDetails({ formality, status }: { formality: Formality; status: "not_started" | "prepared" | "sent" }) {
   return <>
-    <dl className="grid gap-2 text-sm text-emerald-900/75 sm:grid-cols-2"><div><dt className="font-semibold">Procédure</dt><dd>{procedureLabel(formality.procedureKind)}</dd></div><div><dt className="font-semibold">Destinataire</dt><dd>{formality.recipient ?? "À identifier"}</dd></div><div className="sm:col-span-2"><dt className="font-semibold">Pourquoi</dt><dd>{formality.justification}</dd></div>{formality.deadline ? <div><dt className="font-semibold">Délai indicatif</dt><dd>{formality.deadline.minimumValue} {deadlineUnitLabel(formality.deadline.unit)}</dd></div> : null}<div className="sm:col-span-2"><dt className="font-semibold">Périmètre de la règle</dt><dd>{formality.scope}</dd></div><div><dt className="font-semibold">État de votre démarche</dt><dd>{userStatusLabel(status)}</dd></div></dl>
+    <dl className="grid gap-2 text-sm text-emerald-900/75 sm:grid-cols-2"><div><dt className="font-semibold">Procédure</dt><dd>{procedureLabel(formality.procedureKind)}</dd></div><div><dt className="font-semibold">Destinataire</dt><dd>{formality.recipient ?? "À identifier"}</dd></div><div className="sm:col-span-2"><dt className="font-semibold">Pourquoi</dt><dd>{formality.justification}</dd></div>{formality.deadline ? <div><dt className="font-semibold">Délai indicatif</dt><dd>{formality.deadline.minimumValue} {deadlineUnitLabel(formality.deadline.unit)}<br />{formality.deadline.note}</dd></div> : null}<div className="sm:col-span-2"><dt className="font-semibold">Périmètre de la règle</dt><dd>{formality.scope}</dd></div><div><dt className="font-semibold">État de votre démarche</dt><dd>{userStatusLabel(status)}</dd></div></dl>
     {formality.officialChannel ? <p className="text-xs text-emerald-900/70">Canal : {formality.officialChannel.url ? <a className="font-semibold underline" href={formality.officialChannel.url} target="_blank" rel="noreferrer">{formality.officialChannel.label}</a> : formality.officialChannel.label}</p> : null}
     {formality.requestedInformation.length ? <div className="text-xs text-emerald-900/75"><p className="font-semibold">Informations demandées</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedInformation.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
     <DocumentRequirements formality={formality} />
@@ -161,15 +163,28 @@ export function ActionFormalitiesQualificationView({
   isSaving,
   readOnly = false,
   onTransition,
+  supportNeeds,
+  onSupportNeedsChange,
+  actionId,
 }: {
   qualification: ActionFormalitiesQualification;
   workflow: ActionFormalitiesWorkflowState;
   facts?: ActionFormalitiesFacts;
   actionEmailData?: FormalitiesEmailActionData;
+  actionId?: string | null;
+  supportNeeds?: readonly SupportNeed[];
+  onSupportNeedsChange?: (needs: SupportNeed[]) => void;
   isSaving: boolean;
   readOnly?: boolean;
   onTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => void;
 }) {
+  const [localNeeds, setLocalNeeds] = useState<SupportNeed[]>([]);
+  const needs = supportNeeds ?? localNeeds;
+  const updateNeeds = (next: SupportNeed[]) => {
+    const normalized = normalizeSupportNeeds(next);
+    if (onSupportNeedsChange) onSupportNeedsChange(normalized);
+    else setLocalNeeds(normalized);
+  };
   const progressById = new Map(workflow.progress.map((progress) => [progress.formalityId, progress]));
   const summary = summaryFor(qualification);
   const primaryFormality = qualification.formalities.find((formality) => formality.requirementStatus === "required") ??
@@ -210,7 +225,7 @@ export function ActionFormalitiesQualificationView({
     <div className="space-y-3" aria-live="polite" data-testid="action-formalities-qualification">
       <CmmCard tone={summary.tone === "amber" ? "amber" : summary.tone === "sky" ? "sky" : summary.tone === "slate" ? "slate" : "emerald"} variant="glass" size="md" data-testid="action-formalities-summary">
         <div className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-lg font-black text-emerald-950">Formalités locales</h3><CmmPill tone={summary.tone} size="sm">{summary.label}</CmmPill></div>
+          <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-lg font-black text-emerald-950">Formalités et accompagnement</h3><CmmPill tone={summary.tone} size="sm">{summary.label}</CmmPill></div>
           <p className="text-sm leading-5 text-emerald-950/80">{summary.explanation}</p>
           {primaryFormality ? <>
             <p className="text-sm text-emerald-950"><span className="font-semibold">Interlocuteur :</span> {primaryFormality.recipient ?? primaryFormality.competentAuthority.label ?? "À confirmer"}</p>
@@ -219,10 +234,27 @@ export function ActionFormalitiesQualificationView({
           <ActionFormalitiesPrintSheet summary={summary.label} actionData={actionEmailData} qualification={qualification} contacts={support?.divisions ?? []} support={support} />
         </div>
       </CmmCard>
-      {isParisMunicipalCleanwalk && contactFormality ? <ActionFormalitiesParisContactPanel actionData={actionEmailData} contactFormality={contactFormality} selectedArrondissements={selectedArrondissements} onArrondissementsChange={updateSelectedArrondissements} support={support} /> : null}
+      <div className="space-y-3">
+        {qualification.formalities.filter(formality => formality.requirementStatus === "required").map(formality => <ActionFormalityCard key={formality.id} formality={formality} progress={progressById.get(formality.id)} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />)}
+      </div>
+      {facts?.isCleanwalk ? <>
+        <fieldset className="space-y-2 rounded-xl border border-emerald-200 p-3">
+          <legend className="font-semibold">De quoi avez-vous besoin ? (facultatif)</legend>
+          {SUPPORT_NEEDS.map(item => <label key={item.id} className="flex gap-2 text-sm"><input type="checkbox" checked={needs.includes(item.id)} onChange={event => updateNeeds(event.target.checked ? [...needs, item.id] : needs.filter(need => need !== item.id))} />{item.label}</label>)}
+        </fieldset>
+        {isParisMunicipalCleanwalk && contactFormality && needs.some(need => MUNICIPAL_CLEANING_NEEDS.includes(need) || need === "association" || need === "communication") ? <ActionFormalitiesParisContactPanel actionData={actionEmailData} contactFormality={contactFormality} selectedArrondissements={selectedArrondissements} onArrondissementsChange={updateSelectedArrondissements} support={support} needs={needs} /> : null}
+        {!isParisMunicipalCleanwalk ? resolveLocalSupport(qualification.territory, resolvedContactAreaMode, needs).map(channel => <section key={channel.id} className="space-y-2 rounded-xl border p-3 text-sm"><h4 className="font-semibold">{channel.label}</h4><p>{channel.guidance}</p><a className="underline" href={channel.url} target="_blank" rel="noreferrer">Démarche officielle</a>{channel.email ? <p><a className="underline" href={`mailto:${channel.email}`}>{channel.email}</a></p> : null}<p className="text-xs">Source vérifiée le {channel.verifiedOn}.</p></section>) : null}
+        {needs.length ? <div className="space-y-1 text-sm">
+          <p>Pour les besoins sans canal local documenté, vérifier l’interlocuteur compétent. Aucun soutien ni prise en charge n’est présumé.</p>
+          {resolvedContactAreaMode !== "single_location" ? <p>Vérifier tous les territoires traversés : le point de départ ne suffit pas.</p> : null}
+          <a href="https://lannuaire.service-public.gouv.fr/" target="_blank" rel="noreferrer" className="underline">Consulter l’annuaire officiel des services publics</a>
+        </div> : null}
+      </> : null}
+      <ActionFormalitiesMetropolitanContacts key={actionId ?? "draft"} actionId={actionId} needs={needs} />
+      <p className="text-xs text-slate-700">Une démarche déclarée envoyée ne vaut ni récépissé ni autorisation obtenue.</p>
       <CmmDisclosure summary="Détail des démarches, sources et pièces" tone="slate" size="sm">
         <div className="space-y-3">
-          {qualification.formalities.map((formality) => <ActionFormalityCard key={formality.id} formality={formality} progress={progressById.get(formality.id)} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />)}
+          {qualification.formalities.filter(formality => formality.requirementStatus !== "required").map((formality) => <ActionFormalityCard key={formality.id} formality={formality} progress={progressById.get(formality.id)} isSaving={isSaving} readOnly={readOnly} onTransition={onTransition} />)}
         </div>
       </CmmDisclosure>
     </div>

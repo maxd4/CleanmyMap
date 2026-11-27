@@ -168,6 +168,8 @@ describe("POST /api/actions/:actionId/publish", () => {
       published_at: null,
       status: "pending",
       organizer_type: "association",
+      department_code: "75",
+      department_name: "Paris",
       preparation_data: {
         formalitiesContext: facts,
         formalitiesWorkflow: workflow,

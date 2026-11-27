@@ -17,6 +17,16 @@ import {
 } from './mobile-actions-service'
 
 export type Section = 'essentiel' | 'terrain' | 'equipe' | 'verification'
+export const MOBILE_FORMALITIES_SUPPORT_NEEDS = [
+  { id: 'notify', label: 'Informer la collectivité' },
+  { id: 'equipment', label: 'Demander du matériel' },
+  { id: 'pickup', label: 'Organiser la reprise des déchets' },
+  { id: 'safety', label: 'Demander un accompagnement de sécurité' },
+  { id: 'insurance', label: 'Obtenir des informations sur les assurances' },
+  { id: 'association', label: 'Contacter des associations partenaires' },
+  { id: 'communication', label: 'Demander un relais de communication' },
+] as const
+export type MobileFormalitySupportNeed = (typeof MOBILE_FORMALITIES_SUPPORT_NEEDS)[number]['id']
 export type Draft = {
   title: string
   description: string
@@ -43,6 +53,7 @@ export type Draft = {
   participants: string
   duration: string
   notes: string
+  formalitiesSupportNeeds: MobileFormalitySupportNeed[]
 }
 
 export const SECTIONS: Array<{ id: Section; label: string }> = [
@@ -57,7 +68,7 @@ const LEGACY_STORAGE_KEY = STORAGE_KEY_PREFIX
 const EMPTY: Draft = {
   title: '', description: '', organizerName: '', organizerType: null, date: '', start: '', end: '', location: '',
   latitude: '', longitude: '', meetingPoint: '', materials: '', recommendedMaterials: '', logistics: '', checklist: '', safety: '', accessibility: '', coorganizers: '', invitees: '', departure: '', arrival: '', routeTopology: 'loop', participants: '1',
-  duration: '60', notes: '',
+  duration: '60', notes: '', formalitiesSupportNeeds: [],
 }
 
 type PendingOrganizerOrigin = 'automatic' | 'explicit' | 'unknown'
@@ -114,8 +125,11 @@ function parseStoredDraft(value: string | null, expectedOwnerId?: string | null)
     const pendingOrganizerOrigin = organizerType === 'spontaneous' && normalizedOrganizerName === SPONTANEOUS_PENDING_ORGANIZER_LABEL
       ? isPendingOrganizerOrigin(parsed.pendingOrganizerOrigin) ? parsed.pendingOrganizerOrigin : 'unknown'
       : null
+    const formalitiesSupportNeeds = Array.isArray(storedDraft?.formalitiesSupportNeeds)
+      ? MOBILE_FORMALITIES_SUPPORT_NEEDS.map(({ id }) => id).filter(need => storedDraft.formalitiesSupportNeeds?.includes(need))
+      : []
     return {
-      draft: storedDraft ? { ...EMPTY, ...storedDraft, organizerName: normalizedOrganizerName, organizerType } : undefined,
+      draft: storedDraft ? { ...EMPTY, ...storedDraft, formalitiesSupportNeeds, organizerName: normalizedOrganizerName, organizerType } : undefined,
       ownerId: storedOwnerId,
       actionId: parsed.actionId || undefined,
       section: isSection(parsed.section) ? parsed.section : undefined,
@@ -326,6 +340,7 @@ function buildPayload(draft: Draft, clientRequestId: string): MobileActionDraftP
       groupJoinEnabled: true,
       actionDate: draft.date,
       preparationChecklist: draft.checklist.split('\n').map((label, index) => ({ key: `mobile-${index + 1}`, label: label.trim(), checked: false })).filter((item) => item.label).slice(0, 12),
+      formalitiesSupportNeeds: draft.formalitiesSupportNeeds,
       routeTopology: draft.routeTopology,
     },
   }
@@ -656,5 +671,14 @@ export function useActionCreateController({ onSessionExpired, onStartAction }: A
       })
     }
   }
-  return { section: visibleSection, setSection, draft: visibleDraft, update, updateOrganizerType, actionId: visibleActionId, published: visiblePublished, sectionIndex: SECTIONS.findIndex((item) => item.id === visibleSection), getCurrentPosition, ...persistence, ...mutations, setActionId, setPublished }
+  const toggleFormalitiesSupportNeed = (need: MobileFormalitySupportNeed) => {
+    if (!ownerHydrated) return
+    setDraft(current => ({
+      ...current,
+      formalitiesSupportNeeds: current.formalitiesSupportNeeds.includes(need)
+        ? current.formalitiesSupportNeeds.filter(item => item !== need)
+        : [...current.formalitiesSupportNeeds, need],
+    }))
+  }
+  return { section: visibleSection, setSection, draft: visibleDraft, update, updateOrganizerType, toggleFormalitiesSupportNeed, actionId: visibleActionId, published: visiblePublished, sectionIndex: SECTIONS.findIndex((item) => item.id === visibleSection), getCurrentPosition, ...persistence, ...mutations, setActionId, setPublished }
 }

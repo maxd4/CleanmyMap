@@ -87,7 +87,7 @@ describe("ActionFormalitiesQualificationView", () => {
       }),
     );
 
-    expect(markup).toContain("Formalités locales");
+    expect(markup).toContain("Formalités et accompagnement");
     expect(markup).toContain("Cadre national disponible");
     expect(markup).toContain("règle locale suffisamment vérifiée");
     expect(markup).toContain("https://www.service-public.gouv.fr/particuliers/vosdroits/F21899");

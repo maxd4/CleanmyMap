@@ -12,6 +12,7 @@ export const preparationFormalitiesSchemaFields = {
     .strict()
     .optional(),
   formalitiesContext: actionFormalitiesFactsSchema.optional(),
+  formalitiesSupportNeeds: z.array(z.enum(["notify", "equipment", "pickup", "safety", "insurance", "association", "communication"])).max(7).refine(items => new Set(items).size === items.length).optional(),
   // This protected sub-state is accepted for read/compatibility payloads,
   // then removed below so generic writes cannot forge workflow progress.
   formalitiesWorkflow: z.custom<ActionFormalitiesWorkflowState>().optional(),

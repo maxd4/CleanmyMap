@@ -1,7 +1,7 @@
 # Formalités territoriales et accompagnement
 
-Statut : CANDIDATE / non intégré. 27 novembre 2026. Références de lecture : `f654eeea9ea07d2f4636859b314da9159bf723b7` (passe 1), `202267461c69ce033ebe44bbfb479d78d378b3f0` (passe 2).
-Chantier indépendant ; aucun runtime activé, aucun changement de l'ordre des autres lots.
+Statut : intégré au checkout `main` le 27 novembre 2026 ; patches 01–03 et 05–06 appliqués/adaptés, patch 04 non rejoué car ses hunks étaient invalides pour le checkout et ont été portés manuellement dans les deux documents canoniques. Références des candidats : `f654eeea9ea07d2f4636859b314da9159bf723b7` (passe 1), `202267461c69ce033ebe44bbfb479d78d378b3f0` (passe 2).
+La présente fiche reste le manifeste de lot et conserve les limites et preuves datées ; elle ne remplace pas les contrats `CURRENT`.
 
 ## Ordre
 
@@ -31,17 +31,27 @@ Sources :
 
 Partir du checkout courant, vérifier les hunks et préserver les changements concurrents. Vérifier les consommateurs de FormalityRuleScope, les traces, la publication/revue associative, les DTO publics/privés, Mobile et les écritures de préparation.
 
-Restent à implémenter ou vérifier :
-- DILA dynamique et cache : code candidat livré, appels réels non exécutés, vérifier tous les codes de service, champs et limites du fournisseur avant activation ;
-- géométrie multiterritoriale : candidat IGN livré ; contrôler les réponses réelles, géométries frontières, taille des requêtes et ambiguïtés ; ne jamais étendre les règles d'un point à un itinéraire entier ; cas parisiens non municipaux à vérifier ;
-- récépissé, accord/refus et preuve opposable : workflow actuel conservé tant que le contrat Web/Mobile/SQL n'est pas validé ;
-- inventaire et quantités demandées, courriels Lyon, sélection Mobile, DTO, écritures concurrentes ;
-- champs réels du formulaire Paris et couverture des demandes ; conserver les consignes de sécurité générales visibles indépendamment des besoins ;
-- tests historiques de rendu à adapter, tests de persistance, non-régression publication/revue, permissions et réponses GEO/DILA réelles.
+Restent ouverts, sans blocage des contrats intégrés :
+- couverture complète des catégories et des interlocuteurs locaux DILA, gestionnaires déchets et associations ; les observations réseau de ce lot sont des échantillons bornés ;
+- cas frontières IGN, les territoires parisiens non municipaux, validation de tous les codes de service et comportement exhaustif des limites fournisseur ;
+- preuve de réception, accord/refus, délais locaux et preuve opposable : aucun statut `sent` ou contact trouvé ne signifie réception ou accord ;
+- champs exacts du formulaire Paris et recouvrement complet avec les demandes complémentaires ; ne pas solliciter deux fois pour un besoin couvert ;
+- inventaire/quantités de matériel et reprise confirmés par les interlocuteurs ; disponibilité non garantie ;
+- adaptation du rendu mobile à vérifier sur appareil réel ; le test/runtime ne prouve pas le rendu natif par plateforme.
 
-Contrôles : reconstruction statique depuis les fichiers du SHA de référence. Hooks locaux HOOK_NOT_AVAILABLE ; git apply --check, typecheck, lint, Vitest, couverture et runtime NOT_RUN. Aucun résultat de production revendiqué.
+Les recherches de contacts sont exécutées uniquement à la demande de l'organisateur autorisé ; IGN résout les communes couvertes par la géométrie enregistrée et DILA fournit des fiches de services publics pour les catégories interrogées. Réponse privée/non-cacheable, cache fournisseur borné côté serveur, pas d'écriture des contacts ni d'envoi de message. La validation de publication requalifie les faits actuels ; les obligations `required` non satisfaites empêchent publication et l'enregistrement de revue associative, tandis qu'un besoin facultatif ou une qualification `unknown` ne crée pas d'obligation.
 
-STOP CONDITION : candidats adaptés et intégrés, validations exécutées, aucun blocage fondé sur une géographie non prouvée, formulaire Paris prioritaire et besoins facultatifs indépendants, contrats partagés sans duplication. Toute preuve manquante reste explicite.
+Preuves exécutées pour ce checkout :
+- Web ciblé : 120 tests / 11 fichiers PASS ; après la dernière correction locale, 13 tests / 4 fichiers PASS ; typecheck `next typegen && tsc --noEmit` PASS ; ESLint strict des fichiers du lot PASS.
+- Mobile : 402 tests / 45 fichiers PASS dans FAST, plus la suite ciblée de création (76 tests / 2 fichiers) PASS ; typecheck et ESLint strict PASS.
+- Couverture V8 ciblée Web : 80,44 % statements, 76,30 % branches, 86,44 % fonctions, 86,13 % lignes sur les modules/routes inclus ; Mobile : 88,48 %, 89,52 %, 81,39 %, 97,44 % respectivement sur le contrôleur de création et son écran. Ces chiffres sont `TARGETED`, pas comparables aux rapports workspace.
+- Revue associative : test ciblé confirme qu'une obligation requise non satisfaite interrompt le flux avant persistance de la revue ; publication Web relit et requalifie l'action sur le serveur. Aucune migration SQL/RLS n'a été créée ; `DB_SEMANTICS_NOT_EXECUTED`.
+- `npm run checks:fast` : FAIL après 149,6 s. Contrôles en échec : audit des secrets (alertes sur documents d'import non suivis ; l'adresse institutionnelle Lyon, qui déclenchait également l'heuristique, a été retirée du runtime au profit du lien officiel), gouvernance documentaire (documents d'import non suivis), dérive globale pages_site, frontières d'import hors fichiers du lot et lint ciblé (apostrophe JSX corrigée ensuite ; re-lint strict ciblé PASS). Les gates non démarrées au budget temps restent `NOT_RUN` ; le typecheck Web avait passé séparément.
+- Observations réseau bornées : IGN a retourné la commune pour un point de Paris ; DILA a retourné des services pour Lyon/Nantes et révèle un champ courriel tantôt scalaire, corrigé dans le parseur. Les échantillons ne prouvent ni les frontières, ni la taxonomie complète, ni l'exhaustivité des contacts.
+
+Aucun résultat de déploiement ou d'exhaustivité n'est revendiqué. Les validations sont ciblées ; l'agrégat FAST reste en FAIL à cause de constats globaux et concurrents explicités ci-dessus.
+
+STOP CONDITION : patches adaptés et intégrés ; validation ciblée exécutée ; publication et revue associative consomment la qualification serveur courante ; aucune décision bloquante ne repose sur une géographie non prouvée ; formulaire Paris reste prioritaire et besoins facultatifs indépendants ; contrat de préparation partagé sans duplication. Les lacunes d'exhaustivité, de réception/accord et de rendu appareil restent explicitement hors preuve.
 
 ## Passe 2 : annuaire métropolitain dynamique
 

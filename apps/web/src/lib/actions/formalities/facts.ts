@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isMetropolitanCommune, isMetropolitanDepartment } from "./metropolitan-contacts-contract";
 import type { ResolvedActionTerritory } from "@/lib/geo/action-territory-resolver";
 import type {
   ActionFormalitiesFacts,
@@ -10,6 +11,7 @@ export const actionFormalitiesFactsSchema = z
     territory: z
       .object({
         countryCode: z.literal("FR"),
+        jurisdictionEvidence: z.literal("metropolitan_point").optional(),
         code: z.string().trim().min(1).max(40),
         label: z.string().trim().min(1).max(120),
         commune: z
@@ -28,6 +30,7 @@ export const actionFormalitiesFactsSchema = z
           .object({ code: z.string().trim().min(1).max(40), label: z.string().trim().min(1).max(120) })
           .nullable()
           .optional(),
+        epci: z.object({ code: z.string().regex(/^\d{9}$/), label: z.string().trim().min(1).max(120) }).nullable().optional(),
         arrondissement: z
           .object({ code: z.string().trim().min(1).max(20), label: z.string().trim().min(1).max(120) })
           .nullable()
@@ -159,6 +162,7 @@ function buildFormalitiesTerritory(params: {
   departmentCode?: string | null;
   departmentName?: string | null;
   resolvedTerritory?: ResolvedActionTerritory | null;
+  resolvedPoint?: boolean;
 }): FormalitiesTerritory {
   const resolved = params.resolvedTerritory;
   const department = resolveDepartment(params);
@@ -166,12 +170,16 @@ function buildFormalitiesTerritory(params: {
 
   return {
     countryCode: "FR",
+    ...(params.resolvedPoint && resolved?.source === "geo.api.gouv.fr" &&
+      isMetropolitanCommune(resolved.commune?.code) && isMetropolitanDepartment(resolved.department?.code)
+      ? { jurisdictionEvidence: "metropolitan_point" as const } : {}),
     code: buildTerritoryCode(department.code, isParis),
     label: buildTerritoryLabel(resolved, department.name, isParis),
     commune: buildCommuneTerritoryPart(resolved),
     department: buildDepartmentTerritoryPart(department.code, department.name),
     region: buildRegionTerritoryPart(resolved),
     specialTerritory: buildSpecialTerritoryPart(resolved, isParis),
+    ...(resolved?.epci ? { epci: { code: resolved.epci.code, label: resolved.epci.name } } : {}),
     arrondissement: resolved?.arrondissement
       ? { code: resolved.arrondissement.code, label: resolved.arrondissement.name }
       : null,
@@ -188,6 +196,7 @@ export function deriveActionFormalitiesFacts(params: {
   departmentCode?: string | null;
   departmentName?: string | null;
   resolvedTerritory?: ResolvedActionTerritory | null;
+  resolvedPoint?: boolean;
   placeType?: string | null;
   plannedObjective?: string | null;
 }): ActionFormalitiesFacts {

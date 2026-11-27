@@ -30,6 +30,7 @@ export function applyDuplicatePrefillToForm(form: FormState, prefill: ActionDupl
     accessibility: prefill.accessibility,
     accessibilityStatus: prefill.accessibilityStatus ?? "not_evaluated",
     formalitiesContext: null,
+    formalitiesSupportNeeds: [],
     safetyInstructions: prefill.safetyInstructions,
     recommendedMaterials: prefill.recommendedMaterials,
     materialsProvided: prefill.materialsProvided,

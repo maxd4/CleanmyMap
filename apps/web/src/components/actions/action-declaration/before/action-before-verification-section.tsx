@@ -10,6 +10,7 @@ import { buildPreparationDataFromForm } from "../payload";
 import { buildPublicActionPracticalInformation } from "@/lib/actions/participation/group-participation-public-projection";
 import { ActionCreationLegalPanel } from "../../action-creation-legal-panel";
 import { deriveActionFormalitiesFacts } from "@/lib/actions/formalities/facts";
+import type { SupportNeed } from "@/lib/actions/formalities/accompaniment";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 import { deriveActionVolunteerChecklist } from "@/lib/actions/action-preparation-checklist";
 import { buildFormalitiesEmailActionDataFromForm } from "@/lib/actions/formalities/email-draft";
@@ -32,7 +33,7 @@ export function ActionBeforeVerificationSection({
   errorMessage: string | null;
   guidedReadiness: "unknown" | "ready" | "blocked";
   actionId?: string | null;
-  updateField: (key: "formalitiesContext", value: ActionFormalitiesFacts | null) => void;
+  updateField: <K extends "formalitiesContext" | "formalitiesSupportNeeds">(key: K, value: FormState[K]) => void;
   onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
   onEditDefinition?: (field?: string) => void;
 }) {
@@ -91,6 +92,8 @@ export function ActionBeforeVerificationSection({
     actionId={actionId}
     actionEmailData={buildFormalitiesEmailActionDataFromForm(form)}
     onDraftFactsChange={(facts) => updateField("formalitiesContext", facts)}
+    supportNeeds={form.formalitiesSupportNeeds ?? []}
+    onSupportNeedsChange={needs => updateField("formalitiesSupportNeeds", needs)}
     onFormalitiesReadiness={onFormalitiesReadiness}
     onEditDefinition={onEditDefinition}
   />;
@@ -112,6 +115,8 @@ type ActionBeforeVerificationViewProps = {
   actionId?: string | null;
   actionEmailData: ReturnType<typeof buildFormalitiesEmailActionDataFromForm>;
   onDraftFactsChange: (facts: ActionFormalitiesFacts) => void;
+  supportNeeds: readonly SupportNeed[];
+  onSupportNeedsChange: (needs: SupportNeed[]) => void;
   onFormalitiesReadiness?: (readiness: { known: boolean; blocked: boolean }) => void;
   onEditDefinition?: (field?: string) => void;
 };
@@ -132,6 +137,8 @@ function ActionBeforeVerificationView({
   actionId,
   actionEmailData,
   onDraftFactsChange,
+  supportNeeds,
+  onSupportNeedsChange,
   onFormalitiesReadiness,
   onEditDefinition,
 }: ActionBeforeVerificationViewProps) {
@@ -151,7 +158,7 @@ function ActionBeforeVerificationView({
       <CmmDisclosure summary="Aperçu public bénévole" tone="sky" size="sm">
         <ActionBeforeVolunteerPreview publicInformation={publicInformation} weatherChecklist={weatherChecklist} requestWeather={requestWeather} />
       </CmmDisclosure>
-      <ActionCreationLegalPanel actionId={actionId} draftFacts={draftFacts} onDraftFactsChange={onDraftFactsChange} onReadinessChange={onFormalitiesReadiness} actionEmailData={actionEmailData} />
+      <ActionCreationLegalPanel actionId={actionId} draftFacts={draftFacts} onDraftFactsChange={onDraftFactsChange} onReadinessChange={onFormalitiesReadiness} actionEmailData={actionEmailData} supportNeeds={supportNeeds} onSupportNeedsChange={onSupportNeedsChange} />
     </div>
   </CmmCard>;
 }

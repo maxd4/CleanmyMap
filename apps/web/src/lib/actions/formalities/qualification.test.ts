@@ -456,7 +456,7 @@ describe("action formalities qualification — existing scopes", () => {
       territory: { countryCode: "FR", code: "FR-69", label: "Lyon" },
     });
 
-    expect(result.rulesetVersion).toBe("national-administrative-framework-fallback-2026-09-17");
+    expect(result.rulesetVersion).toBe("national-administrative-framework-2026-11-27");
     expect(result.formalities[0]).toMatchObject({
       id: "national-formalities-fallback",
       requirementStatus: "unknown",
@@ -610,5 +610,75 @@ describe("action formalities qualification — existing scopes", () => {
       competentAuthority: { kind: "unknown" },
     });
     expect(result.unresolvedQuestions).toEqual(["règles officielles du territoire"]);
+  });
+});
+
+describe("national and additional territorial scopes", () => {
+  const lyonFacts: ActionFormalitiesFacts = {
+    ...parisFacts,
+    territory: {
+      countryCode: "FR", code: "FR-69", label: "Lyon", jurisdictionEvidence: "metropolitan_point",
+      department: { code: "69", label: "Rhône" },
+      commune: { codeInsee: "69123", label: "Lyon" },
+      arrondissement: { code: "69388", label: "Lyon 8e" },
+    },
+    manager: { kind: "unknown", label: null },
+  };
+
+  it("accumulates demonstrated national obligations while keeping local uncertainty", () => {
+    const result = qualifyActionFormalities({
+      ...lyonFacts, isPublicRoadwayActivity: true, isCortegeOrGathering: true,
+      localCustomaryUse: false, requiresPhysicalOccupation: true,
+    });
+    expect(result.formalities.filter(item => item.requirementStatus === "required").map(item => item.id))
+      .toEqual(["national-public-roadway-declaration", "national-public-domain-occupation-title"]);
+    expect(result.formalities.some(item => item.requirementStatus === "unknown")).toBe(true);
+  });
+
+  it("does not infer a manifestation from itinerancy or an unknown customary-use exception", () => {
+    const result = qualifyActionFormalities({
+      ...lyonFacts, isItinerant: true, isPublicRoadwayActivity: true,
+      isCortegeOrGathering: true, localCustomaryUse: "unknown",
+      requiresPhysicalOccupation: false,
+    });
+    expect(result.formalities.some(item => item.requirementStatus === "required")).toBe(false);
+  });
+
+  it("does not require national procedures without a resolved French department", () => {
+    const result = qualifyActionFormalities({
+      ...lyonFacts, territory: { countryCode: "FR", code: "FR-unknown", label: "À préciser" },
+      requiresPhysicalOccupation: true,
+    });
+    expect(result.formalities.some(item => item.requirementStatus === "required")).toBe(false);
+  });
+
+  it("does not infer a national obligation from a persisted department or route anchor", () => {
+    const result = qualifyActionFormalities({
+      ...lyonFacts, territory: { ...lyonFacts.territory, jurisdictionEvidence: undefined },
+      isPublicRoadwayActivity: true, isCortegeOrGathering: true,
+      localCustomaryUse: false, requiresPhysicalOccupation: true,
+    });
+    expect(result.formalities.some(item => item.requirementStatus === "required")).toBe(false);
+  });
+
+  it("matches arrondissement scopes only with the correct parent commune", () => {
+    const rule = testRule({
+      id: "lyon-8", scope: { kind: "arrondissement", countryCode: "FR", communeCode: "69123", arrondissementCode: "69388" },
+      formalityId: "lyon-8-support",
+    });
+    expect(qualifyActionFormalities(lyonFacts, [rule]).formalities[0].id).toBe("lyon-8-support");
+    expect(qualifyActionFormalities({
+      ...lyonFacts, territory: { ...lyonFacts.territory, commune: { codeInsee: "75056", label: "Paris" } },
+    }, [rule]).formalities[0].id).not.toBe("lyon-8-support");
+  });
+
+  it("matches an EPCI independently of the commune name", () => {
+    const rule = testRule({
+      id: "nantes-metropole", scope: { kind: "epci", countryCode: "FR", epciCode: "244400404" },
+      formalityId: "nantes-support",
+    });
+    expect(qualifyActionFormalities({
+      ...lyonFacts, territory: { ...lyonFacts.territory, epci: { code: "244400404", label: "Nantes Métropole" } },
+    }, [rule]).formalities[0].id).toBe("nantes-support");
   });
 });

@@ -17,6 +17,7 @@ import {
 import {
   ActionFormalitiesQualificationView,
 } from "./action-formalities-qualification-view";
+import type { SupportNeed } from "@/lib/actions/formalities/accompaniment";
 import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
 
 export { ActionFormalitiesQualificationView } from "./action-formalities-qualification-view";
@@ -180,6 +181,8 @@ type ActionFormalitiesWorkflowPanelProps = {
   onDraftFactsChange?: (facts: ActionFormalitiesFacts) => void;
   onReadinessChange?: (readiness: { known: boolean; blocked: boolean }) => void;
   actionEmailData?: FormalitiesEmailActionData;
+  supportNeeds?: readonly SupportNeed[];
+  onSupportNeedsChange?: (needs: SupportNeed[]) => void;
 };
 
 export function ActionFormalitiesWorkflowPanel(props: ActionFormalitiesWorkflowPanelProps) {
@@ -192,6 +195,8 @@ function ActionFormalitiesWorkflowPanelRuntime({
   onDraftFactsChange,
   onReadinessChange,
   actionEmailData,
+  supportNeeds,
+  onSupportNeedsChange,
 }: ActionFormalitiesWorkflowPanelProps) {
   const [draftFactsOverride, setDraftFactsOverride] = useState<ActionFormalitiesFacts | null>(null);
 
@@ -246,6 +251,8 @@ function ActionFormalitiesWorkflowPanelRuntime({
     visibleData={visibleData}
     visibleFacts={visibleFacts}
     actionEmailData={visibleData.actionData ?? actionEmailData}
+    supportNeeds={supportNeeds}
+    onSupportNeedsChange={onSupportNeedsChange}
   />;
 }
 
@@ -260,6 +267,8 @@ function ActionFormalitiesWorkflowContent({
   visibleData,
   visibleFacts,
   actionEmailData,
+  supportNeeds,
+  onSupportNeedsChange,
 }: {
   actionId?: string | null;
   error: string | null;
@@ -271,6 +280,8 @@ function ActionFormalitiesWorkflowContent({
   visibleData: ActionFormalitiesResponse;
   visibleFacts: ActionFormalitiesFacts;
   actionEmailData?: FormalitiesEmailActionData;
+  supportNeeds?: readonly SupportNeed[];
+  onSupportNeedsChange?: (needs: SupportNeed[]) => void;
 }) {
   const managerNeedsLabel = visibleFacts.manager.kind === "other_public";
   return (
@@ -319,7 +330,7 @@ function ActionFormalitiesWorkflowContent({
         {hasUnknown ? <span className="text-xs text-amber-800">Certaines données doivent encore être confirmées.</span> : null}
       </div>
       {error ? <p className="text-sm text-rose-700" role="alert">{error}</p> : null}
-      <ActionFormalitiesQualificationView qualification={visibleData.qualification} workflow={visibleData.workflow} facts={visibleFacts} actionEmailData={actionEmailData} isSaving={isSaving} readOnly={!actionId} onTransition={(formalityId, kind) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyTransition(formalityId, kind); }} />
+      <ActionFormalitiesQualificationView actionId={actionId} qualification={visibleData.qualification} workflow={visibleData.workflow} facts={visibleFacts} actionEmailData={actionEmailData} supportNeeds={supportNeeds} onSupportNeedsChange={onSupportNeedsChange} isSaving={isSaving} readOnly={!actionId} onTransition={(formalityId, kind) => { void /* fire-and-forget -- UI event boundary delegates to the existing stateful action. */ applyTransition(formalityId, kind); }} />
     </div>
   );
 }

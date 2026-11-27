@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { MUNICIPAL_CLEANING_NEEDS, type SupportNeed } from "@/lib/actions/formalities/accompaniment";
+import { buildSupportActionSummary } from "@/lib/actions/formalities/email-draft";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import type { ActionFormality } from "@/lib/actions/formalities/qualification";
 import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
@@ -21,16 +24,21 @@ function areaLabel(numbers: readonly number[]) {
 export function ActionFormalitiesParisContactPanel({
   actionData, contactFormality, selectedArrondissements, onArrondissementsChange,
   support = resolveParisFormalitiesSupport(selectedArrondissements),
+  needs,
 }: {
   actionData?: FormalitiesEmailActionData;
   contactFormality: ActionFormality | undefined;
   selectedArrondissements: number[];
   onArrondissementsChange: (arrondissements: number[]) => void;
   support?: ParisFormalitiesSupport;
+  needs: readonly SupportNeed[];
 }) {
   const action = actionData ?? {};
   const draftKey = JSON.stringify(action);
   const areaUnknown = support.arrondissements.length === 0;
+  const municipalNeeds = MUNICIPAL_CLEANING_NEEDS.filter(need => needs.includes(need));
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const summary = buildSupportActionSummary(action);
   return (
     <section className="min-w-0 space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3 sm:p-4" aria-labelledby="paris-cleaning-contact-title">
       <div>
@@ -46,12 +54,16 @@ export function ActionFormalitiesParisContactPanel({
           </label>)}
         </fieldset>
       </CmmDisclosure>
+      {municipalNeeds.length ? <>
+      <p className="text-sm font-semibold">Canal recommandé : formulaire officiel pour les demandes courantes. Les champs effectivement proposés restent à vérifier lors de la saisie.</p>
       <a href={PARIS_CLEANING_FORM_URL} target="_blank" rel="noreferrer" className="cmm-button max-w-full whitespace-normal" data-cmm-button-tone="primary" data-cmm-button-size="sm" data-cmm-button-variant="pill">Ouvrir le formulaire officiel Paris.fr</a>
+      {summary ? <div className="space-y-1"><textarea aria-label="Informations à préparer" readOnly value={summary} rows={5} className="w-full rounded-lg border bg-white p-2 text-sm" /><button type="button" className="cmm-button" onClick={async () => { try { await navigator.clipboard.writeText(summary); setCopyState("copied"); } catch { setCopyState("failed"); } }}>Copier les informations</button><p role="status" className="text-xs">{copyState === "copied" ? "Informations copiées." : copyState === "failed" ? "Sélectionnez le texte pour le copier." : ""}</p></div> : null}
+      <CmmDisclosure summary="Contact complémentaire, relance ou formulaire indisponible" tone="sky" size="sm">
       {areaUnknown || !support.divisions.length ? <p role="status" className="text-sm text-amber-950">Aucune division identifiée. Précisez le secteur ou utilisez le formulaire officiel.</p> :
         <div className="space-y-2" aria-label="Contacts des divisions concernées">
           {support.divisions.map(contact => {
             const covered = contact.arrondissements.filter(n => support.arrondissements.includes(n));
-            const emailScope = contact.emailArrondissements ?? [];
+            const emailScope = (contact.emailArrondissements ?? []).filter(n => covered.includes(n));
             const uncovered = covered.filter(n => !emailScope.includes(n));
             return <article key={contact.id} className="min-w-0 space-y-1 rounded-xl border border-emerald-200 bg-white p-3">
               <h5 className="font-semibold text-emerald-950">{contact.label}</h5>
@@ -62,18 +74,23 @@ export function ActionFormalitiesParisContactPanel({
               {contact.email && contact.emailSource && emailScope.length ? <>
                 <p className="break-all text-sm">Courriel publié pour {areaLabel(emailScope)} : <a className="underline" href={`mailto:${contact.email}`}>{contact.email}</a></p>
                 <SourceLink source={contact.emailSource} />
-                {contactFormality ? <CmmDisclosure summary="Prévenir la division de propreté" tone="sky" size="sm">
-                  <ActionFormalitiesEmailComposer key={`${draftKey}:${contact.id}:${areaLabel(emailScope)}`} formality={contactFormality} actionData={action} recipientEmail={contact.email} contactScope={areaLabel(emailScope)} />
+                {contactFormality ? <CmmDisclosure summary="Préparer un courriel complémentaire" tone="sky" size="sm">
+                  <ActionFormalitiesEmailComposer key={`${draftKey}:${contact.id}:${areaLabel(emailScope)}:complement`} formality={contactFormality} actionData={action} recipientEmail={contact.email} contactScope={areaLabel(emailScope)} purpose="complementary" />
+                </CmmDisclosure> : null}
+                {contactFormality ? <CmmDisclosure summary="Formulaire indisponible : préparer les demandes sélectionnées" tone="sky" size="sm">
+                  <ActionFormalitiesEmailComposer key={`${draftKey}:${contact.id}:${areaLabel(emailScope)}:${municipalNeeds.join(",")}`} formality={contactFormality} actionData={action} recipientEmail={contact.email} contactScope={areaLabel(emailScope)} needs={municipalNeeds} />
                 </CmmDisclosure> : null}
               </> : null}
               {uncovered.length ? <p className="text-xs">Pas de courriel vérifié pour {areaLabel(uncovered)}. Téléphone ou <a href={contact.officialChannel.url} target="_blank" rel="noreferrer" className="underline">canal officiel</a>.</p> : null}
             </article>;
           })}
         </div>}
-      <CmmDisclosure summary={`Mairies · relais facultatifs (${support.townHalls.length})`} tone="emerald" size="sm">
-        {support.townHalls.length ? <ul className="space-y-2">{support.townHalls.map(hall => <li key={hall.id} className="min-w-0 rounded-lg bg-white p-2 text-sm"><p className="font-semibold">{hall.label} · {areaLabel(hall.arrondissements)}</p><p>{hall.administrativeAddress} (administrative)</p><p><a href={`tel:${hall.phone.replaceAll(" ","")}`} className="underline">{hall.phone}</a> · <a href={hall.officialChannel} target="_blank" rel="noreferrer" className="underline">Site officiel</a></p><SourceLink source={hall.source}/></li>)}</ul> : <p role="status" className="text-sm">Aucune mairie identifiée pour la sélection.</p>}
       </CmmDisclosure>
-      <CmmDisclosure summary={`Associations et réseaux pertinents (${support.associations.length})`} tone="emerald" size="sm">
+      </> : null}
+      {needs.includes("communication") ? <CmmDisclosure summary={`Mairies · relais facultatifs (${support.townHalls.length})`} tone="emerald" size="sm">
+        {support.townHalls.length ? <ul className="space-y-2">{support.townHalls.map(hall => <li key={hall.id} className="min-w-0 rounded-lg bg-white p-2 text-sm"><p className="font-semibold">{hall.label} · {areaLabel(hall.arrondissements)}</p><p>{hall.administrativeAddress} (administrative)</p><p><a href={`tel:${hall.phone.replaceAll(" ","")}`} className="underline">{hall.phone}</a> · <a href={hall.officialChannel} target="_blank" rel="noreferrer" className="underline">Site officiel</a></p><SourceLink source={hall.source}/></li>)}</ul> : <p role="status" className="text-sm">Aucune mairie identifiée pour la sélection.</p>}
+      </CmmDisclosure> : null}
+      {needs.includes("association") ? <CmmDisclosure summary={`Associations et réseaux pertinents (${support.associations.length})`} tone="emerald" size="sm">
         <p className="mb-2 text-xs">Pistes de contact selon le périmètre documenté. Aucun partenariat ni prêt de matériel présumé.</p>
         {support.associations.length ? <ul className="space-y-2">{support.associations.map(({actor,contact,matchedArrondissements}) => <li key={actor.id} className="min-w-0 space-y-1 rounded-lg bg-white p-2 text-sm">
           <p className="font-semibold">{actor.name}</p>
@@ -86,19 +103,19 @@ export function ActionFormalitiesParisContactPanel({
           {contact.equipmentNote ? <p className="text-xs">{contact.equipmentNote}</p> : null}
           {contact.email && contactFormality ? <CmmDisclosure summary="Proposer une collaboration" tone="sky" size="sm"><ActionFormalitiesEmailComposer key={`${draftKey}:${actor.id}:${areaLabel(matchedArrondissements)}`} formality={contactFormality} actionData={action} recipientEmail={contact.email} purpose="collaboration" contactScope={areaLabel(matchedArrondissements)} /></CmmDisclosure> : null}
         </li>)}</ul> : <p role="status" className="text-sm">Aucun contact associatif suffisamment documenté pour ce secteur.</p>}
-      </CmmDisclosure>
-      <section className="space-y-1 rounded-xl border border-emerald-200 bg-white p-3 text-sm">
+      </CmmDisclosure> : null}
+      {needs.includes("equipment") ? <section className="space-y-1 rounded-xl border border-emerald-200 bg-white p-3 text-sm">
         <h5 className="font-semibold">Matériel potentiellement disponible</h5>
         <p>Sur demande : {support.logistics.offeredOnRequest.join(", ")}. Selon disponibilité : {support.logistics.subjectToAvailability.join(", ")}.</p>
         <p>Quantités, stock et retrait à confirmer. Aucun autre matériel ni lieu de retrait confirmé.</p>
         <SourceLink source={support.logistics.source}/>
-      </section>
-      <section className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm" aria-label="Consignes de reprise des déchets">
+      </section> : null}
+      {needs.includes("pickup") ? <section className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm" aria-label="Consignes de reprise des déchets">
         <h5 className="font-semibold">Organiser l’enlèvement</h5>
         {support.guidance.map(item => <div key={item.label}><p><strong>{item.label} :</strong> {item.text}</p><SourceLink source={item.source}/>{item.additionalSource ? <SourceLink source={item.additionalSource}/> : null}</div>)}
         <p className="font-semibold">Une adresse de mairie ou de division n’est jamais un point de dépôt confirmé.</p>
         <p>Après confirmation réelle du service, reporter la consigne (date, interlocuteur, lieu, horaire et flux) dans Équipe et logistique, notes logistiques internes. Cette note reste spécifique à l’action.</p>
-      </section>
+      </section> : null}
     </section>
   );
 }

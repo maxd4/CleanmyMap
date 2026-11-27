@@ -1,4 +1,5 @@
 import type { ActionFormality } from "./qualification";
+import { buildSupportRequestLines, type SupportNeed } from "./accompaniment";
 
 export type FormalitiesEmailActionData = {
   title?: string | null;
@@ -13,7 +14,7 @@ export type FormalitiesEmailActionData = {
   contactArrondissementCode?: string | null;
 };
 
-export type FormalitiesEmailPurpose = "participatory_cleaning" | "collaboration";
+export type FormalitiesEmailPurpose = "participatory_cleaning" | "collaboration" | "complementary";
 
 export type ReviewableFormalityEmailDraft = {
   to: string;
@@ -80,6 +81,7 @@ export function buildReviewableFormalityEmailDraft(params: {
   purpose?: FormalitiesEmailPurpose;
   contactScope?: string;
   verifiedRecipientEmail?: string;
+  needs?: readonly SupportNeed[];
 }): ReviewableFormalityEmailDraft | null {
   const channel = params.formality.officialChannel;
   const recipientEmail = params.verifiedRecipientEmail ??
@@ -111,12 +113,17 @@ export function buildReviewableFormalityEmailDraft(params: {
       ? `Organisateur : ${action.organizerName.trim()}`
       : null,
     "",
-    params.purpose === "participatory_cleaning"
+    params.purpose === "complementary"
+      ? "Informations ou demande particulière non couverte par le formulaire : [à préciser]"
+      : params.purpose === "participatory_cleaning" && params.needs !== undefined
+        ? null
+        : params.purpose === "participatory_cleaning"
       ? "Pourriez-vous nous indiquer si des gants et des sacs peuvent être fournis sur demande, ainsi que des cendriers de poche selon disponibilité, et confirmer la prise en charge des déchets ?"
       : params.purpose === "collaboration"
         ? "Seriez-vous intéressés par une coorganisation ou un relais de cette action, selon vos possibilités ? Si pertinent, pourriez-vous préciser si vous pouvez fournir du matériel ? Aucun engagement n’est présumé."
         : "Merci de m’indiquer la procédure et les pièces complémentaires éventuellement nécessaires.",
-    ...(params.purpose === "participatory_cleaning" ? [
+    ...(params.purpose === "participatory_cleaning" && params.needs !== undefined ? buildSupportRequestLines(params.needs) : []),
+    ...(params.purpose === "participatory_cleaning" && params.needs === undefined ? [
       "Matériel et quantités souhaités : [à préciser]",
       "Point de reprise souhaité : [à préciser, sous réserve de votre accord]",
       "Horaire de reprise souhaité : [à préciser, sous réserve de votre accord]",
@@ -132,7 +139,7 @@ export function buildReviewableFormalityEmailDraft(params: {
     subject: params.purpose === "participatory_cleaning"
       ? isMeaningful(action.title)
         ? `Nettoyage participatif — ${action.title.trim()}`
-        : "Nettoyage participatif à Paris"
+        : "Nettoyage participatif"
       : params.purpose === "collaboration"
         ? isMeaningful(action.title) ? `Proposition de collaboration : ${action.title.trim()}` : "Proposition de collaboration pour un nettoyage participatif"
       : isMeaningful(action.title)
@@ -142,4 +149,15 @@ export function buildReviewableFormalityEmailDraft(params: {
     requiresReview: true,
     sent: false,
   };
+}
+
+/** User-reviewed copyable facts, not an assertion about external form fields. */
+export function buildSupportActionSummary(action: FormalitiesEmailActionData): string {
+  const values: [string, string | number | null | undefined][] = [
+    ["Titre", action.title], ["Organisateur", action.organizerName], ["Lieu", action.location],
+    ["Date", action.date], ["Début", action.startTime], ["Fin", action.endTime],
+    ["Participants prévus", action.participantCount], ["Description", action.description],
+  ];
+  return values.filter(([, value]) => typeof value === "number" ? Number.isFinite(value) : isMeaningful(value))
+    .map(([label, value]) => label + " : " + value).join("\n");
 }

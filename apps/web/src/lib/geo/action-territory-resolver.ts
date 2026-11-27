@@ -20,6 +20,7 @@ export type ResolvedActionTerritory = {
   commune: ResolvedTerritoryPart | null;
   department: ResolvedTerritoryPart | null;
   region: ResolvedTerritoryPart | null;
+  epci?: ResolvedTerritoryPart | null;
   /** Municipal arrondissement, only when the official city code is resolved. */
   arrondissement?: ResolvedTerritoryPart | null;
   specialTerritory: ResolvedTerritoryPart | null;
@@ -48,6 +49,7 @@ function parseCommuneTerritoryPayload(value: unknown): {
   commune: ResolvedTerritoryPart;
   departmentCode: string | null;
   regionCode: string | null;
+  epci: ResolvedTerritoryPart | null;
 } | null {
   if (!isUnknownArray(value) || value.length === 0) {
     return null;
@@ -70,7 +72,15 @@ function parseCommuneTerritoryPayload(value: unknown): {
     commune: { code: communeCode, name: communeName },
     departmentCode: readStringField(record.codeDepartement),
     regionCode: readStringField(record.codeRegion),
+    epci: parseEpci(record),
   };
+}
+
+function parseEpci(record: Record<string, unknown>): ResolvedTerritoryPart | null {
+  const code = readStringField(record.codeEpci);
+  if (!code || !/^\d{9}$/.test(code)) return null;
+  const nested = parseTerritoryPart(record.epci);
+  return nested?.code === code ? nested : { code, name: code };
 }
 
 function specialTerritoryForResolvedParts(
@@ -131,7 +141,7 @@ async function resolveTerritoryFromCoordinates(
   const communeUrl = new URL(`${ACTION_DEPARTMENT_GEO_API_BASE_URL}/communes`);
   communeUrl.searchParams.set("lat", String(latitude));
   communeUrl.searchParams.set("lon", String(longitude));
-  communeUrl.searchParams.set("fields", "nom,code,codeDepartement,codeRegion");
+  communeUrl.searchParams.set("fields", "nom,code,codeDepartement,codeRegion,codeEpci,epci");
   communeUrl.searchParams.set("format", "json");
   communeUrl.searchParams.set("limit", "1");
 
@@ -161,6 +171,7 @@ async function resolveTerritoryFromCoordinates(
     commune: parsedCommune.commune,
     department,
     region,
+    ...(parsedCommune.epci ? { epci: parsedCommune.epci } : {}),
     ...(arrondissement ? { arrondissement } : {}),
     specialTerritory: specialTerritoryForResolvedParts(
       department ??

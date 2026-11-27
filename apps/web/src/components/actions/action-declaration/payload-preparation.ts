@@ -180,6 +180,7 @@ function buildPreparationContentFields(
       ? { accessibilityAlternativeRouteVersionId: form.accessibilityAlternativeRouteVersionId }
       : {}),
     formalitiesContext: form.formalitiesContext ?? undefined,
+    formalitiesSupportNeeds: form.formalitiesSupportNeeds,
     materialsProvided: form.materialsProvided.trim() || undefined,
     suggestedMaterials: form.suggestedMaterials.length > 0 ? [...form.suggestedMaterials] : undefined,
     ...(equipmentInventory ? { equipmentInventory } : {}),
@@ -317,6 +318,7 @@ function buildHydratedDescriptionFields(
       label: `Version du ${new Date(version.appliedAt).toLocaleDateString("fr-FR")}`,
     })),
     formalitiesContext: preparationData.formalitiesContext ?? form.formalitiesContext,
+    formalitiesSupportNeeds: preparationData.formalitiesSupportNeeds ?? [],
     safetyInstructions:
       stripHistoricalDerivedGuidance(
         preparationData.safetyInstructions,

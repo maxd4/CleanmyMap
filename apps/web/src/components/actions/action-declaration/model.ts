@@ -32,6 +32,7 @@ import type {
   ActionOrganizationalRelations,
   ActionRefreshmentsProvided,
 } from "@/lib/actions/preparation-contract";
+import type { SupportNeed } from "@/lib/actions/formalities/accompaniment";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 import type { ActionFieldRoleCode } from "@/lib/actions/field-roles";
 
@@ -81,6 +82,7 @@ export type FormState = {
  accessibilityConditionsVerifiedAt: string;
  accessibilityRouteVersionOptions: Array<{ versionId: string; label: string }>;
  formalitiesContext?: ActionFormalitiesFacts | null;
+ formalitiesSupportNeeds?: SupportNeed[];
  safetyInstructions: string;
  recommendedMaterials: string;
  materialsProvided: string;
@@ -223,6 +225,7 @@ export const initialState: FormState = {
  accessibilityConditionsVerifiedAt:"",
  accessibilityRouteVersionOptions:[],
  formalitiesContext: null,
+  formalitiesSupportNeeds: [],
  safetyInstructions:"",
  recommendedMaterials:"",
  materialsProvided:"",

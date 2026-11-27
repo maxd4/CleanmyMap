@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { deriveActionFormalitiesFacts } from "@/lib/actions/formalities/facts";
 import { qualifyActionFormalities } from "@/lib/actions/formalities/qualification";
 import { buildFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
+import type { SupportNeed } from "@/lib/actions/formalities/accompaniment";
 import { ActionFormalitiesQualificationView } from "./action-formalities-qualification-view";
 import { ActionFormalitiesWorkflowPanel } from "./action-formalities-workflow-panel";
 
@@ -27,7 +28,11 @@ function parisCleanwalk(arrondissementCode: string) {
   };
 }
 
-function renderAssistant(facts: ReturnType<typeof parisCleanwalk>, selectedArrondissements?: number[]) {
+function renderAssistant(
+  facts: ReturnType<typeof parisCleanwalk>,
+  selectedArrondissements?: number[],
+  supportNeeds: SupportNeed[] = ["notify"],
+) {
   const qualification = qualifyActionFormalities(facts);
   const workflow = buildFormalitiesWorkflowState({ facts, qualification });
   return renderToStaticMarkup(
@@ -43,6 +48,7 @@ function renderAssistant(facts: ReturnType<typeof parisCleanwalk>, selectedArron
         contactAreaMode: selectedArrondissements ? "route_or_area" : "single_location",
         contactArrondissementCode: facts.territory.arrondissement?.code,
       },
+      supportNeeds,
       isSaving: false,
       readOnly: true,
       onTransition: () => undefined,
@@ -60,13 +66,14 @@ describe("Action formalities assistant", () => {
     expect(markup).toContain("Aucune pièce AOT n&#x27;est demandée pour le nettoyage participatif ainsi qualifié.");
   });
 
-  it("shows Paris.fr, the verified 7e/8e phone and the specifically published 7e email", () => {
-    const markup = renderAssistant(parisCleanwalk("75107"));
+  it("shows Paris.fr, the verified 7e/8e phone and the specifically published 7e email when support is requested", () => {
+    const markup = renderAssistant(parisCleanwalk("75107"), undefined, ["notify", "association"]);
     expect(markup).toContain("Ouvrir le formulaire officiel Paris.fr");
     expect(markup).toContain("01 45 61 57 00");
     expect(markup).toContain("DPE-STPP-7/8e-Exploitation7e@paris.fr");
     expect(markup).toContain("Copier le courriel");
-    expect(markup).toContain("Prévenir la division de propreté");
+    expect(markup).toContain("Canal recommandé : formulaire officiel pour les demandes courantes");
+    expect(markup).toContain("Copier les informations");
     expect(markup).toContain("Proposer une collaboration");
     expect(markup).toContain("Adresse administrative (pas un dépôt)");
     expect(markup).toContain("Ne laissez aucun sac");

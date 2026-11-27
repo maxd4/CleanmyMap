@@ -24,6 +24,8 @@ export type FormalityRuleScope =
       countryCode: "FR";
       codeInsee: string;
     }
+  | { kind: "epci"; countryCode: "FR"; epciCode: string }
+  | { kind: "arrondissement"; countryCode: "FR"; communeCode: string; arrondissementCode: string }
   | {
       kind: "special_territory";
       countryCode: "FR";
@@ -64,6 +66,9 @@ export type AdministrativeFormalityRule = {
 
 function scopeSpecificity(scope: FormalityRuleScope): number {
   switch (scope.kind) {
+    case "arrondissement":
+      return 4;
+    case "epci":
     case "commune":
     case "special_territory":
       return 3;
@@ -89,6 +94,10 @@ function scopeMatchesTerritory(
       return territory.department?.code === scope.departmentCode;
     case "commune":
       return territory.commune?.codeInsee === scope.codeInsee;
+    case "epci":
+      return territory.epci?.code === scope.epciCode;
+    case "arrondissement":
+      return territory.commune?.codeInsee === scope.communeCode && territory.arrondissement?.code === scope.arrondissementCode;
     case "special_territory":
       return (
         territory.specialTerritory?.code === scope.code ||
@@ -129,6 +138,9 @@ export function buildFormalitiesTerritoryFingerprint(
     territory.commune?.codeInsee ?? "",
     territory.department?.code ?? territory.code,
     territory.region?.code ?? "",
+    territory.epci?.code ?? "",
+    territory.arrondissement?.code ?? "",
+    territory.jurisdictionEvidence ?? "",
   ].join("|");
 }
 

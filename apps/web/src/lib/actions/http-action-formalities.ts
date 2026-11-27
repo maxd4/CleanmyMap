@@ -1,3 +1,4 @@
+import type { MetropolitanContacts } from "./formalities/metropolitan-contacts-contract";
 import { AppError } from "@/lib/errors/app-errors";
 import type {
   AdministrativeRequirementsRead,
@@ -172,4 +173,16 @@ export async function validateActionAdministrativeRequirements(
     });
   }
   return body as ValidateAdministrativeRequirementsResponse;
+}
+
+/** Explicit authenticated lookup on the persisted action, not an arbitrary provider proxy. */
+export async function fetchMetropolitanFormalitiesContacts(actionId: string): Promise<MetropolitanContacts> {
+  const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/formalities?contacts=1`, { method: "GET", cache: "no-store" });
+  const body = await parseJsonSafely(response);
+  if (!response.ok) throw createActionError(response, body, parseErrorMessage(body, "Impossible de charger les contacts locaux."));
+  if (!body || typeof body !== "object" || !("coverage" in body) || !("contacts" in body) ||
+    !Array.isArray(body.contacts) || !("unresolvedCommuneCodes" in body) || !Array.isArray(body.unresolvedCommuneCodes)) {
+    throw new AppError({ kind: "server", message: "Réponse annuaire incomplète." });
+  }
+  return body as MetropolitanContacts;
 }

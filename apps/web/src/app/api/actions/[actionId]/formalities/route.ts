@@ -25,6 +25,7 @@ import {
 } from "@/lib/actions/formalities/rules";
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 import { deriveActionFormalitiesFactsFromAction } from "@/lib/actions/formalities/action-context";
+import { loadMetropolitanContacts } from "@/lib/actions/formalities/metropolitan-coverage.server";
 import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
 
 export const runtime = "nodejs";
@@ -147,7 +148,7 @@ function buildFormalitiesEmailActionData(
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
   const requestContext = await resolveFormalitiesRequestContext(ctx);
@@ -169,6 +170,9 @@ export async function GET(
       );
     }
 
+    if (new URL(request.url).searchParams.get("contacts") === "1") {
+      return NextResponse.json(await loadMetropolitanContacts(current), { headers: { "Cache-Control": "private, no-store" } });
+    }
     const facts = await deriveActionFormalitiesFactsFromAction(current);
     const qualification = qualifyActionFormalities(facts);
     const workflow = buildFormalitiesWorkflowState({

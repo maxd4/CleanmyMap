@@ -43,6 +43,8 @@ export type FormalitiesAuthorityKind =
 
 export type FormalitiesTerritory = {
   countryCode: "FR";
+  /** Evidence derived server-side from a resolved metropolitan point, never user-declared. */
+  jurisdictionEvidence?: "metropolitan_point";
   code: string;
   label: string;
   commune?: {
@@ -61,6 +63,7 @@ export type FormalitiesTerritory = {
     code: string;
     label: string;
   } | null;
+  epci?: { code: string; label: string } | null;
   arrondissement?: {
     code: string;
     label: string;
@@ -72,7 +75,7 @@ export type FormalitiesOfficialSource = {
   title: string;
   authorityLevel: "municipal" | "police" | "national";
   url: string;
-  verifiedOn: typeof FORMALITIES_RULE_VERIFIED_ON;
+  verifiedOn: string;
   scope: string;
 };
 
@@ -563,6 +566,7 @@ const ACTION_FORMALITIES_RULES: readonly AdministrativeFormalityRule[] = [
     rulesetVersion: PARIS_FORMALITIES_RULESET_VERSION,
     contract: PARIS_RULE_CONTRACT,
     qualifies: qualifyParisFormalities,
+    supersedesRuleIds: ["national-formalities-fallback"],
   },
   createNationalFormalitiesRule({ source: SERVICE_PUBLIC_MANIFESTATION_SOURCE, verifiedOn: FORMALITIES_RULE_VERIFIED_ON }),
 ];

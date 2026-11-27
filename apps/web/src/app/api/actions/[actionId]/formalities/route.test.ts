@@ -535,12 +535,13 @@ describe("/api/actions/:actionId/formalities", () => {
       commune: { codeInsee: "92050", label: "Nanterre" },
       department: { code: "92", label: "Hauts-de-Seine" },
       region: { code: "11", label: "Île-de-France" },
+      jurisdictionEvidence: "metropolitan_point",
       specialTerritory: null,
       arrondissement: null,
     });
   });
 
-  it("preserves the stored territory fallback when resolution is unavailable", async () => {
+  it("does not reuse stored territory when current action geography is unresolvable", async () => {
     loadActionMock.mockResolvedValueOnce({
       ...action(),
       department_code: null,
@@ -593,9 +594,11 @@ describe("/api/actions/:actionId/formalities", () => {
     const body = await readFormalitiesResponse(response);
 
     expect(response.status).toBe(200);
-    expect(body.facts.territory).toEqual(
-      expect.objectContaining({ code: "FR-92", label: "Hauts-de-Seine" }),
-    );
+    expect(body.facts.territory).toEqual(expect.objectContaining({
+      code: "FR-unknown",
+      label: "Territoire à préciser",
+    }));
+    expect(body.facts.territory).not.toHaveProperty("jurisdictionEvidence");
   });
 
   it("invalidates the workflow after a real action territory change", async () => {

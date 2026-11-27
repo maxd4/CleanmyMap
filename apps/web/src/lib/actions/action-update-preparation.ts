@@ -55,6 +55,10 @@ export function prepareActionUpdateBody(
     withFormalitiesWorkflow,
   ) as typeof parsedBody.preparationData;
 
+  if (preservedPreparationData && preservedPreparationData.formalitiesSupportNeeds === undefined && current.preparation_data?.formalitiesSupportNeeds !== undefined) {
+    preservedPreparationData.formalitiesSupportNeeds = [...current.preparation_data.formalitiesSupportNeeds];
+  }
+
   const currentObservedMeasures = (
     current.preparation_data as ActionPreparationData | null | undefined
   )?.accessibilityObservedMeasures;

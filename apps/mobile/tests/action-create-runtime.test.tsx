@@ -1210,6 +1210,8 @@ describe('mobile action creation runtime', () => {
       input('Coorganisateurs (identifiants séparés par des virgules)', 'orga-1, orga-1, orga-2')
       input('Invitations (identifiants séparés par des virgules)', 'invite-1, invite-1, invite-2')
       input('Logistique et checklist (une ligne par item)', Array.from({ length: 14 }, (_, index) => `item-${index + 1}`).join('\n'))
+      await callTestHandler(findButton(renderer, 'Demander du matériel'), 'onPress')
+      await callTestHandler(findButton(renderer, 'Organiser la reprise des déchets'), 'onPress')
     })
     await act(async () => { await callTestHandler(findButton(renderer, 'Vérifier et publier'), 'onPress') })
     await act(async () => { await callTestHandler(findButton(renderer, 'Publier'), 'onPress') })
@@ -1226,8 +1228,9 @@ describe('mobile action creation runtime', () => {
       organizerAccounts: ['orga-1', 'orga-2'],
       participantAccounts: ['invite-1', 'invite-2'],
     })
-    const preparationData = payload.preparationData as { preparationChecklist?: unknown[] } | undefined
+    const preparationData = payload.preparationData as { preparationChecklist?: unknown[]; formalitiesSupportNeeds?: string[] } | undefined
     expect(preparationData?.preparationChecklist).toHaveLength(12)
+    expect(preparationData?.formalitiesSupportNeeds).toEqual(['equipment', 'pickup'])
   })
 
   it('links GPS only after a server draft exists and keeps the server result explicit', async () => {

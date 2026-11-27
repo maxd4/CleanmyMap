@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
+import type { SupportNeed } from "@/lib/actions/formalities/accompaniment";
 import type { ActionFormality } from "@/lib/actions/formalities/qualification";
 import {
   buildReviewableFormalityEmailDraft,
@@ -14,12 +15,14 @@ export function ActionFormalitiesEmailComposer({
   recipientEmail,
   purpose = "participatory_cleaning",
   contactScope,
+  needs,
 }: {
   formality: ActionFormality;
   actionData: FormalitiesEmailActionData;
   recipientEmail: string;
   purpose?: FormalitiesEmailPurpose;
   contactScope?: string;
+  needs?: readonly SupportNeed[];
 }) {
   const titleId = useId();
   const draft = useMemo(
@@ -28,9 +31,10 @@ export function ActionFormalitiesEmailComposer({
       action: actionData,
       purpose,
       contactScope,
+      needs,
       verifiedRecipientEmail: recipientEmail,
     }),
-    [actionData, formality, recipientEmail, purpose, contactScope],
+    [actionData, formality, recipientEmail, purpose, contactScope, needs],
   );
   const [subject, setSubject] = useState(draft?.subject ?? "");
   const [body, setBody] = useState(draft?.body ?? "");
@@ -53,7 +57,7 @@ export function ActionFormalitiesEmailComposer({
   return (
     <section className="space-y-3 rounded-xl border border-sky-200 bg-sky-50/60 p-3" aria-labelledby={titleId}>
       <div>
-        <h4 id={titleId} className="font-bold text-sky-950">{purpose === "collaboration" ? "Proposer une collaboration" : "Prévenir la division de propreté"}</h4>
+        <h4 id={titleId} className="font-bold text-sky-950">{purpose === "complementary" ? "Courriel complémentaire" : purpose === "collaboration" ? "Proposer une collaboration" : "Préparer une demande"}</h4>
         <p className="mt-1 text-xs leading-5 text-sky-950">Le texte est modifiable. Copier ou ouvrir votre messagerie ne marque pas la démarche comme envoyée.</p>
       </div>
       <p className="break-all text-xs text-sky-950"><span className="font-semibold">À :</span> {currentDraft.to}</p>

@@ -37,6 +37,7 @@ export async function deriveActionFormalitiesFactsFromAction(
     departmentCode: action.department_code,
     departmentName: action.department_name,
     resolvedTerritory,
+    resolvedPoint: action.derived_geometry_kind === "point",
     plannedObjective: action.preparation_data?.plannedObjective,
   });
   const parsed = actionFormalitiesFactsSchema.safeParse(
@@ -48,9 +49,6 @@ export async function deriveActionFormalitiesFactsFromAction(
   return {
     ...parsed.data,
     isCortegeOrGathering: parsed.data.isCortegeOrGathering ?? "unknown",
-    territory:
-      resolvedTerritory || fallback.territory.code !== "FR-unknown"
-        ? fallback.territory
-        : parsed.data.territory,
+    territory: fallback.territory,
   };
 }

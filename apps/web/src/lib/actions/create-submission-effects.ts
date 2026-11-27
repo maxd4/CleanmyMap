@@ -30,9 +30,7 @@ function buildInitialFormalitiesState(payload: CreateActionPayload) {
     const facts = providedFacts.success
       ? {
         ...providedFacts.data,
-        territory: resolvedTerritory || fallbackFacts.territory.code !== "FR-unknown"
-          ? fallbackFacts.territory
-          : providedFacts.data.territory,
+        territory: fallbackFacts.territory,
       }
       : fallbackFacts;
     const qualification = qualifyActionFormalities(facts);

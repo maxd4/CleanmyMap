@@ -36,6 +36,7 @@ import type {
 } from "@/lib/route/route-operational";
 import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
 import type { AdministrativeRequirements } from "./administrative-requirements";
+import type { SupportNeed } from "./formalities/accompaniment";
 import type { ActionFormalitiesFacts } from "./formalities/qualification";
 import type { ActionFormalitiesWorkflowState } from "./formalities/workflow";
 import type { RouteGeometryMode, RouteGeometryProvider } from "@/lib/route/route-contract";
@@ -224,6 +225,8 @@ export type ActionPreparationData = {
   administrativeRequirements?: AdministrativeRequirements;
   /** User-supplied legal facts used by the separately persisted qualification workflow. */
   formalitiesContext?: ActionFormalitiesFacts;
+  /** Optional organizer preferences, not administrative evidence. */
+  formalitiesSupportNeeds?: SupportNeed[];
   /** Server-managed qualification trace and per-formality user progress. */
   formalitiesWorkflow?: ActionFormalitiesWorkflowState;
   logisticsNotes?: string;

@@ -473,21 +473,43 @@ et `apps/web/src/lib/actions/time-contract.ts`.
 
 Le moteur des formalités consomme la géographie canonique de l'action et ne
 crée ni seconde géographie ni autorisation territoriale. Les règles déclarent
-un scope `national`, `department`, `commune` ou `special_territory`. Les règles
-applicables sont résolues par précision décroissante (commune ou territoire
-spécialisé, département, national), puis par identifiant déterministe ; une
-règle générale n'est retirée que si une relation `supersedesRuleIds` le
-déclare. Des formalités compatibles peuvent donc coexister.
+un scope `national`, `department`, `epci`, `commune`, `arrondissement` ou
+`special_territory`. Les scopes d'arrondissement exigent le code INSEE de la
+commune parente ; un EPCI exige son propre code. Les règles applicables sont
+résolues par précision décroissante, puis par identifiant déterministe ; les
+règles compatibles coexistent, et seules les relations
+`supersedesRuleIds` remplacent explicitement une règle. Paris conserve son
+moteur spécialisé.
 
-Le fallback national fournit un cadre officiel lorsque aucune règle locale
-suffisamment précise ne s'applique, mais conserve `requirementStatus =
-unknown` tant que l'obligation locale n'est pas démontrée. `unknown` signifie
-« preuves insuffisantes pour conclure à required, recommended ou
-not_required » ; ce n'est ni l'absence de formalité, ni une erreur technique.
-La qualification, sa source officielle, son périmètre et sa date de
-vérification restent rattachés au moteur
-`apps/web/src/lib/actions/formalities/qualification.ts` et à
-`formalities-rules.ts`. Le parcours produit correspondant est décrit dans
+Le cadre national conserve une formalité `unknown` tant que la compétence ou
+la procédure locale n'est pas vérifiée. Avec une preuve de point géocodé en
+commune métropolitaine, il qualifie aussi une manifestation caractérisée sur
+voie publique (faits de cortège/rassemblement ou revendication, hors usage
+local) et une occupation du domaine public au-delà de l'usage commun. Une
+simple collecte, un itinéraire ou un point non prouvé ne suffit pas. Le
+gestionnaire effectif, les délais et le canal restent à confirmer. Une preuve
+de point n'est jamais étendue aux communes traversées par un parcours.
+
+`formalitiesSupportNeeds` est un choix facultatif de préparation, séparé des
+faits juridiques et des démarches. Paris garde la priorité du formulaire
+officiel pour les demandes courantes ; les demandes complémentaires restent
+à préciser. Les indications Lyon 8e, Nantes Métropole et Rennes sont bornées
+aux lieux ponctuels explicitement résolus et ne garantissent ni disponibilité,
+ni soutien, ni reprise des déchets. La recherche complémentaire IGN/DILA
+résout les communes à partir de la géométrie enregistrée d'une pré-action
+autorisée ; ses résultats peuvent être partiels ou indisponibles et ne prouvent
+ni compétence de collecte, ni accord. Seules des coordonnées et géométries
+nécessaires à cette résolution sont transmises aux fournisseurs ; aucune
+identité ou donnée personnelle n'est jointe. Les contacts ne sont pas
+persistés dans l'action et aucun envoi n'est automatique.
+
+La publication requalifie toujours les faits persistés. Une démarche
+`required` non déclarée envoyée peut bloquer la publication ou la soumission
+à la revue associative ; les besoins facultatifs, les contacts, leur
+indisponibilité et le statut `unknown` ne la bloquent pas. `sent` reste une
+déclaration de l'organisateur, pas un récépissé ni une autorisation. Les
+owners sont `apps/web/src/lib/actions/formalities/` et la route
+`/api/actions/[actionId]/formalities`. Le parcours produit est décrit dans
 [`actions-new-README.md`](../pages_site/routes/02-agir/actions-new/actions-new-README.md).
 
 #### Géométries observées et promotion
