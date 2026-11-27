@@ -394,7 +394,7 @@ begin
   end;
 exception when others then
   raise exception using
-    errcode = 'P0001',
+    errcode = SQLSTATE,
     message = format('TERRITORIAL_PHASE=%s ORIGINAL_SQLSTATE=%s', v_phase, SQLSTATE);
 end $$;
 
