@@ -93,6 +93,7 @@ export async function loadActivePedestrianNetwork(
   const rows: NetworkRow[] = [];
   let offset = 0;
   let first: NetworkRow | null = null;
+  let continuationExpected = false;
   for (;;) {
     const { data, error } = await supabase.rpc("get_active_pedestrian_network_page", {
       p_south: bounds.south,
@@ -105,10 +106,12 @@ export async function loadActivePedestrianNetwork(
     if (error || !Array.isArray(data) || data.length > NETWORK_PAGE_SIZE + 1) return null;
     const pageRows = data as NetworkRow[];
     if (pageRows.length === 0 && rows.length === 0) return null;
+    if (continuationExpected && pageRows.length === 0) return null;
     if (!first && pageRows.length > 0) first = pageRows[0]!;
     if (first && pageRows.some((row) => !sameNetworkIdentity(first!, row))) return null;
     rows.push(...pageRows.slice(0, NETWORK_PAGE_SIZE));
-    if (pageRows.length <= NETWORK_PAGE_SIZE) break;
+    continuationExpected = pageRows.length > NETWORK_PAGE_SIZE;
+    if (!continuationExpected) break;
     offset += NETWORK_PAGE_SIZE;
   }
   if (!first || rows.length === 0) return null;

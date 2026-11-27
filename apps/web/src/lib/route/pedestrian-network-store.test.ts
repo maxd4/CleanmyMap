@@ -42,9 +42,36 @@ describe("loadActivePedestrianNetwork", () => {
     const graph = await loadActivePedestrianNetwork(supabase as never, [{ latitude: 48.85, longitude: 2.35 }]);
 
     expect(graph?.edges).toHaveLength(1001);
+    expect(graph?.edges.map((edge) => edge.edgeKey)).toEqual(rows.map((item) => item.edge_key));
     expect(supabase.rpc).toHaveBeenCalledTimes(2);
     expect(supabase.rpc).toHaveBeenNthCalledWith(1, "get_active_pedestrian_network_page", expect.objectContaining({ p_limit: 900, p_offset: 0 }));
     expect(supabase.rpc).toHaveBeenNthCalledWith(2, "get_active_pedestrian_network_page", expect.objectContaining({ p_limit: 900, p_offset: 900 }));
+  });
+
+  it("rejects an empty page after the previous page announced a continuation", async () => {
+    const rows = Array.from({ length: 901 }, (_, index) => row(index));
+    const supabase = client(rows, () => []);
+
+    await expect(loadActivePedestrianNetwork(supabase as never, [{ latitude: 48.85, longitude: 2.35 }])).resolves.toBeNull();
+    expect(supabase.rpc).toHaveBeenCalledTimes(2);
+    expect(supabase.rpc).toHaveBeenNthCalledWith(2, "get_active_pedestrian_network_page", expect.objectContaining({ p_limit: 900, p_offset: 900 }));
+  });
+
+  it("stops at exact page boundaries and preserves every edge", async () => {
+    const onePageRows = Array.from({ length: 900 }, (_, index) => row(index));
+    const onePageClient = client(onePageRows);
+    const onePageGraph = await loadActivePedestrianNetwork(onePageClient as never, [{ latitude: 48.85, longitude: 2.35 }]);
+
+    expect(onePageGraph?.edges.map((edge) => edge.edgeKey)).toEqual(onePageRows.map((item) => item.edge_key));
+    expect(onePageClient.rpc).toHaveBeenCalledTimes(1);
+
+    const twoPageRows = Array.from({ length: 1800 }, (_, index) => row(index));
+    const twoPageClient = client(twoPageRows);
+    const twoPageGraph = await loadActivePedestrianNetwork(twoPageClient as never, [{ latitude: 48.85, longitude: 2.35 }]);
+
+    expect(twoPageGraph?.edges.map((edge) => edge.edgeKey)).toEqual(twoPageRows.map((item) => item.edge_key));
+    expect(twoPageClient.rpc).toHaveBeenCalledTimes(2);
+    expect(twoPageClient.rpc).toHaveBeenNthCalledWith(2, "get_active_pedestrian_network_page", expect.objectContaining({ p_limit: 900, p_offset: 900 }));
   });
 
   it("rejects a network whose version changes between pages", async () => {
