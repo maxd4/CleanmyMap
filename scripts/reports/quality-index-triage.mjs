@@ -239,7 +239,7 @@ function buildTestQualityTriage(files, audits) {
   for (const file of files) {
     const covMetric = file.metrics?.coverage?.items?.[0];
     const uncoveredBranches = covMetric?.uncoveredBranches ?? 0;
-    const branchPct = covMetric?.branches?.pct ?? null;
+    const branchPct = covMetric?.metrics?.branches?.pct ?? covMetric?.branches?.pct ?? null;
     if (uncoveredBranches > 0 && branchPct !== null && branchPct < 80) {
       candidates.push({
         path: file.path,

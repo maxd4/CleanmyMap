@@ -253,41 +253,46 @@ function getGitHubRunJobs(repoFullName, runId) {
   }
 }
 
-export function classifyRunFailure(conclusion, attempt = 1, sameShaConclusions = []) {
-  if (!conclusion || conclusion === "success" || conclusion === "skipped" || conclusion === "neutral") return "PASS";
+export function classifyRunFailure(conclusion, attempt = 1, sameWorkflowShaConclusions = []) {
+  if (!conclusion) return "INCOMPLETE_OR_PENDING";
+  if (conclusion === "success" || conclusion === "skipped" || conclusion === "neutral") return "PASS";
   if (conclusion === "cancelled") return "CANCELLED";
   if (conclusion === "timed_out" || conclusion === "startup_failure" || conclusion === "action_required") return "INFRA_OR_TIMEOUT";
-  if (Number(attempt) > 1 || sameShaConclusions.includes("success")) return "FLAKY_OR_INDETERMINATE";
+  if (Number(attempt) > 1 || sameWorkflowShaConclusions.includes("success")) return "FLAKY_OR_INDETERMINATE";
   return "REGRESSION_OR_PERSISTENT_FAIL";
 }
 
-export function summarizeCicdReliability(runsWithJobs) {
+export function summarizeCicdReliability(runsWithJobs, { githubLimit = null } = {}) {
   const byJob = new Map();
   const shaConclusions = new Map();
   let retriedRuns = 0;
+  let incompleteRuns = 0;
 
   for (const entry of runsWithJobs) {
     if (Number(entry.attempt ?? 1) > 1) retriedRuns += 1;
-    const sha = entry.headSha ?? "unknown";
-    const list = shaConclusions.get(sha) ?? [];
-    list.push(entry.conclusion ?? "unknown");
-    shaConclusions.set(sha, list);
+    if (!entry.conclusion) incompleteRuns += 1;
+    const wfSha = `${entry.workflowName ?? "unknown"}::${entry.headSha ?? "unknown"}`;
+    const list = shaConclusions.get(wfSha) ?? [];
+    list.push(entry.conclusion ?? "pending");
+    shaConclusions.set(wfSha, list);
   }
 
-  const failureBreakdown = { CANCELLED: 0, INFRA_OR_TIMEOUT: 0, FLAKY_OR_INDETERMINATE: 0, REGRESSION_OR_PERSISTENT_FAIL: 0 };
+  const failureBreakdown = { CANCELLED: 0, INFRA_OR_TIMEOUT: 0, FLAKY_OR_INDETERMINATE: 0, REGRESSION_OR_PERSISTENT_FAIL: 0, INCOMPLETE_OR_PENDING: 0 };
   for (const entry of runsWithJobs) {
-    const cls = classifyRunFailure(entry.conclusion, entry.attempt, shaConclusions.get(entry.headSha ?? "unknown") ?? []);
+    const wfSha = `${entry.workflowName ?? "unknown"}::${entry.headSha ?? "unknown"}`;
+    const cls = classifyRunFailure(entry.conclusion, entry.attempt, shaConclusions.get(wfSha) ?? []);
     if (cls !== "PASS") failureBreakdown[cls] = (failureBreakdown[cls] ?? 0) + 1;
 
     for (const job of entry.jobs ?? []) {
-      const key = `${entry.workflowName ?? "unknown"} :: ${job.name ?? "unknown"}`;
+      const runnerOs = (job.labels ?? []).join(",") || "unknown";
+      const key = `${entry.workflowName ?? "unknown"} :: ${job.name ?? "unknown"} :: ${runnerOs}`;
       const start = job.started_at ? Date.parse(job.started_at) : NaN;
       const end = job.completed_at ? Date.parse(job.completed_at) : NaN;
       const durationMs = Number.isFinite(start) && Number.isFinite(end) && end >= start ? end - start : null;
       const bucket = byJob.get(key) ?? {
         workflow: entry.workflowName ?? "unknown",
         job: job.name ?? "unknown",
-        runnerOs: (job.labels ?? []).join(",") || "unknown",
+        runnerOs,
         runs: 0,
         failures: 0,
         totalDurationMs: 0,
@@ -323,11 +328,20 @@ export function summarizeCicdReliability(runsWithJobs) {
     .sort((a, b) => b.failures - a.failures || a.job.localeCompare(b.job))
     .slice(0, 15);
 
+  const truncated = githubLimit !== null && runsWithJobs.length >= githubLimit;
+  const jobsUnavailable = runsWithJobs.filter((r) => (r.jobs ?? []).length === 0).length;
+
   return {
     retriedRuns,
+    incompleteRuns,
     failureBreakdown,
     slowestJobs,
     recurringFailures,
+    apiCompleteness: {
+      truncated,
+      jobsUnavailableRuns: jobsUnavailable,
+      note: truncated || jobsUnavailable > 0 ? "GitHub API response may be truncated/paginated or missing job details." : "complete within window",
+    },
     comparabilityNote: "Durations and failure rates are only comparable across identical workflow, runner OS labels, and triggered scope.",
   };
 }
@@ -586,7 +600,7 @@ export async function main() {
     ...run,
     jobs: getGitHubRunJobs(repo.fullName, run.databaseId),
   }));
-  const reliability = summarizeCicdReliability(runsWithJobs);
+  const reliability = summarizeCicdReliability(runsWithJobs, { githubLimit: options.githubLimit });
   const githubRows = runsWithJobs.map((run) => {
     const jobsCount = run.jobs.length;
     const durationMs = getDerivedRunDurationMs(run);

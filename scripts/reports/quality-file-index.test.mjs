@@ -1491,7 +1491,7 @@ test("triage.testQuality sépare défaut démontré, signal heuristique et mesur
     files: [
       {
         path: "apps/web/src/lib/auth/session.ts",
-        metrics: { topHeavy: { state: "NOT_MEASURED", items: [] }, coverage: { state: "PRESENT", items: [{ uncoveredBranches: 25, branches: { pct: 50 } }] } },
+        metrics: { topHeavy: { state: "NOT_MEASURED", items: [] }, coverage: { state: "PRESENT", items: [{ uncoveredBranches: 25, metrics: { branches: { pct: 50 } } }] } },
         findings: {},
         provenance: { coverage: "coverage-summary.json" },
       },

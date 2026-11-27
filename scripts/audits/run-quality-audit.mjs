@@ -580,7 +580,7 @@ function createAuditExecutors({
     hotspots: () => ({ result: hotspotsRunner({ root, auditedSha: auditedHead, reports: previousResults, scope: activeScope }), readProvenance: "COMMITTED_SNAPSHOT", validate: isHotspotsResult }),
     testability: () => ({ result: testabilityRunner({ root, auditedSha: auditedHead, scope: activeScope }), readProvenance: "MIXED", validate: isTestabilityResult }),
     structure: () => ({ result: structureRunner({ root, auditedSha: auditedHead, runId, scope: activeScope }), readProvenance: "COMMITTED_SNAPSHOT", validate: isStructureResult }),
-    coverage: () => ({ result: coverageRunner({ root, auditedSha: auditedHead, duplicationReport: previousResults.duplication ?? null, scope: activeScope }), readProvenance: "MIXED", validate: isCoverageResult, format: formatCoverageInsightsReport }),
+    coverage: () => ({ result: coverageRunner({ root, auditedSha: auditedHead, duplicationReport: previousResults.duplication ?? null, scope: activeScope, baseRef: previousResults.baseRef ?? null }), readProvenance: "MIXED", validate: isCoverageResult, format: formatCoverageInsightsReport }),
     "ui-density": () => ({ result: uiDensityRunner({ root, auditedSha: auditedHead, scope: activeScope }), readProvenance: "COMMITTED_SNAPSHOT", validate: isUiDensityResult, format: formatUiDensityReport }),
     cycles: async () => {
       const result = await cycleRunner({ scope: activeScope });

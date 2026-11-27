@@ -301,8 +301,9 @@ function buildDifferentialCoverage({ root, activeScope, baseRef, currentRef, mea
   const enrichedFiles = (result.files ?? []).map((entry) => {
     const classification = classifyCoverageFile(entry.path);
     const family = classification.domain ?? "unclassified";
-    byRiskFamily[family] = (byRiskFamily[family] ?? 0) + (entry.uncoveredLines?.length ?? 0);
-    return { ...entry, riskFamily: family };
+    const uncovered = Math.max(0, (entry.measured ?? 0) - (entry.covered ?? 0));
+    byRiskFamily[family] = (byRiskFamily[family] ?? 0) + uncovered;
+    return { ...entry, uncovered, riskFamily: family };
   });
   return { ...result, files: enrichedFiles, byRiskFamily };
 }
@@ -354,7 +355,9 @@ const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === fileUR
 if (isMainModule) {
   try {
     const scope = normalizeQualityScope(process.argv.find((argument) => argument.startsWith("--scope="))?.slice("--scope=".length) ?? "all");
-    const report = buildCoverageInsightsReport({ scope });
+    const baseRef = process.argv.find((argument) => argument.startsWith("--base-ref="))?.slice("--base-ref=".length) ?? null;
+    const currentRef = process.argv.find((argument) => argument.startsWith("--current-ref="))?.slice("--current-ref=".length) ?? null;
+    const report = buildCoverageInsightsReport({ scope, baseRef, currentRef });
     console.log(formatCoverageInsightsReport(report));
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

@@ -242,12 +242,32 @@ test("differentialCoverage reste NOT_MEASURED sans baseRef et classe les lignes 
       baseRef: "main~1",
       measureChangedLineCoverageFn: () => ({
         status: "OBSERVE",
-        files: [{ path: "apps/web/src/lib/auth/session.ts", uncoveredLines: [10, 11] }],
+        files: [{ path: "apps/web/src/lib/auth/session.ts", covered: 2, measured: 4, pct: 50 }],
         lines: { covered: 2, total: 4, pct: 50 },
         provenance: { baseRef: "main~1", currentRef: sha },
       }),
     });
     assert.equal(withBase.differentialCoverage.files[0].riskFamily, "security");
+    assert.equal(withBase.differentialCoverage.files[0].uncovered, 2);
     assert.equal(withBase.differentialCoverage.byRiskFamily.security, 2);
+
+    const incompleteLcov = buildCoverageInsightsReport({
+      root,
+      auditedSha: sha,
+      reports: [definition],
+      validateSonar: () => [{ status: "VALID" }],
+      validateEvidence: () => ({ gitHead: sha }),
+      baseRef: "main~1",
+      measureChangedLineCoverageFn: () => ({
+        status: "NOT_MEASURED",
+        reason: "CHANGED_LINES_MISSING_FROM_LCOV",
+        files: [{ path: "apps/web/src/lib/auth/session.ts", covered: 0, measured: 0, pct: null }],
+        lines: { covered: 0, total: 0, pct: null },
+        provenance: { baseRef: "main~1", currentRef: sha },
+      }),
+    });
+    assert.equal(incompleteLcov.differentialCoverage.status, "NOT_MEASURED");
+    assert.equal(incompleteLcov.differentialCoverage.reason, "CHANGED_LINES_MISSING_FROM_LCOV");
+    assert.equal(incompleteLcov.differentialCoverage.byRiskFamily.security, 0);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });

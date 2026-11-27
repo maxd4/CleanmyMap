@@ -1,7 +1,7 @@
 {
   "schemaVersion": 4,
-  "sourceSha": "4b602bf11698f24f1ce232e0e2b80c8d5491d023",
-  "timestamp": "2026-11-26T23:43:46.955Z",
+  "sourceSha": "69d5b4833d5348abed906abb411d8598f4e13715",
+  "timestamp": "2026-11-27T12:27:15.697Z",
   "methodology": {
     "source": "git-tracked-source-at-sourceSha",
     "physicalLines": "Physical UTF-8 lines using the repository-growth counter; CRLF, LF and lone CR are separators and a final unterminated line counts once.",
@@ -90,13 +90,13 @@
   },
   "accounting": {
     "web": {
-      "runtimeFiles": 2850,
-      "runtimeLines": 420400,
-      "testFiles": 2002,
-      "testLines": 291940,
+      "runtimeFiles": 2852,
+      "runtimeLines": 418675,
+      "testFiles": 2004,
+      "testLines": 291792,
       "testRuntimeRatio": {
-        "files": 0.7025,
-        "lines": 0.6944
+        "files": 0.7027,
+        "lines": 0.6969
       }
     },
     "mobile": {
@@ -110,13 +110,13 @@
       }
     },
     "scripts": {
-      "runtimeFiles": 249,
-      "runtimeLines": 56134,
-      "testFiles": 161,
-      "testLines": 37399,
+      "runtimeFiles": 250,
+      "runtimeLines": 56773,
+      "testFiles": 162,
+      "testLines": 37604,
       "testRuntimeRatio": {
-        "files": 0.6466,
-        "lines": 0.6662
+        "files": 0.648,
+        "lines": 0.6624
       }
     },
     "e2e": {
@@ -146,25 +146,25 @@
       "note": "Shared infrastructure is outside module source roots and counted once by repository-growth."
     },
     "monorepo": {
-      "runtimeFiles": 3144,
-      "runtimeLines": 483255,
-      "testFiles": 2223,
-      "testLines": 339984,
+      "runtimeFiles": 3147,
+      "runtimeLines": 482169,
+      "testFiles": 2226,
+      "testLines": 340041,
       "testRuntimeRatio": {
-        "files": 0.7071,
-        "lines": 0.7035
+        "files": 0.7073,
+        "lines": 0.7052
       },
       "note": "Module totals include source roots only; the repository-growth total remains the authoritative all-tree total."
     }
   },
   "totals": {
-    "runtimeFiles": 3144,
-    "runtimeLines": 483255,
-    "testFiles": 2223,
-    "testLines": 339984,
+    "runtimeFiles": 3147,
+    "runtimeLines": 482169,
+    "testFiles": 2226,
+    "testLines": 340041,
     "testRuntimeRatio": {
-      "files": 0.7071,
-      "lines": 0.7035
+      "files": 0.7073,
+      "lines": 0.7052
     }
   },
   "execution": {
@@ -196,32 +196,32 @@
     "tests": {
       "status": "AVAILABLE_NOT_ATTESTED",
       "attestation": "NOT_ATTESTED",
-      "observedSha": "4b602bf11698f24f1ce232e0e2b80c8d5491d023",
+      "observedSha": "69d5b4833d5348abed906abb411d8598f4e13715",
       "provenance": "working-tree",
       "provenanceReason": "JSCPD_OBSERVED_ON_DIRTY_WORKTREE",
       "metrics": {
-        "files": 2014,
-        "lines": 295916,
-        "tokens": 2136325,
-        "clones": 1334,
-        "duplicatedLines": 13977,
-        "duplicatedTokens": 94562,
-        "percentage": 4.72329985536436,
-        "percentageTokens": 4.426386434648286,
-        "newClones": 140
+        "files": 2016,
+        "lines": 295768,
+        "tokens": 2136559,
+        "clones": 1335,
+        "duplicatedLines": 13998,
+        "duplicatedTokens": 94652,
+        "percentage": 4.7327635173514375,
+        "percentageTokens": 4.430114029146867,
+        "newClones": 141
       },
       "comparison": {
         "status": "FAIL",
         "failures": [
-          "new clone fingerprints detected (140)",
-          "duplicatedLines exceeded grace (807 > 150)",
-          "duplicatedTokens exceeded grace (6679 > 1500)"
+          "new clone fingerprints detected (141)",
+          "duplicatedLines exceeded grace (828 > 150)",
+          "duplicatedTokens exceeded grace (6769 > 1500)"
         ],
         "deltas": {
-          "duplicatedLines": 807,
-          "duplicatedTokens": 6679,
-          "linePercentagePoints": -0.017367293648090643,
-          "tokenPercentagePoints": -0.03908609255622378
+          "duplicatedLines": 828,
+          "duplicatedTokens": 6769,
+          "linePercentagePoints": -0.007903631661013155,
+          "tokenPercentagePoints": -0.035358498057643656
         }
       },
       "clonePairsByDomain": {
@@ -637,8 +637,8 @@
           ]
         },
         "reports": {
-          "clonePairs": 73,
-          "pairedLines": 1489,
+          "clonePairs": 74,
+          "pairedLines": 1531,
           "testFiles": [
             "apps/web/src/app/(app)/reports/page.test.ts",
             "apps/web/src/app/api/reports/actions.csv/route.test.ts",
@@ -1368,8 +1368,8 @@
     "cross-domain-tests": {
       "runtimeFiles": 0,
       "runtimeLines": 0,
-      "testFiles": 955,
-      "testLines": 210201,
+      "testFiles": 956,
+      "testLines": 210110,
       "runtimeFilesWithoutDirectTest": 0,
       "runtimeFilesWithDirectTest": 0,
       "runtimeFilesWithoutDirectTestExamples": [],
@@ -2105,7 +2105,7 @@
     },
     "reports": {
       "runtimeFiles": 148,
-      "runtimeLines": 18342,
+      "runtimeLines": 18395,
       "testFiles": 38,
       "testLines": 5106,
       "runtimeFilesWithoutDirectTest": 46,
@@ -2134,37 +2134,37 @@
       ],
       "testRuntimeRatio": {
         "files": 0.2568,
-        "lines": 0.2784
+        "lines": 0.2776
       },
       "coverage": {
         "status": "PRESENT_NOT_ATTESTED",
         "files": 2,
         "metrics": {
           "lines": {
-            "total": 85,
-            "covered": 85,
+            "total": 93,
+            "covered": 93,
             "pct": 100
           },
           "functions": {
-            "total": 38,
-            "covered": 38,
+            "total": 41,
+            "covered": 41,
             "pct": 100
           },
           "branches": {
-            "total": 96,
-            "covered": 88,
+            "total": 132,
+            "covered": 121,
             "pct": 91.67
           },
           "statements": {
-            "total": 89,
-            "covered": 89,
+            "total": 98,
+            "covered": 98,
             "pct": 100
           }
         }
       },
       "testDuplication": {
-        "clonePairs": 73,
-        "pairedLines": 1489,
+        "clonePairs": 74,
+        "pairedLines": 1531,
         "testFiles": [
           "apps/web/src/app/(app)/reports/page.test.ts",
           "apps/web/src/app/api/reports/actions.csv/route.test.ts",
@@ -2243,9 +2243,9 @@
     },
     "scripts/checks": {
       "runtimeFiles": 100,
-      "runtimeLines": 18246,
+      "runtimeLines": 18278,
       "testFiles": 50,
-      "testLines": 8065,
+      "testLines": 8098,
       "runtimeFilesWithoutDirectTest": 46,
       "runtimeFilesWithDirectTest": 54,
       "runtimeFilesWithoutDirectTestExamples": [
@@ -2272,7 +2272,7 @@
       ],
       "testRuntimeRatio": {
         "files": 0.5,
-        "lines": 0.442
+        "lines": 0.443
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -2473,12 +2473,12 @@
       }
     },
     "scripts/reports": {
-      "runtimeFiles": 33,
-      "runtimeLines": 10764,
-      "testFiles": 12,
-      "testLines": 2101,
-      "runtimeFilesWithoutDirectTest": 13,
-      "runtimeFilesWithDirectTest": 20,
+      "runtimeFiles": 34,
+      "runtimeLines": 11371,
+      "testFiles": 13,
+      "testLines": 2215,
+      "runtimeFilesWithoutDirectTest": 12,
+      "runtimeFilesWithDirectTest": 22,
       "runtimeFilesWithoutDirectTestExamples": [
         "scripts/reports/generate-vercel-surface-report.mjs",
         "scripts/reports/normalize-report-language.mjs",
@@ -2490,13 +2490,12 @@
         "scripts/reports/quality-index-markdown.mjs",
         "scripts/reports/quality-index-offline.mjs",
         "scripts/reports/quality-index-output.mjs",
-        "scripts/reports/quality-index-triage.mjs",
         "scripts/reports/quality-index-zip.mjs",
         "scripts/reports/update-audit-stats.mjs"
       ],
       "testRuntimeRatio": {
-        "files": 0.3636,
-        "lines": 0.1952
+        "files": 0.3824,
+        "lines": 0.1948
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -2700,11 +2699,11 @@
       }
     },
     "web/app": {
-      "runtimeFiles": 99,
-      "runtimeLines": 9553,
+      "runtimeFiles": 100,
+      "runtimeLines": 9435,
       "testFiles": 29,
       "testLines": 2432,
-      "runtimeFilesWithoutDirectTest": 65,
+      "runtimeFilesWithoutDirectTest": 66,
       "runtimeFilesWithDirectTest": 34,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/app/(app)/admin/admin-page-content.tsx",
@@ -2729,8 +2728,8 @@
         "apps/web/src/app/(app)/profil/page.tsx"
       ],
       "testRuntimeRatio": {
-        "files": 0.2929,
-        "lines": 0.2546
+        "files": 0.29,
+        "lines": 0.2578
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -2754,12 +2753,12 @@
       }
     },
     "web/components": {
-      "runtimeFiles": 672,
-      "runtimeLines": 93058,
-      "testFiles": 166,
-      "testLines": 15943,
-      "runtimeFilesWithoutDirectTest": 310,
-      "runtimeFilesWithDirectTest": 362,
+      "runtimeFiles": 673,
+      "runtimeLines": 91511,
+      "testFiles": 167,
+      "testLines": 15944,
+      "runtimeFilesWithoutDirectTest": 309,
+      "runtimeFilesWithDirectTest": 364,
       "runtimeFilesWithoutDirectTestExamples": [
         "apps/web/src/components/accueil/accueil-community-credibility-hook.ts",
         "apps/web/src/components/accueil/accueil-community-credibility-panel.tsx",
@@ -2783,8 +2782,8 @@
         "apps/web/src/components/admin/creator-inbox/feedback-export-actions.tsx"
       ],
       "testRuntimeRatio": {
-        "files": 0.247,
-        "lines": 0.1713
+        "files": 0.2481,
+        "lines": 0.1742
       },
       "coverage": {
         "status": "NOT_RUN",
@@ -2913,7 +2912,7 @@
     },
     "web/data": {
       "runtimeFiles": 2,
-      "runtimeLines": 538,
+      "runtimeLines": 425,
       "testFiles": 0,
       "testLines": 0,
       "runtimeFilesWithoutDirectTest": 2,
@@ -3019,30 +3018,9 @@
         "lines": 0.314
       },
       "coverage": {
-        "status": "PRESENT_NOT_ATTESTED",
-        "files": 3,
-        "metrics": {
-          "lines": {
-            "total": 175,
-            "covered": 174,
-            "pct": 99.43
-          },
-          "functions": {
-            "total": 40,
-            "covered": 40,
-            "pct": 100
-          },
-          "branches": {
-            "total": 270,
-            "covered": 261,
-            "pct": 96.67
-          },
-          "statements": {
-            "total": 184,
-            "covered": 182,
-            "pct": 98.91
-          }
-        }
+        "status": "NOT_RUN",
+        "files": 0,
+        "metrics": null
       },
       "testDuplication": {
         "clonePairs": 163,
@@ -3202,12 +3180,27 @@
   "campaignCompleteness": {
     "provenance": "git-tracked-tree-static",
     "scopes": {
+      "mobile_node_dedicated": {
+        "scope": "mobile_node_dedicated",
+        "trackedFiles": 9,
+        "runnerIncludedFiles": 9,
+        "excludedFiles": 0,
+        "staticTestCases": 37,
+        "skips": 0,
+        "todos": 0,
+        "onlys": 0,
+        "ciWiring": {
+          "ciWorkflow": ".github/workflows/ci.yml",
+          "ciJob": "mobile-quality (mobile:security / metro-env / ui:preflight)",
+          "wired": true
+        }
+      },
       "mobile_vitest": {
         "scope": "mobile_vitest",
-        "trackedFiles": 60,
+        "trackedFiles": 51,
         "runnerIncludedFiles": 45,
-        "excludedFiles": 15,
-        "staticTestCases": 418,
+        "excludedFiles": 6,
+        "staticTestCases": 381,
         "skips": 0,
         "todos": 0,
         "onlys": 0,
@@ -3219,13 +3212,13 @@
       },
       "node_scripts": {
         "scope": "node_scripts",
-        "trackedFiles": 183,
-        "runnerIncludedFiles": 182,
+        "trackedFiles": 184,
+        "runnerIncludedFiles": 183,
         "excludedFiles": 1,
-        "staticTestCases": 1637,
+        "staticTestCases": 1643,
         "skips": 0,
-        "todos": 0,
-        "onlys": 0,
+        "todos": 1,
+        "onlys": 1,
         "ciWiring": {
           "ciWorkflow": ".github/workflows/ci.yml",
           "ciJob": "node-coverage",
@@ -3234,10 +3227,10 @@
       },
       "web_vitest": {
         "scope": "web_vitest",
-        "trackedFiles": 2002,
-        "runnerIncludedFiles": 1968,
+        "trackedFiles": 2004,
+        "runnerIncludedFiles": 1970,
         "excludedFiles": 34,
-        "staticTestCases": 10792,
+        "staticTestCases": 10796,
         "skips": 0,
         "todos": 0,
         "onlys": 0,
@@ -3249,10 +3242,10 @@
       },
       "other": {
         "scope": "other",
-        "trackedFiles": 14,
+        "trackedFiles": 1,
         "runnerIncludedFiles": 0,
-        "excludedFiles": 14,
-        "staticTestCases": 89,
+        "excludedFiles": 1,
+        "staticTestCases": 2,
         "skips": 0,
         "todos": 0,
         "onlys": 0,
@@ -3277,11 +3270,26 @@
           "wired": false
         }
       },
+      "candidate_specs": {
+        "scope": "candidate_specs",
+        "trackedFiles": 10,
+        "runnerIncludedFiles": 0,
+        "excludedFiles": 10,
+        "staticTestCases": 77,
+        "skips": 0,
+        "todos": 0,
+        "onlys": 0,
+        "ciWiring": {
+          "ciWorkflow": null,
+          "ciJob": null,
+          "wired": false
+        }
+      },
       "e2e_playwright": {
         "scope": "e2e_playwright",
         "trackedFiles": 42,
-        "runnerIncludedFiles": 27,
-        "excludedFiles": 15,
+        "runnerIncludedFiles": 42,
+        "excludedFiles": 0,
         "staticTestCases": 164,
         "skips": 2,
         "todos": 0,
@@ -3309,124 +3317,11 @@
       }
     },
     "exclusions": {
-      "unjustifiedOrOrphanCount": 37,
+      "unjustifiedOrOrphanCount": 4,
       "conditionalCount": 0,
-      "legitimateInfraCount": 42,
+      "candidateSpecCount": 10,
+      "legitimateInfraCount": 38,
       "unjustifiedOrOrphanExamples": [
-        {
-          "path": "apps/mobile/security/braces-security.test.mjs",
-          "scope": "mobile_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/mobile/vitest.config.ts include (tests/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/mobile/security/deepmerge-security.test.mjs",
-          "scope": "mobile_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/mobile/vitest.config.ts include (tests/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/mobile/security/expo-glob-minimatch-security.test.mjs",
-          "scope": "mobile_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/mobile/vitest.config.ts include (tests/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/mobile/security/expo-zod-compatibility.test.mjs",
-          "scope": "mobile_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/mobile/vitest.config.ts include (tests/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/mobile/security/image-size-security.test.mjs",
-          "scope": "mobile_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/mobile/vitest.config.ts include (tests/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/mobile/security/node-forge-security.test.mjs",
-          "scope": "mobile_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/mobile/vitest.config.ts include (tests/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/mobile/security/stream-json-jayson-security.test.mjs",
-          "scope": "mobile_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/mobile/vitest.config.ts include (tests/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/mobile/tests/agent-device-preflight.test.mjs",
-          "scope": "mobile_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/mobile/vitest.config.ts include (tests/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/mobile/tests/mobile-environment-metro.test.mjs",
-          "scope": "mobile_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/mobile/vitest.config.ts include (tests/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/mobile/tests/test-renderer-helpers.ts",
-          "scope": "mobile_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/mobile/vitest.config.ts include (tests/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/web/src/app/api/actions/[actionId]/route.test.harness.ts",
-          "scope": "web_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/web/vitest.config.mts include (src/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/web/src/app/api/actions/route.submit.test.harness.ts",
-          "scope": "web_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/web/vitest.config.mts include (src/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/web/src/app/api/admin/moderation/route.test.action-form-scenario.ts",
-          "scope": "web_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/web/vitest.config.mts include (src/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/web/src/app/api/admin/moderation/route.test.action-lifecycle-scenarios.ts",
-          "scope": "web_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/web/vitest.config.mts include (src/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/web/src/app/api/admin/moderation/route.test.action-transition-scenarios.ts",
-          "scope": "web_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/web/vitest.config.mts include (src/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/web/src/app/api/admin/moderation/route.test.action-visibility-scenarios.ts",
-          "scope": "web_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/web/vitest.config.mts include (src/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/web/src/app/api/admin/moderation/route.test.clean-place-scenarios.ts",
-          "scope": "web_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/web/vitest.config.mts include (src/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/web/src/app/api/admin/moderation/route.test.sanitized-error-scenario.ts",
-          "scope": "web_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/web/vitest.config.mts include (src/**/*.test.{ts,tsx})"
-        },
-        {
-          "path": "apps/web/src/app/api/admin/moderation/route.test.signalement-transition-scenarios.ts",
-          "scope": "web_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/web/vitest.config.mts include (src/**/*.test.{ts,tsx})"
-        },
         {
           "path": "apps/web/src/app/api/chat/route.test.mocks.ts",
           "scope": "web_vitest",
@@ -3440,66 +3335,86 @@
           "reason": "does not match apps/web/vitest.config.mts include (src/**/*.test.{ts,tsx})"
         },
         {
-          "path": "apps/web/src/app/api/route/recommend/route.test.harness.ts",
-          "scope": "web_vitest",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "does not match apps/web/vitest.config.mts include (src/**/*.test.{ts,tsx})"
-        },
-        {
           "path": "apps/web/supabase/migration-contracts/community-subscriptions-migration.test.ts",
           "scope": "other",
           "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
           "reason": "outside known test runner roots"
         },
         {
-          "path": "documentation/specs/empreinte-ia/CANDIDATS_LOTS_0_08/apps/web/src/lib/environmental-impact-estimator/ai-cleanwalk-goal-solver.test.ts",
-          "scope": "other",
+          "path": "scripts/checks/fixtures/architecture-import-boundary/web/src/components/fixture.test.ts",
+          "scope": "node_scripts",
           "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "outside known test runner roots"
+          "reason": "does not match run-script-tests.mjs (*.test.{mjs,js})"
+        }
+      ],
+      "conditionalExamples": [],
+      "candidateSpecExamples": [
+        {
+          "path": "documentation/specs/empreinte-ia/CANDIDATS_LOTS_0_08/apps/web/src/lib/environmental-impact-estimator/ai-cleanwalk-goal-solver.test.ts",
+          "scope": "candidate_specs",
+          "exclusionKind": "CANDIDATE_SPEC_NON_INTEGRATED",
+          "reason": "unintegrated spec candidate under documentation/specs/"
         },
         {
           "path": "documentation/specs/empreinte-ia/CANDIDATS_LOTS_0_08/apps/web/src/lib/environmental-impact-estimator/ai-cleanwalk-science.test.ts",
-          "scope": "other",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "outside known test runner roots"
+          "scope": "candidate_specs",
+          "exclusionKind": "CANDIDATE_SPEC_NON_INTEGRATED",
+          "reason": "unintegrated spec candidate under documentation/specs/"
         },
         {
           "path": "documentation/specs/empreinte-ia/CANDIDATS_LOTS_0_08/apps/web/src/lib/environmental-impact-estimator/ai-personal-import-preview.test.ts",
-          "scope": "other",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "outside known test runner roots"
+          "scope": "candidate_specs",
+          "exclusionKind": "CANDIDATE_SPEC_NON_INTEGRATED",
+          "reason": "unintegrated spec candidate under documentation/specs/"
         },
         {
           "path": "documentation/specs/empreinte-ia/CANDIDATS_LOTS_0_08/apps/web/src/lib/environmental-impact-estimator/ai-personal-monthly.test.ts",
-          "scope": "other",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "outside known test runner roots"
+          "scope": "candidate_specs",
+          "exclusionKind": "CANDIDATE_SPEC_NON_INTEGRATED",
+          "reason": "unintegrated spec candidate under documentation/specs/"
         },
         {
           "path": "documentation/specs/empreinte-ia/CANDIDATS_LOTS_0_08/apps/web/src/lib/environmental-impact-estimator/ai-personal-usage-import.test.ts",
-          "scope": "other",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "outside known test runner roots"
+          "scope": "candidate_specs",
+          "exclusionKind": "CANDIDATE_SPEC_NON_INTEGRATED",
+          "reason": "unintegrated spec candidate under documentation/specs/"
         },
         {
           "path": "documentation/specs/empreinte-ia/CANDIDATS_LOT_21/apps/web/src/components/environmental-impact-estimator/offer-comparison-scatter.test.tsx",
-          "scope": "other",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "outside known test runner roots"
+          "scope": "candidate_specs",
+          "exclusionKind": "CANDIDATE_SPEC_NON_INTEGRATED",
+          "reason": "unintegrated spec candidate under documentation/specs/"
         },
         {
           "path": "documentation/specs/empreinte-ia/CANDIDATS_LOT_21/apps/web/src/lib/environmental-impact-estimator/offer-comparison.test.ts",
-          "scope": "other",
-          "exclusionKind": "UNJUSTIFIED_OR_ORPHAN",
-          "reason": "outside known test runner roots"
+          "scope": "candidate_specs",
+          "exclusionKind": "CANDIDATE_SPEC_NON_INTEGRATED",
+          "reason": "unintegrated spec candidate under documentation/specs/"
+        },
+        {
+          "path": "documentation/specs/messagerie-ui/candidates/apps/web/src/lib/chat/role-topic-priority.test.ts",
+          "scope": "candidate_specs",
+          "exclusionKind": "CANDIDATE_SPEC_NON_INTEGRATED",
+          "reason": "unintegrated spec candidate under documentation/specs/"
+        },
+        {
+          "path": "documentation/specs/messagerie-ui/candidates/apps/web/src/lib/chat/spogomi-chat-contract.test.ts",
+          "scope": "candidate_specs",
+          "exclusionKind": "CANDIDATE_SPEC_NON_INTEGRATED",
+          "reason": "unintegrated spec candidate under documentation/specs/"
+        },
+        {
+          "path": "documentation/specs/messagerie-ui/candidates/apps/web/src/lib/chat/topic-presentation.test.ts",
+          "scope": "candidate_specs",
+          "exclusionKind": "CANDIDATE_SPEC_NON_INTEGRATED",
+          "reason": "unintegrated spec candidate under documentation/specs/"
         }
-      ],
-      "conditionalExamples": []
+      ]
     },
     "markers": {
       "totalSkips": 2,
-      "totalTodos": 0,
-      "totalOnlys": 0,
+      "totalTodos": 1,
+      "totalOnlys": 1,
       "filesWithMarkers": [
         {
           "path": "e2e/homepage-reveal.spec.ts",
@@ -3516,6 +3431,14 @@
           "todos": 0,
           "onlys": 0,
           "classification": "HEURISTIC_SIGNAL"
+        },
+        {
+          "path": "scripts/reports/test-quality-signals.test.mjs",
+          "scope": "node_scripts",
+          "skips": 0,
+          "todos": 1,
+          "onlys": 1,
+          "classification": "DEMONSTRATED_DEFECT"
         }
       ]
     }
@@ -3542,7 +3465,7 @@
           "note": "Candidate to review: no standard expect/assert call matched statically; helpers or custom assertions may exist."
         }
       ],
-      "mockHeavyCandidateCount": 118,
+      "mockHeavyCandidateCount": 117,
       "mockHeavyCandidates": [
         {
           "path": "apps/web/src/app/(app)/dashboard/page.test.ts",
@@ -3790,7 +3713,8 @@
       "apiRoutes": {
         "total": 253,
         "byProofLevel": {
-          "EXECUTED_BEHAVIOR": 14,
+          "STATIC_INTEGRATION_SUITE": 1,
+          "STATIC_BEHAVIOR_SUITE": 13,
           "STATIC_OR_UNIT_TEST": 145,
           "MOCK_HEAVY_CANDIDATE": 40,
           "ABSENT": 54
@@ -3826,7 +3750,8 @@
       "permissionsAndAuth": {
         "total": 51,
         "byProofLevel": {
-          "EXECUTED_BEHAVIOR": 0,
+          "STATIC_INTEGRATION_SUITE": 0,
+          "STATIC_BEHAVIOR_SUITE": 0,
           "STATIC_OR_UNIT_TEST": 17,
           "MOCK_HEAVY_CANDIDATE": 7,
           "ABSENT": 27
@@ -3862,7 +3787,8 @@
       "businessTransitions": {
         "total": 6,
         "byProofLevel": {
-          "EXECUTED_BEHAVIOR": 0,
+          "STATIC_INTEGRATION_SUITE": 0,
+          "STATIC_BEHAVIOR_SUITE": 0,
           "STATIC_OR_UNIT_TEST": 5,
           "MOCK_HEAVY_CANDIDATE": 0,
           "ABSENT": 1
@@ -3986,6 +3912,15 @@
       "recommendedAction": "Exécuter le workflow e2e-supabase-ephemeral sur candidat exact."
     },
     {
+      "domain": "monorepo",
+      "priority": "P0",
+      "classification": "DEMONSTRATED_DEFECT",
+      "evidenceLevel": "STATIC_CONTRACT",
+      "provenance": "git-tracked-tree-static",
+      "detail": "1 occurrence(s) de .only détectée(s) dans les tests.",
+      "recommendedAction": "Supprimer les .only pour éviter l'exécution partielle silencieuse."
+    },
+    {
       "domain": "spogomi",
       "priority": "P0",
       "classification": "HEURISTIC_SIGNAL",
@@ -4000,7 +3935,7 @@
       "classification": "DEMONSTRATED_DEFECT",
       "evidenceLevel": "STATIC_CONTRACT",
       "provenance": "git-tracked-tree-static",
-      "detail": "37 fichier(s) de test non inclus par leur runner.",
+      "detail": "4 fichier(s) de test non inclus par leur runner.",
       "recommendedAction": "Raccorder ces fichiers aux globs Vitest/Node ou les reclasser en helpers."
     },
     {
@@ -4009,7 +3944,7 @@
       "classification": "HEURISTIC_SIGNAL",
       "evidenceLevel": "STATIC_CONTRACT",
       "provenance": "git-tracked-tree-static + mutation-artifacts",
-      "detail": "2 candidat(s) sans assertion standard et 118 candidat(s) fortement mockés.",
+      "detail": "2 candidat(s) sans assertion standard et 117 candidat(s) fortement mockés.",
       "recommendedAction": "Examiner manuellement ces candidats sans les traiter comme défauts automatiques."
     }
   ]

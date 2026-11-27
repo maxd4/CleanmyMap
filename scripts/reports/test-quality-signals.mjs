@@ -20,9 +20,15 @@ function isTrackedTestCandidate(file) {
 
 function classifyScopeAndInclusion(file) {
   const normalized = normalize(file);
+  if (normalized.startsWith("documentation/specs/")) {
+    return { scope: "candidate_specs", included: false, exclusionKind: "CANDIDATE_SPEC_NON_INTEGRATED", reason: "unintegrated spec candidate under documentation/specs/" };
+  }
   if (normalized.startsWith("apps/web/src/")) {
     if (/^apps\/web\/src\/.*\/__codex-[^/]*\.test\.ts$/i.test(normalized) || /^apps\/web\/src\/__codex-[^/]*\.test\.ts$/i.test(normalized)) {
       return { scope: "web_vitest", included: false, exclusionKind: "CONDITIONAL_POLICY", reason: "excluded by apps/web/vitest.config.mts (__codex-*.test.ts)" };
+    }
+    if (/\.test\.(?:harness|.*-scenarios?)\.tsx?$/i.test(normalized)) {
+      return { scope: "web_vitest", included: false, exclusionKind: "LEGITIMATE_INFRA", reason: "test harness or scenario helper consumed by test suites" };
     }
     if (/^apps\/web\/src\/.+\.test\.tsx?$/i.test(normalized)) {
       return { scope: "web_vitest", included: true, exclusionKind: null, reason: null };
@@ -33,10 +39,13 @@ function classifyScopeAndInclusion(file) {
     return { scope: "web_vitest", included: false, exclusionKind: "UNJUSTIFIED_OR_ORPHAN", reason: "does not match apps/web/vitest.config.mts include (src/**/*.test.{ts,tsx})" };
   }
   if (normalized.startsWith("apps/mobile/")) {
+    if (/^apps\/mobile\/(?:security\/.*\.test\.mjs|tests\/(?:agent-device-preflight|mobile-environment-metro)\.test\.mjs)$/i.test(normalized)) {
+      return { scope: "mobile_node_dedicated", included: true, exclusionKind: null, reason: null };
+    }
     if (/^apps\/mobile\/tests\/.+\.test\.tsx?$/i.test(normalized)) {
       return { scope: "mobile_vitest", included: true, exclusionKind: null, reason: null };
     }
-    if (/^apps\/mobile\/tests\/support\//i.test(normalized)) {
+    if (/^apps\/mobile\/tests\/(?:support\/|test-renderer-helpers\.ts$)/i.test(normalized)) {
       return { scope: "mobile_vitest", included: false, exclusionKind: "LEGITIMATE_INFRA", reason: "mobile test support helper" };
     }
     return { scope: "mobile_vitest", included: false, exclusionKind: "UNJUSTIFIED_OR_ORPHAN", reason: "does not match apps/mobile/vitest.config.ts include (tests/**/*.test.{ts,tsx})" };
@@ -54,7 +63,7 @@ function classifyScopeAndInclusion(file) {
     return { scope: "python_pytest", included: true, exclusionKind: null, reason: null };
   }
   if (normalized.startsWith("e2e/")) {
-    if (/\.spec\.(?:ts|tsx|js|mjs)$/i.test(normalized)) {
+    if (/\.(?:spec|test)\.(?:ts|tsx|js|mjs)$/i.test(normalized)) {
       return { scope: "e2e_playwright", included: true, exclusionKind: null, reason: null };
     }
     return { scope: "e2e_playwright", included: false, exclusionKind: "LEGITIMATE_INFRA", reason: "e2e helper or setup file" };
@@ -68,10 +77,12 @@ function classifyScopeAndInclusion(file) {
 const CI_WIRING = Object.freeze({
   web_vitest: { ciWorkflow: ".github/workflows/ci.yml", ciJob: "web-tests", wired: true },
   mobile_vitest: { ciWorkflow: ".github/workflows/ci.yml", ciJob: "mobile-quality", wired: true },
+  mobile_node_dedicated: { ciWorkflow: ".github/workflows/ci.yml", ciJob: "mobile-quality (mobile:security / metro-env / ui:preflight)", wired: true },
   node_scripts: { ciWorkflow: ".github/workflows/ci.yml", ciJob: "node-coverage", wired: true },
   python_pytest: { ciWorkflow: ".github/workflows/ci.yml", ciJob: "python-coverage", wired: true },
   e2e_playwright: { ciWorkflow: ".github/workflows/ci.yml", ciJob: "e2e-public (conditional/manual)", wired: true },
   pgtap_sql: { ciWorkflow: ".github/workflows/e2e-supabase-ephemeral.yml", ciJob: "ephemeral-supabase (manual/conditional)", wired: false },
+  candidate_specs: { ciWorkflow: null, ciJob: null, wired: false },
   other: { ciWorkflow: null, ciJob: null, wired: false },
 });
 
@@ -105,6 +116,7 @@ export function analyzeCampaignCompleteness(allTrackedFiles, readText) {
   const orphansAndUnjustified = [];
   const conditionalExclusions = [];
   const legitimateExclusions = [];
+  const candidateSpecs = [];
   const skipTodoOnlyFiles = [];
 
   for (const rawFile of allTrackedFiles) {
@@ -130,6 +142,7 @@ export function analyzeCampaignCompleteness(allTrackedFiles, readText) {
       const entry = { path: file, scope: info.scope, exclusionKind: info.exclusionKind, reason: info.reason };
       if (info.exclusionKind === "UNJUSTIFIED_OR_ORPHAN") orphansAndUnjustified.push(entry);
       else if (info.exclusionKind === "CONDITIONAL_POLICY") conditionalExclusions.push(entry);
+      else if (info.exclusionKind === "CANDIDATE_SPEC_NON_INTEGRATED") candidateSpecs.push(entry);
       else legitimateExclusions.push(entry);
     }
 
@@ -158,9 +171,11 @@ export function analyzeCampaignCompleteness(allTrackedFiles, readText) {
     exclusions: {
       unjustifiedOrOrphanCount: orphansAndUnjustified.length,
       conditionalCount: conditionalExclusions.length,
+      candidateSpecCount: candidateSpecs.length,
       legitimateInfraCount: legitimateExclusions.length,
       unjustifiedOrOrphanExamples: orphansAndUnjustified.slice(0, 30),
       conditionalExamples: conditionalExclusions.slice(0, 30),
+      candidateSpecExamples: candidateSpecs.slice(0, 30),
     },
     markers: {
       totalSkips: Object.values(scopes).reduce((sum, s) => sum + s.skips, 0),
@@ -196,8 +211,11 @@ function summarizeMutationEvidence(mutationBaseline, mutationReport) {
 
 function classifyCatalogProof(runtimeFile, testFiles, mockHeavySet) {
   if (testFiles.length === 0) return "ABSENT";
-  if (testFiles.some((f) => f.startsWith("e2e/") || /\.integration\.test\.|\.behavior\.test\./i.test(f))) {
-    return "EXECUTED_BEHAVIOR";
+  if (testFiles.some((f) => f.startsWith("e2e/") || /\.integration\.test\./i.test(f))) {
+    return "STATIC_INTEGRATION_SUITE";
+  }
+  if (testFiles.some((f) => /\.behavior\.test\./i.test(f))) {
+    return "STATIC_BEHAVIOR_SUITE";
   }
   if (testFiles.every((f) => mockHeavySet.has(f))) return "MOCK_HEAVY_CANDIDATE";
   return "STATIC_OR_UNIT_TEST";
@@ -251,9 +269,9 @@ export function analyzeTestProofQuality(allTrackedFiles, readText, { mutationBas
   }
 
   const catalogs = {
-    apiRoutes: { total: 0, byProofLevel: { EXECUTED_BEHAVIOR: 0, STATIC_OR_UNIT_TEST: 0, MOCK_HEAVY_CANDIDATE: 0, ABSENT: 0 }, unprovedExamples: [] },
-    permissionsAndAuth: { total: 0, byProofLevel: { EXECUTED_BEHAVIOR: 0, STATIC_OR_UNIT_TEST: 0, MOCK_HEAVY_CANDIDATE: 0, ABSENT: 0 }, unprovedExamples: [] },
-    businessTransitions: { total: 0, byProofLevel: { EXECUTED_BEHAVIOR: 0, STATIC_OR_UNIT_TEST: 0, MOCK_HEAVY_CANDIDATE: 0, ABSENT: 0 }, unprovedExamples: [] },
+    apiRoutes: { total: 0, byProofLevel: { STATIC_INTEGRATION_SUITE: 0, STATIC_BEHAVIOR_SUITE: 0, STATIC_OR_UNIT_TEST: 0, MOCK_HEAVY_CANDIDATE: 0, ABSENT: 0 }, unprovedExamples: [] },
+    permissionsAndAuth: { total: 0, byProofLevel: { STATIC_INTEGRATION_SUITE: 0, STATIC_BEHAVIOR_SUITE: 0, STATIC_OR_UNIT_TEST: 0, MOCK_HEAVY_CANDIDATE: 0, ABSENT: 0 }, unprovedExamples: [] },
+    businessTransitions: { total: 0, byProofLevel: { STATIC_INTEGRATION_SUITE: 0, STATIC_BEHAVIOR_SUITE: 0, STATIC_OR_UNIT_TEST: 0, MOCK_HEAVY_CANDIDATE: 0, ABSENT: 0 }, unprovedExamples: [] },
     sqlMigrationsAndPgTap: { migrationFiles: 0, pgTapFiles: 0, note: "PostgreSQL/RLS/RPC invariants require pgTAP execution (DB_SEMANTICS_NOT_EXECUTED locally)." },
   };
 
@@ -347,13 +365,14 @@ export function buildDomainTestDiagnostics({ domains, campaignCompleteness, proo
     const missingDirect = stats.runtimeFilesWithoutDirectTest ?? 0;
     const branchPct = stats.coverage?.metrics?.branches?.pct ?? null;
     if (branchPct !== null && branchPct < 80 && highRisk.has(domain)) {
+      const attested = stats.coverage?.status === "AVAILABLE";
       diagnostics.push({
         domain,
         priority: "P1",
-        classification: "DEMONSTRATED_DEFECT",
-        evidenceLevel: stats.coverage?.status === "AVAILABLE" ? "EXECUTED_BEHAVIOR" : "PRESENT_NOT_ATTESTED",
+        classification: attested ? "DEMONSTRATED_DEFECT" : "HEURISTIC_SIGNAL",
+        evidenceLevel: attested ? "EXECUTED_BEHAVIOR" : "PRESENT_NOT_ATTESTED",
         provenance: "coverage-summary.json",
-        detail: `Couverture branches ${branchPct}% (< 80%) sur un domaine prioritaire.`,
+        detail: `Couverture branches ${branchPct}% (< 80%) sur un domaine prioritaire (${attested ? "attestée" : "observation non attestée"}).`,
         recommendedAction: "Ajouter des tests comportementaux ciblant les branches non couvertes.",
       });
     } else if (missingDirect > 0 && highRisk.has(domain)) {
