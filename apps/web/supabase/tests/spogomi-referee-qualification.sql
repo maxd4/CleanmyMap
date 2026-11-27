@@ -578,7 +578,10 @@ begin
     raise exception 'spogomi_referee_scope_current remained false after full reg-v2 requalification';
   end if;
 exception when others then
-  get stacked diagnostics v_sqlstate = returned_sqlstate, v_constraint_name = constraint_name;
+  get stacked diagnostics v_sqlstate = returned_sqlstate, v_constraint_name = constraint_name, v_sqlerrm = message_text;
+  if nullif(v_constraint_name, '') is null then
+    v_constraint_name := (regexp_match(v_sqlerrm, 'constraint "([a-z0-9_]+)"'))[1];
+  end if;
   raise notice 'PROOF_PHASE=spogomi.% SQLSTATE=% PROOF_CONSTRAINT=%', v_proof_phase, v_sqlstate, coalesce(v_constraint_name, 'none');
   raise;
 end;
