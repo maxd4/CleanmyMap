@@ -813,7 +813,7 @@ export async function runValidationMode(
     }
     if (plan.mode === "FULL") {
       writeFullValidationEvidence({
-        repositoryRoot,
+        repositoryRoot: provenanceRoot,
         candidateSha,
         completionSha,
         completionFingerprint,

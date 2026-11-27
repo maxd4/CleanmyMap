@@ -272,7 +272,7 @@ async function main() {
   const evidence = fs.existsSync(evidencePath) ? JSON.parse(fs.readFileSync(evidencePath, "utf8")) : null;
   const current = currentSha();
   const vercelPolicy = readVercelPolicy(target);
-  const deployCandidateScope = profile === "deploy" && evidence?.candidateScope === "DYNAMIC_CANDIDATE"
+  const deployCandidateScope = evidence?.candidateScope === "DYNAMIC_CANDIDATE"
     ? "DYNAMIC_CANDIDATE"
     : "WORKTREE";
   const deployPlan = profile === "deploy" && evidence
