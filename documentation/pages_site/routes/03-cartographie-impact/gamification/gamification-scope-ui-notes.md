@@ -106,7 +106,8 @@ au clavier structurent la lecture :
 - Mes acquis : paliers obtenus, jalons terminés, impact personnel distinct et
   parcours d'engagement dépliable.
 - En cours : progressions commencées et jalons partiellement réalisés, avec
-  valeur courante, prochain palier, progression et conditions canoniques.
+  valeur courante, palier acquis lorsqu'il existe, prochain palier, progression
+  et conditions canoniques.
 - À débloquer : éléments non commencés, sans mesure ni récompense inventée.
 - Communauté : reconnaissance personnelle et annuelle, lien externe au
   classement dédié, Légendes territoriales et Brigade Verte.
@@ -119,9 +120,12 @@ infinie peut avoir des paliers acquis tout en restant en cours. Les icônes et
 médaillons sont des représentations UI et non des récompenses supplémentaires.
 Les conditions et critères restent consultables. Les lectures spécifiques des
 collections ou de la communauté ne sont déclenchées que lorsque leur onglet
-est monté. Les composants remontrés utilisent leurs contrats SWR existants.
-Les reçus et avis restent accessibles ; les liens de réconciliation vers
-progression/jalon sélectionnent l'onglet correspondant. Les réglages globaux
+est monté et qu'une identité Clerk authentifiée est active (`userId` requis,
+clé SWR isolée par `userId`, `keepPreviousData: false` pour empêcher toute
+requête anonyme derrière le soft-gate ou fuite entre comptes). Les reçus et avis
+restent accessibles ; les liens de réconciliation ou ancres profondes
+sélectionnent l'onglet correspondant, attendent le montage différé de la cible
+via observateur DOM borné et respectent `prefers-reduced-motion`. Les réglages globaux
 restent dans la surface canonique /reglages et les préférences du site.
 Le visuel abstrait, les rappels promotionnels, le faux statut hors ligne et
 le panneau d'apprentissage redondant ne sont plus montés.

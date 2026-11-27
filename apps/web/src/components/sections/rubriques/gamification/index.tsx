@@ -12,7 +12,7 @@ import { TerrainSpecializationsPanel } from "./terrain-specializations-panel";
 import { CelebrationsPanel, EngagementPanel, RecognitionPanel } from "./gamification-panels";
 import type { MeResponse } from "./gamification-types";
 import type { UserProgressionResponse } from "@/lib/gamification/progression/progression-types";
-import { swrRecentViewOptions } from "@/lib/swr-config";
+import { swrPrivateGamificationOptions, useGamificationPrivateIdentity } from "./gamification-identity";
 import { GamificationCatalogPanel } from "./gamification-catalog-panel";
 import { GamificationRulesMigrationNotice } from "./gamification-rules-migration-notice";
 import { GamificationImpactPanel } from "./gamification-impact-panel";
@@ -86,6 +86,7 @@ export function GamificationSection() {
   const fr = locale === "fr";
   const searchParams = useSearchParams();
   const receiptId = searchParams?.get("receipt") ?? null;
+  const identityKey = useGamificationPrivateIdentity();
 
   const {
     data: meData,
@@ -93,11 +94,11 @@ export function GamificationSection() {
     error: meError,
     mutate: mutateMe,
   } = useSWR<MeResponse, unknown>(
-    ["gamification-me", receiptId],
+    identityKey ? ["gamification-me", identityKey, receiptId] : null,
     () => fetchJson(receiptId
       ? `/api/gamification/me?receipt=${encodeURIComponent(receiptId)}`
       : "/api/gamification/me", isMeResponse),
-    swrRecentViewOptions,
+    swrPrivateGamificationOptions,
   );
 
   const progression = meData?.progression;

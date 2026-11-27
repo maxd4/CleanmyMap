@@ -1,15 +1,24 @@
 const focusClasses = ["ring-2", "ring-[#c51f1f]", "ring-offset-2"];
 
-export function focusGamificationTarget(targetId: string): void {
-  if (typeof document === "undefined") return;
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+export function focusGamificationTarget(targetId: string): boolean {
+  if (typeof document === "undefined") return false;
 
   const element = document.getElementById(targetId);
-  if (!element) return;
+  if (!element) return false;
 
-  element.scrollIntoView({ behavior: "smooth", block: "center" });
+  element.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center" });
   element.focus({ preventScroll: true });
   focusClasses.forEach((className) => element.classList.add(className));
   window.setTimeout(() => focusClasses.forEach((className) => element.classList.remove(className)), 1800);
+  return true;
 }
 
 export function navigateToGamificationTarget(targetId: string): void {

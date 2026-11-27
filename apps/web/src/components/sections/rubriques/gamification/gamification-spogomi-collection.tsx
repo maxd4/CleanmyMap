@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { useState } from "react";
 import { Award, CalendarDays, CheckCircle2, Flag, Gavel, Medal, Recycle, Trophy } from "lucide-react";
 import { GamificationPanelLoading, SectionLabel } from "./gamification-shell";
+import { useGamificationPrivateIdentity } from "./gamification-identity";
 import type { SpogomiCollection, SpogomiCollectionAward, SpogomiBadgePresentation } from "@/lib/spogomi/collection";
 import { getSpogomiBadgePresentation } from "@/lib/spogomi/collection";
 import {
@@ -94,7 +95,12 @@ function AwardRow({ award }: { award: SpogomiCollectionAward }) {
 
 export function GamificationSpogomiCollection({ locale }: Props) {
   const fr = locale === "fr";
-  const { data, error, isLoading } = useSWR<SpogomiCollection, unknown>("gamification-spogomi-collection", () => fetchCollection("/api/gamification/spogomi/collection"));
+  const identityKey = useGamificationPrivateIdentity();
+  const { data, error, isLoading } = useSWR<SpogomiCollection, unknown>(
+    identityKey ? ["gamification-spogomi-collection", identityKey] : null,
+    () => fetchCollection("/api/gamification/spogomi/collection"),
+    { keepPreviousData: false },
+  );
   const [filters, setFilters] = useState<SpogomiCollectionFilters>({ year: "all", kind: "all", eventId: "all" });
   const awards = data?.awards ?? [];
   const filteredAwards = filterSpogomiCollection(awards, filters);

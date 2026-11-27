@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const swrMock = vi.hoisted(() => vi.fn());
 
+vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ isLoaded: true, isSignedIn: true, userId: "user-test" }) }));
 vi.mock("swr", () => ({ default: swrMock }));
 
 import { TerritorialLegendsPanel } from "./territorial-legends-panel";
@@ -61,7 +62,11 @@ describe("TerritorialLegendsPanel", () => {
     swrMock.mockReturnValueOnce({ data: { ...fullData, territories: [] }, error: undefined, isLoading: false });
     const markup = renderToStaticMarkup(<TerritorialLegendsPanel locale="en" />);
     expect(markup).toContain('data-testid="territorial-legends-empty"');
-    expect(swrMock).toHaveBeenCalledWith("territorial-legends-overview", expect.any(Function), expect.any(Object));
+    expect(swrMock).toHaveBeenCalledWith(
+      ["territorial-legends-overview", "user-test"],
+      expect.any(Function),
+      expect.objectContaining({ keepPreviousData: false }),
+    );
   });
 
   it("keeps partial territories explicit without inventing ranking, dates or rewards", () => {

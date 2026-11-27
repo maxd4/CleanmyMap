@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { GamificationPanelLoading, SectionLabel } from "./gamification-shell";
+import { useGamificationPrivateIdentity } from "./gamification-identity";
 
 export type PublicProof = {
   actionId: string;
@@ -150,13 +151,15 @@ export function GamificationBrigadeVertePanel({
   locale = "fr",
   displayMode = "calme",
 }: Props) {
+  const identityKey = useGamificationPrivateIdentity();
   const { data: rawData, error, isLoading, mutate } = useSWR<BrigadeVerteApiResponse>(
-    "/api/parcours/brigade-verte",
-    fetcher,
+    identityKey ? ["gamification-brigade-verte", identityKey] : null,
+    () => fetcher("/api/parcours/brigade-verte"),
     {
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
       dedupingInterval: 2000,
+      keepPreviousData: false,
     },
   );
 

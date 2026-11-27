@@ -3,7 +3,9 @@ import { act, create, type ReactTestInstance } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const swrState = vi.hoisted(() => ({ data: undefined as unknown, error: undefined as unknown, isLoading: true }));
-vi.mock("swr", () => ({ default: () => swrState }));
+const swrKeySpy = vi.hoisted(() => vi.fn());
+vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ isLoaded: true, isSignedIn: true, userId: "user-test" }) }));
+vi.mock("swr", () => ({ default: (key: unknown, _fetcher: unknown, options: unknown) => { swrKeySpy(key, options); return swrState; } }));
 vi.mock("next/link", () => ({ default: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => React.createElement("a", props, children) }));
 vi.mock("lucide-react", () => ({ Award: () => null, CalendarDays: () => null, CheckCircle2: () => null, Flag: () => null, Gavel: () => null, Medal: () => null, Recycle: () => null, Trophy: () => null }));
 vi.mock("./gamification-shell", () => ({ GamificationPanelLoading: ({ ariaLabel }: { ariaLabel: string }) => React.createElement("div", { "aria-label": ariaLabel }), SectionLabel: ({ title }: { title: string }) => React.createElement("h2", null, title) }));

@@ -42,9 +42,11 @@ describe("Gamification catalog views", () => {
     expect(markup).toContain('id="milestone-parcours_documente"');
   });
 
-  it("displays only canonical progress, conditions and future rewards in active tasks", () => {
+  it("displays only canonical progress, acquired tier, conditions and future rewards in active tasks", () => {
     const markup = render("active");
     expect(markup).toContain('id="progression-participation"');
+    expect(markup).toContain("Palier acquis : Premier");
+    expect(markup).toContain("Prochain palier : Suivant");
     expect(markup).toContain('aria-valuenow="25"');
     expect(markup).toContain('aria-valuenow="50"');
     expect(markup).toContain("Nouveau");

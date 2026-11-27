@@ -12,6 +12,10 @@ let mockSwrState = {
   isLoading: false,
 };
 
+vi.mock("@clerk/nextjs", () => ({
+  useAuth: () => ({ isLoaded: true, isSignedIn: true, userId: "user-test" }),
+}));
+
 vi.mock("swr", () => ({
   default: () => ({
     ...mockSwrState,

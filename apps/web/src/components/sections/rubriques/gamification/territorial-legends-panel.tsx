@@ -8,8 +8,8 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import type { TerritorialLegendOverview } from "@/lib/gamification/territorial-legends/overview";
 import { TERRITORIAL_LEGEND_LEVELS } from "@/lib/gamification/territorial-legends/types";
-import { swrRecentViewOptions } from "@/lib/swr-config";
 
+import { swrPrivateGamificationOptions, useGamificationPrivateIdentity } from "./gamification-identity";
 import { GamificationPanelLoading, SectionLabel } from "./gamification-shell";
 import {
   getConquestStatus,
@@ -148,7 +148,12 @@ function TerritoryCard({ territory, campaignYear }: { territory: TerritorialLege
 }
 
 export function TerritorialLegendsPanel({ locale = "fr" }: { locale?: string }) {
-  const { data, error, isLoading } = useSWR<OverviewResponse, unknown>("territorial-legends-overview", fetchOverview, swrRecentViewOptions);
+  const identityKey = useGamificationPrivateIdentity();
+  const { data, error, isLoading } = useSWR<OverviewResponse, unknown>(
+    identityKey ? ["territorial-legends-overview", identityKey] : null,
+    fetchOverview,
+    swrPrivateGamificationOptions,
+  );
 
   if (isLoading) return <GamificationPanelLoading ariaLabel="Chargement des Légendes territoriales" headingWidth="w-80" cardHeight="h-40" />;
   if (error || !isOverviewResponse(data)) {

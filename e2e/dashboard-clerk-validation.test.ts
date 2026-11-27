@@ -487,4 +487,74 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
       await context.close();
     }
   });
+
+  test("validates gamification privacy when anonymous and 5 tabs, keyboard, deep links, and responsive modes when authenticated", async ({ browser }) => {
+    test.setTimeout(180_000);
+    const anonContext = await browser.newContext();
+    const anonPage = await anonContext.newPage();
+    const privateRequests: string[] = [];
+    anonPage.on("request", (req) => {
+      const url = req.url();
+      if (url.includes("/api/gamification/") || url.includes("/api/parcours/brigade-verte")) {
+        privateRequests.push(url);
+      }
+    });
+    try {
+      await anonPage.goto("/sections/gamification", { waitUntil: "domcontentloaded" });
+      await dismissCookieConsentIfPresent(anonPage);
+      await expect(anonPage.getByRole("heading", { name: "Connexion requise", exact: true })).toBeVisible();
+      await anonPage.waitForTimeout(1_000);
+      expect(privateRequests, `Anonymous soft-gate triggered private requests: ${privateRequests.join(", ")}`).toEqual([]);
+    } finally {
+      await anonContext.close();
+    }
+
+    const context = await browser.newContext({ storageState: authFile });
+    const page = await context.newPage();
+    try {
+      await openProtectedRoute(page, "/sections/gamification");
+      await expect(page.getByRole("heading", { name: "Progression & badges", exact: true })).toBeVisible();
+
+      const tablist = page.getByRole("tablist", { name: "Progression et récompenses" });
+      const tabs = tablist.getByRole("tab");
+      await expect(tabs).toHaveCount(5);
+
+      const expectedLabels = ["Mes acquis", "En cours", "À débloquer", "Communauté", "Badges"];
+      for (const [index, label] of expectedLabels.entries()) {
+        await tabs.nth(index).click();
+        await expect(tabs.nth(index)).toHaveAttribute("aria-selected", "true");
+        await expect(tabs.nth(index)).toContainText(label);
+      }
+
+      // Keyboard navigation
+      await tabs.nth(0).click();
+      await tabs.nth(0).focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+      await page.keyboard.press("End");
+      await expect(tabs.nth(4)).toHaveAttribute("aria-selected", "true");
+      await page.keyboard.press("Home");
+      await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+
+      // Deferred deep link to #spogomi-collection
+      await openProtectedRoute(page, "/sections/gamification#spogomi-collection");
+      await expect(tabs.nth(4)).toHaveAttribute("aria-selected", "true");
+      await expect(page.locator("#spogomi-collection")).toBeVisible();
+
+      // Display modes and responsive widths (390, 768, 1280, 1920)
+      for (const mode of displayModes) {
+        await page.evaluate((m) => {
+          window.localStorage.setItem("cleanmymap.display_mode", m);
+          document.documentElement.setAttribute("data-display-mode", m);
+        }, mode);
+        for (const width of [390, 768, 1280, 1920] as const) {
+          await page.setViewportSize({ width, height: 900 });
+          const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+          expect(overflow, `Gamification horizontal overflow at ${width}px in ${mode}`).toBeLessThanOrEqual(1);
+        }
+      }
+    } finally {
+      await context.close();
+    }
+  });
 });

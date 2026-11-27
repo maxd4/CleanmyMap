@@ -66,11 +66,42 @@ export function GamificationTabs({ locale, summary, receiptId, renderPanel }: {
 
   useEffect(() => {
     if (!target || tabForGamificationTarget(target, summary) !== tab) return;
-    const frame = window.requestAnimationFrame(() => {
-      focusGamificationTarget(target);
+
+    const panel = document.getElementById(`gamification-panel-${tab}`) ?? document.body;
+    let settled = false;
+    let frame = 0;
+
+    const tryFocus = () => {
+      if (settled) return;
+      if (focusGamificationTarget(target)) {
+        settled = true;
+        observer?.disconnect();
+        window.clearTimeout(timeout);
+        setTarget(null);
+      }
+    };
+
+    const observer = typeof MutationObserver !== "undefined"
+      ? new MutationObserver(() => {
+          frame = window.requestAnimationFrame(tryFocus);
+        })
+      : null;
+    observer?.observe(panel, { childList: true, subtree: true });
+
+    frame = window.requestAnimationFrame(tryFocus);
+    const timeout = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      observer?.disconnect();
       setTarget(null);
-    });
-    return () => window.cancelAnimationFrame(frame);
+    }, 5000);
+
+    return () => {
+      settled = true;
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.clearTimeout(timeout);
+    };
   }, [target, tab, summary]);
 
   function select(next: GamificationTab) {

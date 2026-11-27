@@ -74,6 +74,7 @@ const PROGRESSION_ICONS = {
 function ProgressionCard({ item, fr, acquired }: { item: Progression; fr: boolean; acquired: boolean }) {
   const tiers = getAcquiredTiers(item);
   const Icon = PROGRESSION_ICONS[item.id] ?? Target;
+  const current = item.currentTier?.achieved ? item.currentTier.label : item.currentBadge?.label ?? null;
   const next = item.nextTier?.label ?? item.nextBadge?.label;
   return <article id={acquired ? `acquired-progression-${item.id}` : `progression-${item.id}`} tabIndex={-1} className="scroll-mt-24 rounded-2xl border border-rose-100 bg-white p-4 space-y-3 min-w-0">
     <div className="flex items-start gap-3">
@@ -82,7 +83,11 @@ function ProgressionCard({ item, fr, acquired }: { item: Progression; fr: boolea
       {item.isNewSinceLastRulesMigration ? <span className="text-xs font-bold text-emerald-800">{fr ? "Nouveau" : "New"}</span> : null}
     </div>
     {acquired ? <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{tiers.length ? tiers.map((tier) => <Medal key={tier.id} label={tier.label} unlocked compact />) : item.currentBadge ? <Medal label={item.currentBadge.label} unlocked compact /> : null}</div> :
-      <><p className="text-sm font-semibold cmm-text-primary">{fr ? "Prochain palier" : "Next tier"} : {next ?? (fr ? "Non renseigné" : "Unavailable")}{item.nextTier ? ` · ${item.nextTier.threshold}` : ""}</p><Meter value={item.progressPercent} label={item.label} /></>}
+      <>
+        {current ? <p className="text-xs font-semibold cmm-text-secondary">{fr ? "Palier acquis" : "Acquired tier"} : {current}</p> : null}
+        <p className="text-sm font-semibold cmm-text-primary">{fr ? "Prochain palier" : "Next tier"} : {next ?? (fr ? "Non renseigné" : "Unavailable")}{item.nextTier ? ` · ${item.nextTier.threshold}` : ""}</p>
+        <Meter value={item.progressPercent} label={item.label} />
+      </>}
     <p className="text-xs font-semibold cmm-text-secondary">{item.grantsXp ? `${item.xpContribution} XP ${fr ? "obtenue" : "earned"}` : fr ? "Sans XP" : "No XP"}</p>
     <Details item={item} fr={fr} />
   </article>;
