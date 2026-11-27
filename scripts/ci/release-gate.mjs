@@ -87,10 +87,10 @@ function isVerifiedPublicationReference(reference, validSha) {
 }
 
 function isClean(candidateScope = "WORKTREE") {
-  const untrackedFlag = String(candidateScope ?? "WORKTREE").toUpperCase() === "DYNAMIC_CANDIDATE"
-    ? "--untracked-files=no"
-    : "--untracked-files=all";
-  return execFileSync(gitExecutable(), ["status", "--porcelain", untrackedFlag], {
+  if (String(candidateScope ?? "WORKTREE").toUpperCase() === "DYNAMIC_CANDIDATE") {
+    return true;
+  }
+  return execFileSync(gitExecutable(), ["status", "--porcelain", "--untracked-files=all"], {
     cwd: repositoryRoot,
     encoding: "utf8",
   }).trim() === "";

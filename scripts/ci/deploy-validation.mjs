@@ -363,7 +363,7 @@ export async function resolveDeployCandidate({
     includeUntracked: normalizedScope !== "DYNAMIC_CANDIDATE",
   }).filter((file) => !allowedDirty.has(file));
   result.worktreeClean = dirtyFiles.length === 0;
-  if (!result.worktreeClean && !allowDirtyCandidate) {
+  if (!result.worktreeClean && !allowDirtyCandidate && normalizedScope !== "DYNAMIC_CANDIDATE") {
     result.reason = "DEPLOY_WORKTREE_NOT_CLEAN";
     return result;
   }
