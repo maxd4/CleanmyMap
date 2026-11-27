@@ -395,7 +395,7 @@ begin
 exception when others then
   raise exception using
     errcode = SQLSTATE,
-    message = format('TERRITORIAL_PHASE=%s ORIGINAL_SQLSTATE=%s', v_phase, SQLSTATE);
+    message = format('TERRITORIAL_PHASE=%s SQLSTATE=%s', v_phase, SQLSTATE);
 end $$;
 
 select is((select value from engine_state_results where key = 'applied_without_consent'), 'mandate_revoked', 'mark applied fails closed without consent');
