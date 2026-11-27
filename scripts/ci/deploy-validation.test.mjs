@@ -553,3 +553,33 @@ test("DEPLOY refuses an empty diff and a dirty worktree after reference verifica
     removePathWithRetry(root, { recursive: true });
   }
 });
+
+test("DYNAMIC_CANDIDATE DEPLOY ignores foreign untracked files but still rejects dirty tracked files", async () => {
+  const root = makeRepository();
+  try {
+    const productionSha = git(root, ["rev-parse", "HEAD"]);
+    commitWebChange(root);
+    fs.writeFileSync(path.join(root, "foreign-untracked.md"), "other writer\n");
+
+    const dynamicValid = await resolveDeployCandidate({
+      repositoryRoot: root,
+      candidateScope: "DYNAMIC_CANDIDATE",
+      deploymentReference: { sha: productionSha },
+      deploymentProof: proof(productionSha),
+    });
+    assert.equal(dynamicValid.valid, true);
+    assert.equal(dynamicValid.reason, "DEPLOY_SCOPE_VERIFIED");
+
+    fs.writeFileSync(path.join(root, "apps", "web", "src", "page.tsx"), "export default function ModifiedPage() {}\n");
+    const dynamicDirtyTracked = await resolveDeployCandidate({
+      repositoryRoot: root,
+      candidateScope: "DYNAMIC_CANDIDATE",
+      deploymentReference: { sha: productionSha },
+      deploymentProof: proof(productionSha),
+    });
+    assert.equal(dynamicDirtyTracked.valid, false);
+    assert.equal(dynamicDirtyTracked.reason, "DEPLOY_WORKTREE_NOT_CLEAN");
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});

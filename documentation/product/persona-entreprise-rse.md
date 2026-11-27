@@ -207,7 +207,7 @@ Le [répertoire entreprise World Cleanup Day France](https://www.worldcleanupday
 
 ### Intermédiaires
 
-- [World Cleanup Day France](https://www.worldcleanupday.fr/je-suis-une-entreprise-2/) : prestations@worldcleanupday.fr, canal public d'accompagnement.
+- [World Cleanup Day France](https://www.worldcleanupday.fr/je-suis-une-entreprise-2/) : canal public d'accompagnement entreprises.
 - PikPik Environnement : partenaire documenté de la collecte Matmut à Paris ; demander un retour opérationnel.
 - [Surfrider](https://act.surfrider.eu/collecte-de-dechets-entreprise/) : animation et mesure terrain.
 - [C3D](https://www.cddd.fr/), [ORSE](https://www.orse.org/), [Les entreprises s'engagent](https://lesentreprises-sengagent.gouv.fr/), CCI Paris Île-de-France : réseaux à solliciter pour accéder aux responsables RSE. Vérifier les modalités de contact et d'adhésion actuelles.

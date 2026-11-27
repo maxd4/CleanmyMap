@@ -473,7 +473,9 @@ export async function runValidationMode(
     }
     const effectiveOptions = options.autoPublish
       ? { ...options, candidateScope: "STAGED" }
-      : options;
+      : process.env.CMM_DYNAMIC_CANDIDATE_ROOT && options.candidateScope === "WORKTREE"
+        ? { ...options, candidateScope: "DYNAMIC_CANDIDATE" }
+        : options;
     const candidateSha = getCandidateSha(repositoryRoot);
     const deploymentProof = effectiveOptions.mode === "DEPLOY"
       ? readDeploymentProof(options.deploymentProofPath)
@@ -486,6 +488,7 @@ export async function runValidationMode(
         deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
         deploymentProof,
         candidateTreeSha: publicationCandidate?.candidateTreeSha,
+        candidateScope: effectiveOptions.candidateScope,
         allowDirtyCandidate: Boolean(publicationCandidate),
         allowedDirtyFiles: options.deploymentProofPath ? [options.deploymentProofPath] : [],
         vercelClient: runtime.vercelClient,
@@ -650,6 +653,7 @@ export async function runValidationMode(
         deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
         deploymentProof,
         candidateTreeSha: publicationCandidate?.candidateTreeSha,
+        candidateScope: effectiveOptions.candidateScope,
         allowDirtyCandidate: Boolean(publicationCandidate),
         allowedDirtyFiles: options.deploymentProofPath ? [options.deploymentProofPath] : [],
         vercelClient: runtime.vercelClient,
@@ -827,7 +831,7 @@ export async function runValidationMode(
       log(`RELEASE_READY: ${verdict === "PASS" && candidateSha !== "NO_GIT_HEAD" && checkoutStable ? "YES" : "NO"}`);
     } else if (plan.mode === "DEPLOY") {
       writeDeployValidationEvidence({
-        repositoryRoot,
+        repositoryRoot: process.env.CMM_CANONICAL_REPO_ROOT || repositoryRoot,
         candidateSha,
         completionSha,
         candidateTreeSha: getCandidateTreeSha(repositoryRoot, candidateSha),

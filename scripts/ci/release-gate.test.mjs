@@ -407,3 +407,41 @@ test("DEPLOY never becomes release-ready when alias or deployment project proven
     assert.equal(result.ready, false, field);
   }
 });
+
+test("release gate accepts DYNAMIC_CANDIDATE DEPLOY attestation and rejects stale or incomplete DYNAMIC_CANDIDATE proof", () => {
+  const dynamicValid = evaluateReleaseGate({
+    evidence: { ...deployEvidence, candidateScope: "DYNAMIC_CANDIDATE" },
+    current: sha,
+    clean: true,
+    deploymentEnabled,
+    provenance,
+    profile: "deploy",
+    requiredChecks: deployRequiredChecks,
+    deployScope,
+  });
+  assert.equal(dynamicValid.ready, true);
+
+  const dynamicStale = evaluateReleaseGate({
+    evidence: { ...deployEvidence, candidateScope: "DYNAMIC_CANDIDATE", candidateSha: otherSha },
+    current: sha,
+    clean: true,
+    deploymentEnabled,
+    provenance,
+    profile: "deploy",
+    requiredChecks: deployRequiredChecks,
+    deployScope,
+  });
+  assert.equal(dynamicStale.ready, false);
+
+  const dynamicDirtyTracked = evaluateReleaseGate({
+    evidence: { ...deployEvidence, candidateScope: "DYNAMIC_CANDIDATE" },
+    current: sha,
+    clean: false,
+    deploymentEnabled,
+    provenance,
+    profile: "deploy",
+    requiredChecks: deployRequiredChecks,
+    deployScope,
+  });
+  assert.equal(dynamicDirtyTracked.ready, false);
+});

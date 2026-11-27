@@ -20,8 +20,8 @@ import { FieldShell, GroupJoinPublishCard, SectionLabel } from "./ui";
 import { hasValidationIssue, type BaseSectionProps } from "./section-contract";
 import { PrivateActionAccessSection } from "./private-action-access-section";
 import { ACTION_FIELD_ROLE_OPTIONS, normalizeActionFieldRoleCodes } from "@/lib/actions/field-roles";
-import { ActionOrganizerTypeChoices, getOrganizerFieldPresentation } from "../steps/ActionOrganizerTypeChoices";
-import { ActionOrganizationalRelationsSection, shouldShowActionOrganizationalRelations } from "../steps/ActionOrganizationalRelationsSection";
+import { ActionOrganizerTypeChoices, getOrganizerFieldPresentation } from "../steps/action-organizer-type-choices";
+import { ActionOrganizationalRelationsSection, shouldShowActionOrganizationalRelations } from "../steps/action-organizational-relations-section";
 
 type IdentityAndSharingSectionProps = BaseSectionProps & {
   userMetadata: {

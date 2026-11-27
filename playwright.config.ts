@@ -53,7 +53,7 @@ export default defineConfig({
     },
     {
       name: "local authenticated",
-      testMatch: /(?:route-campaign-3c|personal-ai-authenticated)\.spec\.ts|mobile-header-authenticated\.test\.ts/,
+      testMatch: /(?:route-campaign-3c\.spec\.ts|(?:personal-ai-authenticated|mobile-header-authenticated)\.test\.ts)/,
       dependencies: ["global setup"],
       use: { ...devices["Desktop Chrome"] },
     },
@@ -130,7 +130,7 @@ export default defineConfig({
     },
     {
       name: "action sharing",
-      testMatch: /(?:action-sharing|action-finalization|action-route-reference-images|route-reference-action-sharing)\.spec\.ts/,
+      testMatch: /(?:action-sharing|action-route-reference-images)\.spec\.ts|(?:action-finalization|route-reference-action-sharing)\.test\.ts/,
       dependencies: ["global setup"],
       use: { ...devices["Desktop Chrome"] },
     },
@@ -163,7 +163,7 @@ export default defineConfig({
     },
     {
       name: "personal AI authenticated",
-      testMatch: /personal-ai-authenticated\.spec\.ts/,
+      testMatch: /personal-ai-authenticated\.test\.ts/,
       dependencies: ["global setup"],
       use: { ...devices["Desktop Chrome"] },
     },

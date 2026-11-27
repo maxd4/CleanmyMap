@@ -8,7 +8,7 @@ import {
 import {
   SPONTANEOUS_PENDING_ORGANIZER_LABEL,
 } from "@/lib/actions/organizer-type";
-import { ActionOrganizerTypeChoices, getOrganizerFieldPresentation } from "./ActionOrganizerTypeChoices";
+import { ActionOrganizerTypeChoices, getOrganizerFieldPresentation } from "./action-organizer-type-choices";
 import type { ActiveRole } from "@/lib/domain-language";
 import type { FormState } from "../model";
 import {

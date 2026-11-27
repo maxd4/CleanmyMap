@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { normalizeActionOrganizationalRelations } from "@/lib/actions/preparation-contract";
 import { createInitialFormState, type FormState } from "../model";
-import { ActionOrganizationalRelationsSection } from "./ActionOrganizationalRelationsSection";
+import { ActionOrganizationalRelationsSection } from "./action-organizational-relations-section";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 

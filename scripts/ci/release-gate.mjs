@@ -86,8 +86,11 @@ function isVerifiedPublicationReference(reference, validSha) {
   );
 }
 
-function isClean() {
-  return execFileSync(gitExecutable(), ["status", "--porcelain", "--untracked-files=all"], {
+function isClean(candidateScope = "WORKTREE") {
+  const untrackedFlag = String(candidateScope ?? "WORKTREE").toUpperCase() === "DYNAMIC_CANDIDATE"
+    ? "--untracked-files=no"
+    : "--untracked-files=all";
+  return execFileSync(gitExecutable(), ["status", "--porcelain", untrackedFlag], {
     cwd: repositoryRoot,
     encoding: "utf8",
   }).trim() === "";
@@ -117,7 +120,7 @@ export function evaluateReleaseGate({
   );
   const fullGreen = Boolean(evidence?.mode === "FULL" && evidence.verdict === "PASS" && evidence.releaseReady === true
     && evidence.version === 2
-    && evidence.candidateScope === "WORKTREE"
+    && (evidence.candidateScope === "WORKTREE" || evidence.candidateScope === "DYNAMIC_CANDIDATE")
     && evidence.checkoutStable === true
     && evidence.attestationStatus === "ATTESTED_CANDIDATE"
     && evidence.completionFingerprint === evidence.candidateFingerprint
@@ -133,7 +136,7 @@ export function evaluateReleaseGate({
     && evidence.version === DEPLOY_VALIDATION_EVIDENCE_VERSION
     && evidence.verdict === "PASS"
     && evidence.releaseReady === true
-    && evidence.candidateScope === "WORKTREE"
+    && (evidence.candidateScope === "WORKTREE" || evidence.candidateScope === "DYNAMIC_CANDIDATE")
     && evidence.checkoutStable === true
     && evidence.attestationStatus === "ATTESTED_CANDIDATE"
     && evidence.completionFingerprint === evidence.candidateFingerprint
@@ -269,10 +272,13 @@ async function main() {
   const evidence = fs.existsSync(evidencePath) ? JSON.parse(fs.readFileSync(evidencePath, "utf8")) : null;
   const current = currentSha();
   const vercelPolicy = readVercelPolicy(target);
+  const deployCandidateScope = profile === "deploy" && evidence?.candidateScope === "DYNAMIC_CANDIDATE"
+    ? "DYNAMIC_CANDIDATE"
+    : "WORKTREE";
   const deployPlan = profile === "deploy" && evidence
     ? createModeValidationPlan({
       mode: "DEPLOY",
-      candidateScope: "WORKTREE",
+      candidateScope: deployCandidateScope,
       candidateSha: sha,
       baseRef: evidence.baseRef,
       changedFiles: evidence.changedFiles,
@@ -286,13 +292,14 @@ async function main() {
       candidateSha: sha,
       baseRef: evidence.baseRef,
       publicationReference: evidence.publicationReference,
+      candidateScope: deployCandidateScope,
     })
     : null;
   const provenance = readCandidateProvenance(sha);
   const result = evaluateReleaseGate({
     evidence,
     current,
-    clean: isClean(),
+    clean: isClean(deployCandidateScope),
     deploymentEnabled: { ...vercelPolicy, sha },
     provenance,
     profile,

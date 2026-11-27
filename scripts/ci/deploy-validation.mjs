@@ -32,8 +32,12 @@ function normalizePath(value) {
   return String(value).replaceAll("\\", "/").replace(/^\.\//, "");
 }
 
-function dirtyWorktreeFiles(repositoryRoot) {
-  return git(repositoryRoot, ["status", "--porcelain", "--untracked-files=all"], { allowFailure: true })
+function dirtyWorktreeFiles(repositoryRoot, { includeUntracked = true } = {}) {
+  return git(
+    repositoryRoot,
+    ["status", "--porcelain", includeUntracked ? "--untracked-files=all" : "--untracked-files=no"],
+    { allowFailure: true },
+  )
     .split(/\r?\n/)
     .map((line) => line.slice(3).trim())
     .filter(Boolean)
@@ -308,6 +312,7 @@ export async function resolveDeployCandidate({
   deploymentProof = null,
   vercelClient,
   candidateTreeSha = "",
+  candidateScope = "WORKTREE",
   allowDirtyCandidate = false,
   allowedDirtyFiles = [],
 } = {}) {
@@ -353,7 +358,10 @@ export async function resolveDeployCandidate({
   }
 
   const allowedDirty = new Set(allowedDirtyFiles.map((file) => normalizePath(path.relative(repositoryRoot, path.resolve(repositoryRoot, file)))));
-  const dirtyFiles = dirtyWorktreeFiles(repositoryRoot).filter((file) => !allowedDirty.has(file));
+  const normalizedScope = String(candidateScope ?? "WORKTREE").toUpperCase();
+  const dirtyFiles = dirtyWorktreeFiles(repositoryRoot, {
+    includeUntracked: normalizedScope !== "DYNAMIC_CANDIDATE",
+  }).filter((file) => !allowedDirty.has(file));
   result.worktreeClean = dirtyFiles.length === 0;
   if (!result.worktreeClean && !allowDirtyCandidate) {
     result.reason = "DEPLOY_WORKTREE_NOT_CLEAN";

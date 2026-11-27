@@ -1,7 +1,7 @@
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { ORGANIZER_TYPE_VALUES, type OrganizerType } from "@/lib/actions/organizer-type";
-import { ActionOrganizerTypeChoices } from "./ActionOrganizerTypeChoices";
+import { ActionOrganizerTypeChoices } from "./action-organizer-type-choices";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 

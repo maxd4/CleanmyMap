@@ -49,6 +49,16 @@ npm run checks:deploy -- --deployment-ref=<sha-production-verifie> --deployment-
 npm run release:check -- --sha=<sha-candidat> --target=production --profile=deploy
 ```
 
+En présence de fichiers non suivis étrangers dans le checkout multi-writer,
+exécuter la validation `DEPLOY` et le déploiement CLI exclusivement sur l'arbre
+Git publié (`DYNAMIC_CANDIDATE` sous `artifacts/validation/prepush-candidate/<sha>/`) :
+
+```powershell
+node scripts/ci/run-dynamic-candidate-check.mjs --ref=HEAD --command=npm --dependency-mode=reuse -- run checks:deploy -- --deployment-ref=<sha-production-verifie> --deployment-proof=<preuve-vercel.json>
+npm run release:check -- --sha=<sha-candidat> --target=production --profile=deploy
+node scripts/ci/run-dynamic-candidate-check.mjs --ref=<sha-candidat> --command=vercel --dependency-mode=reuse -- deploy --prod --yes --scope maxdperso
+```
+
 Pour une campagne DEPLOY autorisée à publier automatiquement, fournir en plus
 la liste complète des fichiers attribués au chantier :
 

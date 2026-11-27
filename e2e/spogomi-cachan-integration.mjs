@@ -148,7 +148,18 @@ async function api(baseUrl, route, init = {}, expected = [200]) {
     }
   }
   if (!expected.includes(response.status)) {
-    await response.body?.cancel().catch(() => undefined);
+    let validationDetail = "";
+    if (response.status === 422 && (response.headers.get("content-type") ?? "").includes("json")) {
+      const payload = await response.json().catch(() => null);
+      if (payload && typeof payload === "object") {
+        const ref = typeof payload.referenceCode === "string" ? ` ref=${payload.referenceCode}` : "";
+        const err = typeof payload.error === "string" ? ` error=${payload.error}` : "";
+        const detailKeys = payload.details && typeof payload.details === "object" ? ` details=${JSON.stringify(payload.details)}` : "";
+        validationDetail = `${ref}${err}${detailKeys}`;
+      }
+    } else {
+      await response.body?.cancel().catch(() => undefined);
+    }
     const diagnostic = classifyLocalAppHttpStatus(response.status);
     const diagnosticCode = diagnostic ? ` ${diagnostic.code}` : " HTTP_UNEXPECTED_RESPONSE";
     const diagnosticMessage = diagnostic?.message ?? "The response status was not expected.";
@@ -156,7 +167,7 @@ async function api(baseUrl, route, init = {}, expected = [200]) {
       ? classifyLocalAppRuntimeOutput(runtimeServers.get(baseUrl)?.getStartupOutput?.() ?? "")
       : null;
     const runtimeSuffix = runtimeDiagnostic ? ` (${runtimeDiagnostic.code}: ${runtimeDiagnostic.message})` : "";
-    throw new Error(`${init.method ?? "GET"} ${route}:${diagnosticCode} HTTP ${response.status}. ${diagnosticMessage}${runtimeSuffix}`);
+    throw new Error(`${init.method ?? "GET"} ${route}:${diagnosticCode} HTTP ${response.status}. ${diagnosticMessage}${validationDetail}${runtimeSuffix}`);
   }
   const contentType = response.headers.get("content-type") ?? "";
   const body = contentType.includes("json") ? await response.json() : await response.arrayBuffer();

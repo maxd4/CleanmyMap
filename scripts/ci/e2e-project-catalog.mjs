@@ -24,7 +24,8 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
     name: "action sharing",
     requiresAuth: true,
     specPatterns: [
-      /^e2e\/(?:action-sharing|action-finalization|action-route-reference-images|route-reference-action-sharing)\.spec\.ts$/,
+      /^e2e\/(?:action-sharing|action-route-reference-images)\.spec\.ts$/,
+      /^e2e\/(?:action-finalization|route-reference-action-sharing)\.test\.ts$/,
     ],
     dependencyPrefixes: [
       "apps/web/src/lib/actions/",
@@ -63,7 +64,7 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
     name: "personal AI authenticated",
     requiresAuth: true,
     specPatterns: [
-      /^e2e\/personal-ai-authenticated\.spec\.ts$/,
+      /^e2e\/personal-ai-authenticated\.test\.ts$/,
     ],
     dependencyPrefixes: [
       "apps/web/src/lib/personal-ai/",
@@ -102,6 +103,7 @@ export const LOCAL_ONLY_E2E_SPECS = Object.freeze([
   /^e2e\/local-authenticated\.spec\.ts$/,
   /^e2e\/dashboard-clerk-validation\.(?:spec|test)\.ts$/,
   /^e2e\/messagerie-information-architecture\.spec\.ts$/,
+  /^e2e\/mobile-header-authenticated\.test\.ts$/,
   /^e2e\/onboarding-progressive\.spec\.ts$/,
   /^e2e\/pdf-export-browser-report\.(?:spec|test)\.ts$/,
   /^e2e\/route-additionality\.spec\.ts$/,

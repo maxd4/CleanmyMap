@@ -6,7 +6,7 @@ import { ActionOrganizerSection } from "./action-step-identity.organizer";
 import { ActionParticipantSection } from "./action-step-identity.participants";
 import { ActionTimeSection } from "./action-step-identity.time";
 import { SectionTitle } from "./action-step-identity.ui";
-import { ActionOrganizationalRelationsSection, shouldShowActionOrganizationalRelations } from "./ActionOrganizationalRelationsSection";
+import { ActionOrganizationalRelationsSection, shouldShowActionOrganizationalRelations } from "./action-organizational-relations-section";
 
 export function ActionStepIdentity({
   form,

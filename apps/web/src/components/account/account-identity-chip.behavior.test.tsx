@@ -441,7 +441,7 @@ describe("MobileAccountMenu and shared controller behavior", () => {
 
     // Late response from user-1 must not overwrite user-2 state
     await act(async () => {
-      resolveFirstFetch(jsonResponse([{ status: "pending_owner_review" }]));
+      resolveFirstFetch(jsonResponse([{ status: "pending_owner_review" }]) as unknown as Response);
       await Promise.resolve();
     });
     await act(async () => {

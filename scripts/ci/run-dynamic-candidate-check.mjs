@@ -351,6 +351,9 @@ function resolveInvocation(command) {
     }
     return { executable: null, prefixArguments: [], shell: false };
   }
+  if (command === "vercel") {
+    return { executable: command, prefixArguments: [], shell: true };
+  }
   return { executable: command, prefixArguments: [], shell: false };
 }
 
@@ -389,6 +392,7 @@ function run() {
         PATH: [materialization.gitShimRoot, process.env.PATH].filter(Boolean).join(path.delimiter),
         CMM_DYNAMIC_CANDIDATE_SHA: materialization.candidateSha,
         CMM_DYNAMIC_CANDIDATE_ROOT: materialization.candidateTreeRoot,
+        CMM_CANONICAL_REPO_ROOT: repositoryRoot,
         CMM_VALIDATION_SCOPE: "DYNAMIC_CANDIDATE",
       },
       stdio: "inherit",

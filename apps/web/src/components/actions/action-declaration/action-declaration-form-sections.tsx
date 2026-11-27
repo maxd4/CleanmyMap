@@ -9,7 +9,7 @@ import { ActionParticipantSection } from "./steps/action-step-identity.participa
 import { ActionTimeSection } from "./steps/action-step-identity.time";
 import { ActionStepHarvest } from "./steps/ActionStepHarvest";
 import { ActionStepIdentity } from "./steps/ActionStepIdentity";
-import { ActionOrganizationalRelationsSection, shouldShowActionOrganizationalRelations } from "./steps/ActionOrganizationalRelationsSection";
+import { ActionOrganizationalRelationsSection, shouldShowActionOrganizationalRelations } from "./steps/action-organizational-relations-section";
 import { ActionStepLocation } from "./steps/ActionStepLocation";
 import type {
   ActionDeclarationValidationStatus,

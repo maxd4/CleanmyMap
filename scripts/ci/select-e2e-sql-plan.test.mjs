@@ -121,7 +121,7 @@ test("signalements API, route-reference-action-sharing spec, bootstrap infra, an
   assert.equal(signalementPlan.playwright_projects, "signalement campaign 2");
 
   const routeRefPlan = planE2eAndSql({
-    changedFiles: ["e2e/route-reference-action-sharing.spec.ts"],
+    changedFiles: ["e2e/route-reference-action-sharing.test.ts"],
   });
   assert.equal(routeRefPlan.e2e_should_run, true);
   assert.equal(routeRefPlan.playwright_projects, "action sharing");
@@ -144,7 +144,7 @@ test("signalements API, route-reference-action-sharing spec, bootstrap infra, an
   assert.equal(uncertainPlan.reason, "uncertain-scope-conservative");
 
   const annuairePlan = planE2eAndSql({
-    changedFiles: ["e2e/annuaire-public-cleanliness.spec.ts"],
+    changedFiles: ["e2e/annuaire-public-cleanliness.test.ts"],
   });
   assert.equal(annuairePlan.e2e_should_run, true);
   assert.equal(annuairePlan.playwright_projects, "local public");
