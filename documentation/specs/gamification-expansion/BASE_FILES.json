@@ -1,0 +1,18 @@
+{
+  "baseCommit": "ff9d0214f711ff4411191aaae94d2acb63a75856",
+  "dependsOn": "documentation/specs/gamification-engine-refactor/README_CODEX.md",
+  "files": [
+    {
+      "path": "apps/web/src/lib/gamification/progression/engagement-expansion-policy.ts",
+      "baseBlob": null,
+      "candidateBlob": "bb45c6a6a329da59e24fca310c17b66e8651c0d3",
+      "lines": 171
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/engagement-expansion-policy.test.ts",
+      "baseBlob": null,
+      "candidateBlob": "7b53eb9419fb478889c5d3ee8497264f15e08307",
+      "lines": 86
+    }
+  ]
+}
