@@ -53,6 +53,7 @@ declare
   v_rejected_vis text;
   v_cross_org_err text := 'none';
   v_resolve_wrong_org text;
+  v_phase text := 'insert_initial_action';
 begin
   insert into public.actions (
     id, created_by_clerk_id, organizer_id, organizer_type, action_date,
@@ -62,24 +63,30 @@ begin
     'pre_action', 'pending', now(), 'Place A', 'visible'
   );
 
+  v_phase := 'set_service_role_claims';
   perform set_config('request.jwt.claims', '{"role":"service_role","sub":"pgtap-engine-state"}', true);
   perform set_config('request.jwt.claim.role', 'service_role', true);
 
+  v_phase := 'upsert_subscription_without_consent';
   v_sub_id := public.upsert_external_action_sync_subscription(
     'org-a', 'jagis_pour_la_nature', 'user-org-a', '{}'::text[],
     'struct-a', 'https://example.test/a', 'synthetic_fixture', true, 'auth-1', '2026-11-01', null, null
   );
 
+  v_phase := 'reserve_initial_reference';
   perform * from public.reserve_external_action_sync_reference(
     v_hash, 'org-a', 'user-org-a', v_token, 'jagis_pour_la_nature', 'ext-state-1',
     'https://example.test/e1', 'r1', '{"v":1}'::jsonb, repeat('8', 64)
   );
+  v_phase := 'complete_initial_identity';
   perform public.complete_external_action_sync_identity(v_hash, v_token, v_action);
 
   -- Without consent_granted_at, mark_external_action_sync_reference_applied refuses with mandate_revoked.
+  v_phase := 'mark_reference_without_consent';
   v_applied_revoked := public.mark_external_action_sync_reference_applied(
     'jagis_pour_la_nature', 'ext-state-1', '{"v":1}'::jsonb, repeat('8', 64), 'r1'
   );
+  v_phase := 'store_without_consent_result';
   insert into engine_state_results values ('applied_without_consent', v_applied_revoked);
 
   -- Grant consent, then mark applied succeeds.
@@ -385,6 +392,9 @@ begin
     insert into engine_state_results values ('tx_update_revoked', v_upd_revoked);
     insert into engine_state_results values ('tx_review_revoked', coalesce(v_rev_revoked->>'status', 'null'));
   end;
+exception when others then
+  raise notice 'TERRITORIAL_PHASE=% SQLSTATE=%', v_phase, SQLSTATE;
+  raise;
 end $$;
 
 select is((select value from engine_state_results where key = 'applied_without_consent'), 'mandate_revoked', 'mark applied fails closed without consent');
