@@ -500,7 +500,7 @@ test("proof attestation maps verified and failed executions to explicit statuses
   const incompleteRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };
   assert.throws(
     () => attestProofResult(incompleteRecord, { code: 0, output: "Files=1, Tests=1\nResult: PASS" }, (output) => parsePgTapOutput(output, 2)),
-    /test count mismatch/,
+    /category=PLAN_INCOMPLETE_OR_INTERRUPTED; origin=PGTAP_STREAM; diagnostic=.*TEST_COUNT_MISMATCH/,
   );
   assert.equal(incompleteRecord.status, "INTEGRATION_PROOF");
   assert.equal(incompleteRecord.outcome, "FAIL");
@@ -516,6 +516,11 @@ test("proof diagnostics classify only observed causes and ignore ambiguous SQL l
     category: "UNCAUGHT_SQL_ERROR",
     origin: "POSTGRESQL",
     sqlstate: "22P02",
+  });
+  assert.deepEqual(classifyProofFailure({ output: "ERROR: 23505: duplicate key violates a constraint\nCONTEXT: private row" }), {
+    category: "UNCAUGHT_SQL_ERROR",
+    origin: "POSTGRESQL",
+    sqlstate: "23505",
   });
   assert.deepEqual(classifyProofFailure({ output: "not ok 4 - expected participant" }), {
     category: "ASSERTION_FAILED",
@@ -638,6 +643,9 @@ test("proof failure excerpts are bounded and redact sensitive values", () => {
   assert.doesNotMatch(excerpt, /0123456789abcdef0123456789abcdef/);
   assert.ok(excerpt.length <= 1200);
   assert.match(sanitizeProofFailureExcerpt("TERRITORIAL_PHASE=fresh-publication"), /TERRITORIAL_PHASE=fresh-publication/);
+  const structured = sanitizeProofFailureExcerpt("PROOF_PHASE=spogomi.requalification ERROR: 23514: private fixture detail\nDETAIL: clerk_id=private");
+  assert.match(structured, /PROOF_PHASE=spogomi\.requalification SQLSTATE=23514/);
+  assert.doesNotMatch(structured, /private fixture|clerk_id/);
 });
 
 test("local Supabase proofs reuse the workflow's isolated Docker network when provided", () => {
@@ -680,6 +688,20 @@ test("pgTAP uses the detailed local CLI path and records a safe first diagnostic
   assert.doesNotMatch(JSON.stringify(report), /private fixture/);
 });
 
+test("SQL proof diagnostics retain safe phase and SQLSTATE metadata", async () => {
+  let report;
+  await assert.rejects(() => runSupabaseSqlProof({
+    commandRunner: async () => ({ code: 1, signal: null, timedOut: false, output: "PROOF_PHASE=spogomi.availability\nERROR: 23514: private fixture detail" }),
+    writeReportImpl: (value) => { report = value; },
+    targets: ["apps/web/supabase/tests/spogomi-referee-qualification.sql"],
+  }));
+  assert.equal(report.firstFailure.file, "apps/web/supabase/tests/spogomi-referee-qualification.sql");
+  assert.equal(report.firstFailure.stage, "SQL_CONTRACT");
+  assert.equal(report.firstFailure.phase, "spogomi.availability");
+  assert.equal(report.firstFailure.sqlstate, "23514");
+  assert.doesNotMatch(JSON.stringify(report), /private fixture detail/);
+});
+
 test("rejected proof reaches the runner failure exit code", async () => {
   const rejectedRecord = { path: "example.pgtap.sql", status: "NOT_RUN", outcome: "NOT_RUN" };
   assert.throws(
@@ -688,7 +710,7 @@ test("rejected proof reaches the runner failure exit code", async () => {
       { code: 0, output: "Files=1, Tests=2, 0 Failed, 0 Ignored, 1 Skipped\nResult: PASS\n" },
       (output) => parsePgTapOutput(output, 2),
     ),
-    (error) => /does not prove/.test(error.message),
+    (error) => /step=SQL_PROOF;/.test(error.message) && !/every planned assertion/.test(error.message),
   );
   assert.equal(rejectedRecord.status, "INTEGRATION_PROOF");
   assert.equal(rejectedRecord.outcome, "FAIL");

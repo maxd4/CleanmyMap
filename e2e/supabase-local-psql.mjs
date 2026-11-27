@@ -9,6 +9,17 @@ const psqlCommand = process.platform === "win32" ? "psql.exe" : "/usr/bin/psql";
 
 let cachedDbUrlPromise = null;
 
+export function buildPsqlArgs(dbUrl, { tuplesOnly = false } = {}) {
+  return [
+    "-X",
+    ...(tuplesOnly ? ["-A", "-t"] : ["-x"]),
+    "-v", "ON_ERROR_STOP=1",
+    "-v", "VERBOSITY=verbose",
+    "-f", "-",
+    dbUrl,
+  ];
+}
+
 function trustedEnvironment() {
   if (process.platform === "win32") {
     return { ...process.env };
@@ -62,7 +73,7 @@ export async function resolveLocalEphemeralDbUrl() {
 
 export async function runLocalPsqlQuery(
   sql,
-  { signal: callerSignal, timeoutMs = 30_000, errorLabel = "local PostgreSQL query failed", rawError = false } = {},
+  { signal: callerSignal, timeoutMs = 30_000, errorLabel = "local PostgreSQL query failed", rawError = false, tuplesOnly = false } = {},
 ) {
   const dbUrl = await resolveLocalEphemeralDbUrl();
   const controller = new AbortController();
@@ -77,7 +88,7 @@ export async function runLocalPsqlQuery(
     return await new Promise((resolve, reject) => {
       const child = spawn(
         psqlCommand,
-        ["-X", "-x", "-v", "ON_ERROR_STOP=1", "-f", "-", dbUrl],
+        buildPsqlArgs(dbUrl, { tuplesOnly }),
         {
           cwd: root,
           env: trustedEnvironment(),

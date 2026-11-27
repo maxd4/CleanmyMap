@@ -55,6 +55,7 @@ declare
   v_count integer;
   v_err_item jsonb;
   v_idx integer;
+  v_proof_phase text := 'privileges';
 begin
   -- 1. Privilege boundaries: anon and authenticated must have zero direct access
   if has_table_privilege('anon', 'public.spogomi_referee_quiz_rotation_secrets', 'SELECT')
@@ -116,6 +117,7 @@ begin
     raise exception 'spogomi_set_event_access ACL is not service-only';
   end if;
 
+  v_proof_phase := 'fixture_setup';
   -- Setup published mixed SPOGOMI event with complete versioned divisions (reg-v1)
   insert into public.actions (id, created_by_clerk_id, action_date, location_label, waste_kg, cigarette_butts, volunteers_count, notes)
   values (v_action_id, v_org_clerk, current_date, 'SPOGOMI referee contract', 0, 0, 1, 'referee contract fixture');
@@ -139,6 +141,7 @@ begin
    where event_id = v_event_id
      and id in (v_casual_id, v_world_cup_id);
 
+  v_proof_phase := 'quiz_availability_and_projection';
   -- 2. Public projection: 22 questions (12 critical, 10 other), no correctOptionId or explanation
   v_public_def := public.spogomi_referee_quiz_definition(v_event_id, v_casual_id);
   if (v_public_def->>'regulationVersion') is distinct from 'reg-v1'
@@ -165,6 +168,7 @@ begin
     raise exception 'expected 12 critical and 10 general questions, got % critical / % other', v_critical_count, v_other_count;
   end if;
 
+  v_proof_phase := 'application_creation';
   -- 3. Create applications explicitly before submitting any quiz
   v_res := public.spogomi_create_referee_application(v_event_id, v_casual_id, v_user_a);
   v_app_a_casual := (v_res->>'applicationId')::uuid;
@@ -196,6 +200,7 @@ begin
     raise exception 'expected candidate applicationId for user_rate casual, got %', v_res;
   end if;
 
+  v_proof_phase := 'answer_fixture';
   -- 4. Build answer sets from Casual private definition (distinct HMAC per division)
   v_private_casual := public.spogomi_referee_quiz_definition_private(v_event_id, v_casual_id);
   v_quiz_version_casual_v1 := v_private_casual->>'quizVersion';
@@ -244,6 +249,7 @@ begin
     end if;
   end loop;
 
+  v_proof_phase := 'quiz_evaluation_and_rate_limit';
   -- 5. Fail with 11/12 critical + non-null explanation on error
   v_res := public.spogomi_submit_referee_quiz(v_event_id, v_casual_id, v_user_a, v_quiz_version_casual_v1, v_answers_fail_critical);
   if (v_res->>'passed')::boolean is distinct from false
@@ -322,6 +328,7 @@ begin
     end if;
   end;
 
+  v_proof_phase := 'division_eligibility_and_approval';
   -- 10. Practical confirmation + approval + mixed-mode division isolation
   v_res := public.spogomi_confirm_referee_practical(v_app_a_casual, v_org_clerk, 'practical-v1', '{"verified":true}'::jsonb);
   if (v_res->>'status') is distinct from 'practical_pending' then
@@ -392,6 +399,7 @@ begin
     raise exception 'expected casual quiz pass for user_c, got %', v_res;
   end if;
 
+  v_proof_phase := 'versioned_requalification';
   -- 11. Regulation change (reg-v1 -> reg-v2) on divisions + parent event: requalification
   update public.spogomi_events
      set regulation_version = 'reg-v2'
@@ -558,6 +566,9 @@ begin
   if public.spogomi_referee_scope_current(v_event_id, v_user_a) is distinct from true then
     raise exception 'spogomi_referee_scope_current remained false after full reg-v2 requalification';
   end if;
+exception when others then
+  raise notice 'PROOF_PHASE=spogomi.% SQLSTATE=%', v_proof_phase, sqlstate;
+  raise;
 end;
 $$;
 

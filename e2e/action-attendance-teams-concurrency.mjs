@@ -8,7 +8,7 @@ const renameARequestId = "33333333-3333-4333-8333-333333333484";
 const renameBRequestId = "33333333-3333-4333-8333-333333333485";
 const writerAName = "attendance-teams-writer-a";
 const writerBName = "attendance-teams-writer-b";
-const run = (sql, timeoutMs = 15_000) => runLocalPsqlQuery(sql, { timeoutMs, rawError: true });
+const run = (sql, timeoutMs = 15_000) => runLocalPsqlQuery(sql, { timeoutMs, rawError: true, tuplesOnly: true });
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function waitForActivity(sql, marker, timeoutMs = 8_000) {

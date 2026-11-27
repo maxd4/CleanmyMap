@@ -11,7 +11,7 @@ const writerAName = "attendance-registry-writer-a";
 const writerBName = "attendance-registry-writer-b";
 const restoreWriterAName = "attendance-registry-restore-a";
 const restoreWriterBName = "attendance-registry-restore-b";
-const run = (sql, timeoutMs = 15_000) => runLocalPsqlQuery(sql, { timeoutMs, rawError: true });
+const run = (sql, timeoutMs = 15_000) => runLocalPsqlQuery(sql, { timeoutMs, rawError: true, tuplesOnly: true });
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function waitForActivity(sql, marker, timeoutMs = 8_000) {

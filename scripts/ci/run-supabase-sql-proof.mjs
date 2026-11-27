@@ -122,13 +122,22 @@ export function sanitizePublicEvidenceText(value) {
   return String(value ?? "").replace(publicEvidenceForbiddenTerm, "<redacted-term>");
 }
 
+function proofPhase(value) {
+  const phase = String(value ?? "").match(/\bPROOF_PHASE=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
+  return phase ? { phase } : {};
+}
+
 export function sanitizeProofFailureExcerpt(output) {
   const lines = String(output ?? "")
     .split(/\r?\n/u)
     .map((line) => line.replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "").replace(/\s+/g, " ").trim())
     .filter(Boolean);
   const safeLines = lines.map((line) => {
-    const sqlstate = line.match(/\b(?:SQLSTATE|SQL\s+state)\s*[:=]?\s*([0-9A-Z]{5})\b/i)?.[1]?.toUpperCase();
+    const phase = line.match(/\bPROOF_PHASE=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
+    const sqlstate = line.match(/\b(?:SQLSTATE|SQL\s+state)\s*[:=]?\s*([0-9A-Z]{5})\b/i)?.[1]?.toUpperCase()
+      ?? line.match(/\b(?:ERROR|FATAL|PANIC):\s*([0-9A-Z]{5}):/i)?.[1]?.toUpperCase();
+    if (phase && sqlstate) return `PROOF_PHASE=${phase} SQLSTATE=${sqlstate}`;
+    if (phase) return `PROOF_PHASE=${phase}`;
     if (sqlstate) return `SQLSTATE=${sqlstate}`;
     const assertion = line.match(/^\s*not ok\s+(\d+)\b/i);
     if (assertion) return `not ok ${assertion[1]}`;
@@ -136,10 +145,11 @@ export function sanitizeProofFailureExcerpt(output) {
     if (counts) return `Files=${counts[1]}, Tests=${counts[2]}`;
     const result = line.match(/\bResult\s*:\s*(PASS|FAIL)\b/i);
     if (result) return `Result: ${result[1].toUpperCase()}`;
+    if (/test count mismatch/i.test(line)) return "TEST_COUNT_MISMATCH";
     if (/\bbail out!/i.test(line)) return "Bail out!";
     if (/\bpermission denied\b/i.test(line)) return "permission denied";
-    const phase = line.match(/\bTERRITORIAL_PHASE=([A-Z0-9_-]{1,40})\b/i);
-    if (phase) return `TERRITORIAL_PHASE=${phase[1]}`;
+    const territorialPhase = line.match(/\bTERRITORIAL_PHASE=([A-Z0-9_-]{1,40})\b/i);
+    if (territorialPhase) return `TERRITORIAL_PHASE=${territorialPhase[1]}`;
     if (/\b(?:ERROR|FATAL|PANIC):/i.test(line)) return "ERROR (details withheld)";
     if (/\b(?:timeout|timed out|connection refused|could not connect)\b/i.test(line)) return "PROCESS OR CONNECTION FAILURE";
     if (/\b(?:invalid|violates|duplicate key|does not exist)\b/i.test(line)) return "DATABASE REJECTION (details withheld)";
@@ -369,7 +379,9 @@ export function captureProcessText(current, chunk, maxBytes = MAX_CAPTURED_PROCE
 
 export function classifyProofFailure({ output = "", code = null, signal = null, timedOut = false, diagnostic = "" } = {}) {
   const text = `${output}\n${diagnostic}`;
-  const sqlstate = text.match(/\b(?:SQLSTATE|SQL\s+state)\s*[:=]?\s*([0-9A-Z]{5})\b/i)?.[1]?.toUpperCase() ?? null;
+  const sqlstate = text.match(/\b(?:SQLSTATE|SQL\s+state)\s*[:=]?\s*([0-9A-Z]{5})\b/i)?.[1]?.toUpperCase()
+    ?? text.match(/\b(?:ERROR|FATAL|PANIC):\s*([0-9A-Z]{5}):/i)?.[1]?.toUpperCase()
+    ?? null;
   let category = "UNKNOWN";
   let origin = "UNPROVEN";
   if (timedOut || signal) {
@@ -387,7 +399,7 @@ export function classifyProofFailure({ output = "", code = null, signal = null, 
   } else if (/\bnot ok\s+\d+\b|\bfailed (?:assertion|tests?)\b|\bResult\s*:\s*FAIL\b/i.test(text)) {
     category = "ASSERTION_FAILED";
     origin = "PGTAP_ASSERTION";
-  } else if (/\bbail out!\b/i.test(text) || /(?:incomplete|plan mismatch|numbering is incomplete)/i.test(diagnostic)) {
+  } else if (/\bbail out!\b/i.test(text) || /(?:incomplete|plan mismatch|numbering is incomplete|test count mismatch)/i.test(diagnostic)) {
     category = "PLAN_INCOMPLETE_OR_INTERRUPTED";
     origin = "PGTAP_STREAM";
   } else if (code !== null) {
@@ -540,9 +552,10 @@ export function attestProofResult(record, result, validate) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
     const failure = classifyProofFailure({ ...result, diagnostic: sanitizeProofFailureExcerpt(result.output) });
-    record.failure = failure;
+    record.failure = { ...failure, ...proofPhase(result.output) };
     if (record.category === "PGTAP") record.counts = pgTapCounts(result.output, record.expectedAssertions ?? null);
-    record.reason = `step=${record.category ?? "SQL_PROOF"}; command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}${result.timedOut ? "; timeout=true" : ""}${result.outputTruncated ? "; output_truncated=true" : ""}; category=${failure.category}; origin=${failure.origin}${failure.sqlstate ? `; sqlstate=${failure.sqlstate}` : ""}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
+    const phase = proofPhase(result.output).phase;
+    record.reason = `step=${record.category ?? "SQL_PROOF"}; command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}${result.timedOut ? "; timeout=true" : ""}${result.outputTruncated ? "; output_truncated=true" : ""}; category=${failure.category}; origin=${failure.origin}${failure.sqlstate ? `; sqlstate=${failure.sqlstate}` : ""}${phase ? `; phase=${phase}` : ""}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
     throw new Error(record.reason);
   }
   try {
@@ -553,9 +566,9 @@ export function attestProofResult(record, result, validate) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
     const diagnostic = error instanceof Error ? error.message : String(error);
-    record.failure = classifyProofFailure({ ...result, diagnostic });
+    record.failure = { ...classifyProofFailure({ ...result, diagnostic }), ...proofPhase(`${result.output}\n${diagnostic}`) };
     if (record.category === "PGTAP") record.counts = pgTapCounts(result.output, record.expectedAssertions ?? null);
-    record.reason = `step=${record.category ?? "SQL_PROOF"}; category=${record.failure.category}; origin=${record.failure.origin}${record.failure.sqlstate ? `; sqlstate=${record.failure.sqlstate}` : ""}; ${sanitizePublicEvidenceText(diagnostic).slice(0, 400)}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
+    record.reason = `step=${record.category ?? "SQL_PROOF"}; category=${record.failure.category}; origin=${record.failure.origin}${record.failure.sqlstate ? `; sqlstate=${record.failure.sqlstate}` : ""}${record.failure.phase ? `; phase=${record.failure.phase}` : ""}; diagnostic=${sanitizeProofFailureExcerpt(`${result.output}\n${diagnostic}`)}`;
     throw new Error(record.reason);
   }
 }
@@ -650,7 +663,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
         }
         const sqlCommand = commandRunner === runCommand ? psqlCommand() : commandName();
         const sqlArgs = commandRunner === runCommand
-          ? ["-v", "ON_ERROR_STOP=1", "-f", resolve(repositoryRoot, record.path), localDbUrl]
+          ? ["-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose", "-f", resolve(repositoryRoot, record.path), localDbUrl]
           : ["db", "query", "--workdir", "apps/web", "--local", ...networkArgs, sql];
         await runProof(record, sqlCommand, sqlArgs, (output) => {
           if (!output.includes(marker)) throw new Error("completion marker is absent from the PostgreSQL output");
@@ -672,6 +685,7 @@ export async function runSupabaseSqlProof({ sha, run = true, commandRunner = run
           category: record.failure?.category ?? "PROOF_VALIDATION_FAILED",
           origin: record.failure?.origin ?? "UNPROVEN",
           ...(record.failure?.sqlstate ? { sqlstate: record.failure.sqlstate } : {}),
+          ...(record.failure?.phase ? { phase: record.failure.phase } : {}),
           ...(record.counts ? { counts: record.counts } : {}),
         };
       }

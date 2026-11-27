@@ -7,11 +7,19 @@ const candidateIds = ["10000000-0000-4000-8000-000000000073", "10000000-0000-400
 const tombstoneRaceId = "10000000-0000-4000-8000-000000000075";
 const barrierKeys = [918273645101n, 918273645102n];
 const owner = "route-reference-concurrency-owner";
+let proofPhase = "setup";
 
-const run = (sql, timeoutMs = 20_000) => runLocalPsqlQuery(sql, {
-  timeoutMs,
-  errorLabel: "Route-reference PostgreSQL concurrency query failed",
-});
+const run = async (sql, timeoutMs = 20_000) => {
+  try {
+    return await runLocalPsqlQuery(sql, {
+      timeoutMs,
+      errorLabel: "Route-reference PostgreSQL concurrency query failed",
+      rawError: true,
+    });
+  } catch (error) {
+    throw new Error(`PROOF_PHASE=action_media.${proofPhase}\n${error instanceof Error ? error.message : String(error)}`);
+  }
+};
 
 const cleanupSql = `
 begin;
@@ -52,6 +60,7 @@ commit;
 }
 
 async function proveTombstoneWinsLateFinalization() {
+  proofPhase = "tombstone_fixture";
   await run(`
 delete from public.action_media where action_id = '${actionId}'::uuid and client_upload_id like 'concurrent-%';
 insert into public.action_media (
@@ -62,6 +71,7 @@ insert into public.action_media (
   '${actionId}/${tombstoneRaceId}.jpg', 'tombstone-race.jpg', 'image/jpeg', 1024, 0, 'pending'
 );
 `);
+  proofPhase = "tombstone_race";
   const tombstone = run(`
 begin;
 update public.action_media
@@ -77,6 +87,7 @@ update public.action_media
  where id = '${tombstoneRaceId}'::uuid and upload_state = 'pending' and failure_reason is null;
 `);
   const [tombstoneResult, finalizationResult] = await Promise.all([tombstone, finalization]);
+  proofPhase = "tombstone_assertions";
   assert.match(tombstoneResult.stdout, /UPDATE 1/);
   assert.match(finalizationResult.stdout, /UPDATE 0/);
   const row = await run(`select upload_state || ':' || failure_reason from public.action_media where id = '${tombstoneRaceId}'::uuid;`);
@@ -134,18 +145,23 @@ commit;
 }
 
 async function main() {
+  proofPhase = "destination_check";
   await assertEphemeralDestination();
   try {
+    proofPhase = "fixture_setup";
     await setup();
+    proofPhase = "quota_concurrency";
     const sessions = await Promise.all(candidateIds.map((_, index) => run(sessionSql(index))));
     const outputs = sessions.map(({ stdout, stderr }) => `${stdout}\n${stderr}`);
     assert.equal(outputs.filter((output) => output.includes("ROUTE_REFERENCE_QUOTA_RESULT=accepted")).length, 1);
     assert.equal(outputs.filter((output) => output.includes("ROUTE_REFERENCE_QUOTA_RESULT=denied")).length, 1);
+    proofPhase = "quota_count";
     const rows = await run(`select count(*)::text from public.action_media where action_id = '${actionId}'::uuid and purpose = 'route_reference' and upload_state in ('pending', 'ready');`);
     assert.match(rows.stdout, /\b2\b/);
     await proveTombstoneWinsLateFinalization();
     console.log("EXECUTED_DB_CONTRACT: Route-reference quota serialization and tombstone compare-and-set prevent late finalization from reactivating a removed intent.");
   } finally {
+    proofPhase = "cleanup";
     await run(cleanupSql);
   }
 }

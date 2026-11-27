@@ -39,6 +39,7 @@ declare
   v_question jsonb;
   v_private_def jsonb;
   v_private_casual jsonb;
+  v_quiz_projection jsonb;
   v_res jsonb;
   v_idx integer;
   v_step text := 'INIT';
@@ -318,6 +319,11 @@ begin
   update public.spogomi_divisions
      set regulation_status = 'incomplete'
    where id = v_world_cup_id;
+  v_quiz_projection := public.spogomi_referee_quiz_definition_private(v_event_id, v_world_cup_id);
+  if (v_quiz_projection->>'available')::boolean is distinct from false
+     or jsonb_array_length(v_quiz_projection->'questions') <> 0 then
+    raise exception 'incomplete division quiz remained available';
+  end if;
   if public.spogomi_referee_is_team_eligible(v_event_id, v_world_cup_id, v_ref_2) then
     raise exception 'referee remained eligible when division regulation became incomplete';
   end if;
@@ -378,6 +384,9 @@ begin
     raise exception 'spogomi_upsert_planned_route accepted a report_photo media';
   exception when sqlstate '23514' then null;
   end;
+exception when others then
+  raise notice 'PROOF_PHASE=spogomi.team.% SQLSTATE=%', v_step, sqlstate;
+  raise;
 end;
 $$;
 
