@@ -10,8 +10,9 @@ select ok(not has_function_privilege('authenticated', 'public.apply_external_act
 select ok(not has_function_privilege('authenticated', 'public.update_external_action_sync_pre_action(uuid, text, text, text, timestamptz, jsonb, boolean)', 'EXECUTE'), 'authenticated cannot update external sync pre-action');
 select ok(not has_function_privilege('authenticated', 'public.submit_external_action_sync_review(uuid, text, text, text, timestamptz)', 'EXECUTE'), 'authenticated cannot submit external sync review');
 
+set local role service_role;
 create temp table engine_state_results (key text primary key, value text);
-grant all on table engine_state_results to service_role;
+reset role;
 
 insert into public.profiles (id, display_name, handle)
 values ('user-org-a', 'Org A User', 'org-a-user')
