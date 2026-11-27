@@ -17,6 +17,7 @@ export type AccountEvolutionStatusLinkProps = {
   label?: string;
   pendingLabel?: string;
   pendingInitially?: boolean;
+  skipFetch?: boolean;
   appearance?: "family" | "neutral";
   className?: string;
   onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
@@ -26,13 +27,18 @@ export function AccountEvolutionStatusLink({
   label = "Faire évoluer mon compte",
   pendingLabel = "Voir ma demande",
   pendingInitially = false,
+  skipFetch = false,
   appearance = "family",
   className,
   onClick,
 }: AccountEvolutionStatusLinkProps) {
   const [isPending, setIsPending] = useState(pendingInitially);
+  const effectiveIsPending = skipFetch ? pendingInitially : isPending;
 
   useEffect(() => {
+    if (skipFetch) {
+      return;
+    }
     let isMounted = true;
 
     void fetch("/api/account/promotion-requests", {
@@ -55,7 +61,7 @@ export function AccountEvolutionStatusLink({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [skipFetch]);
 
   return (
     <Link
@@ -70,7 +76,7 @@ export function AccountEvolutionStatusLink({
         className,
       )}
     >
-      {isPending ? pendingLabel : label}
+      {effectiveIsPending ? pendingLabel : label}
     </Link>
   );
 }

@@ -6,8 +6,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 import type { UserIdentity } from "@/lib/authz";
 import {
-  AccountIdentityChip,
-  MobileAccountMenu,
+  AccountIdentityChipView,
+  MobileAccountMenuView,
   useAccountIdentityController,
 } from "@/components/account/account-identity-chip";
 import { NotificationBell } from "@/components/navigation/notification-bell";
@@ -146,20 +146,24 @@ type RibbonAccountActionsViewProps = RibbonAccountActionsProps & {
 function MobileActivityStatusButton({
   activityStatus,
   isUpdatingActivityStatus,
+  isAccountLoading = false,
   activityStatusError,
   onActivityStatusChange,
   locale,
 }: {
   activityStatus: ActivityStatus;
   isUpdatingActivityStatus: boolean;
+  isAccountLoading?: boolean;
   activityStatusError: string | null;
   onActivityStatusChange: () => void;
   locale: Locale;
 }) {
   const isActive = activityStatus === "active";
-  const label = isActive
-    ? locale === "fr" ? "Statut : actif" : "Status: active"
-    : locale === "fr" ? "Statut : inactif" : "Status: inactive";
+  const label = isAccountLoading
+    ? locale === "fr" ? "Statut : chargement..." : "Status: loading..."
+    : isActive
+      ? locale === "fr" ? "Statut : actif" : "Status: active"
+      : locale === "fr" ? "Statut : inactif" : "Status: inactive";
 
   return (
     <div className="mt-2.5">
@@ -167,22 +171,25 @@ function MobileActivityStatusButton({
         type="button"
         aria-label={label}
         aria-pressed={isActive}
-        disabled={isUpdatingActivityStatus}
+        aria-disabled={isUpdatingActivityStatus || isAccountLoading || undefined}
+        disabled={isUpdatingActivityStatus || isAccountLoading}
         onClick={onActivityStatusChange}
-        className="flex min-h-11 min-w-11 w-full items-center justify-between gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-3 text-sm font-semibold text-white transition-colors hover:bg-white/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-wait disabled:opacity-60"
+        className="flex min-h-11 min-w-11 w-full items-center justify-between gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-3 text-sm font-semibold text-white transition-colors hover:bg-white/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span className="flex items-center gap-2">
           <span
             aria-hidden="true"
             className={cn(
               "h-2.5 w-2.5 shrink-0 rounded-full",
-              isActive ? "bg-emerald-400" : "bg-rose-400",
+              isAccountLoading ? "bg-slate-400" : isActive ? "bg-emerald-400" : "bg-rose-400",
             )}
           />
           <span>{label}</span>
         </span>
         <span className="cmm-text-caption font-medium text-slate-300">
-          {locale === "fr" ? "Changer" : "Toggle"}
+          {isAccountLoading
+            ? locale === "fr" ? "Patienter" : "Loading"
+            : locale === "fr" ? "Changer" : "Toggle"}
         </span>
       </button>
       {activityStatusError ? (
@@ -220,8 +227,8 @@ function AuthenticatedAccountActions({
     <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
       <NotificationBell ribbonChrome={ribbonChrome} />
       {mobileIdentity ? (
-        <div className="flex items-center md:hidden">
-          <MobileAccountMenu
+        <div className="flex items-center xl:hidden">
+          <MobileAccountMenuView
             identity={mobileIdentity}
             activityStatus={activityStatus}
             controller={controller}
@@ -255,6 +262,7 @@ function AuthenticatedAccountActions({
                 <MobileActivityStatusButton
                   activityStatus={activityStatus}
                   isUpdatingActivityStatus={isUpdatingActivityStatus}
+                  isAccountLoading={!user}
                   activityStatusError={activityStatusError}
                   onActivityStatusChange={triggerActivityToggle}
                   locale={locale}
@@ -264,9 +272,9 @@ function AuthenticatedAccountActions({
           />
         </div>
       ) : null}
-      <div className="hidden md:flex md:items-center md:gap-2 lg:gap-3">
+      <div className="hidden xl:flex xl:items-center xl:gap-2 lg:gap-3">
         {effectiveIdentity ? (
-          <AccountIdentityChip identity={effectiveIdentity} controller={controller} />
+          <AccountIdentityChipView identity={effectiveIdentity} controller={controller} />
         ) : null}
         {user && identityForBubble ? (
           <AccountUserBubble

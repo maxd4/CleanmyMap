@@ -44,13 +44,52 @@ export type AccountIdentityController = {
 export function useAccountIdentityController(
   identity: UserIdentity | null,
 ): AccountIdentityController {
+  const userId = identity?.userId ?? null;
   const { locale } = useSitePreferences();
   const { handleActiveRoleMutation, isUpdatingProfile, profileError } =
-    useActiveRoleMutation();
-  const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
-  const [isBadgeMenuOpen, setIsBadgeMenuOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [hasPendingPromotionRequest, setHasPendingPromotionRequest] = useState(false);
+    useActiveRoleMutation(userId);
+  const [menuState, setMenuState] = useState<{
+    userId: string | null;
+    openMenu: "role" | "badge" | "mobile" | null;
+  }>({ userId, openMenu: null });
+  const [pendingState, setPendingState] = useState<{
+    userId: string | null;
+    pending: boolean;
+  }>({ userId, pending: false });
+
+  const isRoleMenuOpen = menuState.userId === userId && menuState.openMenu === "role";
+  const isBadgeMenuOpen = menuState.userId === userId && menuState.openMenu === "badge";
+  const isMobileMenuOpen = menuState.userId === userId && menuState.openMenu === "mobile";
+  const hasPendingPromotionRequest =
+    pendingState.userId === userId ? pendingState.pending : false;
+
+  const setIsRoleMenuOpen = (open: boolean) =>
+    setMenuState((current) => ({
+      userId,
+      openMenu: open
+        ? "role"
+        : current.userId === userId && current.openMenu === "role"
+          ? null
+          : current.openMenu,
+    }));
+  const setIsBadgeMenuOpen = (open: boolean) =>
+    setMenuState((current) => ({
+      userId,
+      openMenu: open
+        ? "badge"
+        : current.userId === userId && current.openMenu === "badge"
+          ? null
+          : current.openMenu,
+    }));
+  const setIsMobileMenuOpen = (open: boolean) =>
+    setMenuState((current) => ({
+      userId,
+      openMenu: open
+        ? "mobile"
+        : current.userId === userId && current.openMenu === "mobile"
+          ? null
+          : current.openMenu,
+    }));
 
   const gamificationBadges = useMemo(
     () =>
@@ -74,8 +113,8 @@ export function useAccountIdentityController(
   );
 
   useEffect(() => {
-    if (!identity) return;
-    let isMounted = true;
+    if (!userId) return;
+    let isCurrent = true;
 
     void fetch("/api/account/promotion-requests", {
       headers: { Accept: "application/json" },
@@ -89,28 +128,27 @@ export function useAccountIdentityController(
         };
       })
       .then((promotionPayload) => {
-        if (isMounted && promotionPayload) {
-          setHasPendingPromotionRequest(
-            promotionPayload.items?.[0]?.status === "pending_owner_review",
-          );
+        if (isCurrent && promotionPayload) {
+          setPendingState({
+            userId,
+            pending: promotionPayload.items?.[0]?.status === "pending_owner_review",
+          });
         }
       })
       .catch(() => undefined);
 
     return () => {
-      isMounted = false;
+      isCurrent = false;
     };
-  }, [identity]);
+  }, [userId]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return;
     }
-    const mediaQuery = window.matchMedia("(min-width: 768px)");
+    const mediaQuery = window.matchMedia("(min-width: 1280px)");
     const closeBreakpointMenus = () => {
-      setIsRoleMenuOpen(false);
-      setIsBadgeMenuOpen(false);
-      setIsMobileMenuOpen(false);
+      setMenuState((current) => ({ ...current, openMenu: null }));
     };
     mediaQuery.addEventListener("change", closeBreakpointMenus);
     return () => {
@@ -136,9 +174,13 @@ export function useAccountIdentityController(
   };
 }
 
-export function AccountIdentityChip({ identity, controller }: AccountIdentityChipProps) {
-  const internalController = useAccountIdentityController(controller ? null : identity);
-  const activeController = controller ?? internalController;
+export function AccountIdentityChipView({
+  identity,
+  controller,
+}: {
+  identity: UserIdentity;
+  controller: AccountIdentityController;
+}) {
   const {
     locale,
     handleActiveRoleMutation,
@@ -152,7 +194,7 @@ export function AccountIdentityChip({ identity, controller }: AccountIdentityChi
     setIsRoleMenuOpen,
     isBadgeMenuOpen,
     setIsBadgeMenuOpen,
-  } = activeController;
+  } = controller;
 
   return (
     <div className="flex items-center gap-2">
@@ -193,6 +235,11 @@ export function AccountIdentityChip({ identity, controller }: AccountIdentityChi
       ) : null}
     </div>
   );
+}
+
+export function AccountIdentityChip({ identity, controller }: AccountIdentityChipProps) {
+  const internalController = useAccountIdentityController(controller ? null : identity);
+  return <AccountIdentityChipView identity={identity} controller={controller ?? internalController} />;
 }
 
 type AccountRoleMenuProps = {
@@ -324,6 +371,7 @@ function AccountRoleMenuContent({
           label={getAccountEvolutionLabel(locale, false)}
           pendingLabel={getAccountEvolutionLabel(locale, true)}
           pendingInitially={hasPendingPromotionRequest}
+          skipFetch
           onClick={onClose}
           className="w-full border-white/18 bg-white/[0.08] text-sm text-white hover:bg-white/[0.14]"
         />
@@ -332,7 +380,7 @@ function AccountRoleMenuContent({
   );
 }
 
-export function MobileAccountMenu({
+export function MobileAccountMenuView({
   identity,
   activityStatus,
   accountHeader,
@@ -341,10 +389,8 @@ export function MobileAccountMenu({
   identity: UserIdentity;
   activityStatus: "active" | "inactive";
   accountHeader: ReactNode;
-  controller?: AccountIdentityController;
+  controller: AccountIdentityController;
 }) {
-  const internalController = useAccountIdentityController(controller ? null : identity);
-  const activeController = controller ?? internalController;
   const {
     locale,
     handleActiveRoleMutation,
@@ -356,7 +402,7 @@ export function MobileAccountMenu({
     profileOptions,
     isMobileMenuOpen,
     setIsMobileMenuOpen,
-  } = activeController;
+  } = controller;
 
   const renderProfileItems = (profiles: AppProfile[]) =>
     profiles.map((profile) => (
@@ -506,6 +552,28 @@ function AccountBadgeMenu({
         ))}
       </ul>
     </CmmDropdown>
+  );
+}
+
+export function MobileAccountMenu({
+  identity,
+  activityStatus,
+  accountHeader,
+  controller,
+}: {
+  identity: UserIdentity;
+  activityStatus: "active" | "inactive";
+  accountHeader: ReactNode;
+  controller?: AccountIdentityController;
+}) {
+  const internalController = useAccountIdentityController(controller ? null : identity);
+  return (
+    <MobileAccountMenuView
+      identity={identity}
+      activityStatus={activityStatus}
+      accountHeader={accountHeader}
+      controller={controller ?? internalController}
+    />
   );
 }
 

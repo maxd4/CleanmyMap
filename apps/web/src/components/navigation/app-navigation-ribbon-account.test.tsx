@@ -19,27 +19,33 @@ vi.mock("next/link", () => ({
     return React.createElement("a", { href, ...anchorProps }, children);
   },
 }));
-vi.mock("@/components/account/account-identity-chip", () => ({
-  AccountIdentityChip: () => React.createElement("div", { "data-testid": "identity-chip" }),
-  MobileAccountMenu: ({ accountHeader }: { accountHeader?: React.ReactNode }) =>
-    React.createElement("div", { "data-testid": "mobile-account-menu" }, accountHeader),
-  useAccountIdentityController: () => ({
-    locale: "fr",
-    handleActiveRoleMutation: vi.fn(),
-    isUpdatingProfile: false,
-    profileError: null,
-    hasPendingPromotionRequest: false,
-    gamificationBadges: [],
-    profileMenuGroups: { openProfiles: ["benevole"], obtainedProfiles: [] },
-    profileOptions: ["benevole"],
-    isRoleMenuOpen: false,
-    setIsRoleMenuOpen: vi.fn(),
-    isBadgeMenuOpen: false,
-    setIsBadgeMenuOpen: vi.fn(),
-    isMobileMenuOpen: false,
-    setIsMobileMenuOpen: vi.fn(),
-  }),
-}));
+vi.mock("@/components/account/account-identity-chip", () => {
+  const IdentityChip = () => React.createElement("div", { "data-testid": "identity-chip" });
+  const MobileMenu = ({ accountHeader }: { accountHeader?: React.ReactNode }) =>
+    React.createElement("div", { "data-testid": "mobile-account-menu" }, accountHeader);
+  return {
+    AccountIdentityChip: IdentityChip,
+    AccountIdentityChipView: IdentityChip,
+    MobileAccountMenu: MobileMenu,
+    MobileAccountMenuView: MobileMenu,
+    useAccountIdentityController: () => ({
+      locale: "fr",
+      handleActiveRoleMutation: vi.fn(),
+      isUpdatingProfile: false,
+      profileError: null,
+      hasPendingPromotionRequest: false,
+      gamificationBadges: [],
+      profileMenuGroups: { openProfiles: ["benevole"], obtainedProfiles: [] },
+      profileOptions: ["benevole"],
+      isRoleMenuOpen: false,
+      setIsRoleMenuOpen: vi.fn(),
+      isBadgeMenuOpen: false,
+      setIsBadgeMenuOpen: vi.fn(),
+      isMobileMenuOpen: false,
+      setIsMobileMenuOpen: vi.fn(),
+    }),
+  };
+});
 vi.mock("@/components/navigation/notification-bell", () => ({
   NotificationBell: () => React.createElement("button", { "aria-label": "Notifications (0 à traiter)" }),
 }));
@@ -356,7 +362,9 @@ describe("AccountUserBubble", () => {
 
     expect(markup).toContain('data-testid="mobile-account-menu"');
     expect(markup).toContain("loading_handle");
-    expect(markup).toContain("Statut : actif");
+    expect(markup).toContain("Statut : chargement...");
+    expect(markup).toContain('aria-disabled="true"');
+    expect(markup).toContain("disabled");
     expect(markup).toContain("min-h-11 min-w-11");
   });
 

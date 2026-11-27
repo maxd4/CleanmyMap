@@ -21,9 +21,10 @@ géométrie parallèle ne permet de choisir une autre présentation.
   contrôles essentiels ; le groupe reste borné au viewport.
 - Sous `xl`, le ruban forme une seule ligne compacte (`Accueil` + `Sommaire` à
   gauche, `Préférences` + `Feedback` + compte à droite) avec des zones tactiles
-  minimales de `44 × 44 px`. Sous `md` (768 px), `MobileAccountMenu` regroupe
-  l'identité Clerk, le statut d'activité, le sélecteur de rôle et les badges
-  dans un menu unique du compte sans modifier leur contrat métier.
+  minimales de `44 × 44 px`. Sous `xl` (1280 px), `MobileAccountMenuView`
+  regroupe l'identité Clerk, le statut d'activité (`>= 44 × 44 px`), le
+  sélecteur de rôle et les badges dans un menu unique du compte sans modifier
+  leur contrat métier.
 - Les dropdowns réutilisent `CmmDropdown`, conservent leur focus, leur
   fermeture par `Escape`, leurs destinations et leurs permissions.
 

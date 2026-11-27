@@ -8,6 +8,7 @@ import type { UserIdentity } from "@/lib/authz";
 
 const mocks = vi.hoisted(() => ({
   locale: "fr" as "fr" | "en",
+  useActiveRoleMutationCalls: 0,
   mutation: {
     handleActiveRoleMutation: vi.fn(),
     isUpdatingProfile: false,
@@ -20,7 +21,12 @@ vi.mock("@/components/ui/site-preferences-provider", () => ({
 }));
 
 vi.mock("./use-active-role-mutation", () => ({
-  useActiveRoleMutation: () => mocks.mutation,
+  useActiveRoleMutation: () => {
+    React.useEffect(() => {
+      mocks.useActiveRoleMutationCalls += 1;
+    }, []);
+    return mocks.mutation;
+  },
 }));
 
 vi.mock("@/components/ui/cmm-dropdown", () => ({
@@ -90,7 +96,9 @@ vi.mock("./account-evolution-status-link", () => ({
 
 import {
   AccountIdentityChip,
+  AccountIdentityChipView,
   MobileAccountMenu,
+  MobileAccountMenuView,
   useAccountIdentityController,
 } from "./account-identity-chip";
 
@@ -285,6 +293,7 @@ describe("MobileAccountMenu and shared controller behavior", () => {
     act(() => root?.unmount());
     host?.remove();
     mocks.locale = "fr";
+    mocks.useActiveRoleMutationCalls = 0;
     mocks.mutation.handleActiveRoleMutation.mockReset();
     mocks.mutation.isUpdatingProfile = false;
     mocks.mutation.profileError = null;
@@ -296,18 +305,19 @@ describe("MobileAccountMenu and shared controller behavior", () => {
     const controller = useAccountIdentityController(identity);
     return (
       <div>
-        <MobileAccountMenu
+        <MobileAccountMenuView
           identity={identity}
           activityStatus="active"
           controller={controller}
           accountHeader={<div data-testid="mobile-header">En-tête compte</div>}
         />
-        <AccountIdentityChip identity={identity} controller={controller} />
+        <AccountIdentityChipView identity={identity} controller={controller} />
       </div>
     );
   }
 
-  it("shares a single promotion-requests fetch across mobile and desktop menus", async () => {
+  it("mounts only one controller instance and one promotion-requests fetch across open/reopen and identity object changes", async () => {
+    mocks.useActiveRoleMutationCalls = 0;
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse([{ status: "pending_owner_review" }]));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -322,13 +332,28 @@ describe("MobileAccountMenu and shared controller behavior", () => {
       await Promise.resolve();
     });
 
+    expect(mocks.useActiveRoleMutationCalls).toBe(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    const mobileTrigger = host.querySelector<HTMLButtonElement>('button[aria-label="Menu du compte"]');
-    expect(mobileTrigger).not.toBeNull();
+    const mobileTrigger = host.querySelector<HTMLButtonElement>('button[aria-label="Menu du compte"]')!;
     await act(async () => {
-      mobileTrigger!.click();
+      mobileTrigger.click();
     });
+    await act(async () => {
+      mobileTrigger.click();
+    });
+    await act(async () => {
+      mobileTrigger.click();
+    });
+
+    // Re-render with new object reference for the same userId -> no redundant fetch
+    act(() => {
+      root.render(<SharedAccountHarness identity={makeIdentity({ displayName: "Alex Updated" })} />);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
 
     const panel = host.querySelector('[role="menu"][aria-label="Menu du compte et du rôle"]');
     expect(panel).not.toBeNull();
@@ -346,11 +371,57 @@ describe("MobileAccountMenu and shared controller behavior", () => {
     expect(mocks.mutation.handleActiveRoleMutation).toHaveBeenCalledWith("coordinateur");
   });
 
-  it("closes open mobile and desktop dropdowns when crossing the 768px breakpoint", async () => {
+  it("resets open state and ignores stale promotion-requests responses when userId changes", async () => {
+    let resolveFirstFetch!: (value: Response) => void;
+    const firstFetchPromise = new Promise<Response>((resolve) => {
+      resolveFirstFetch = resolve;
+    });
+    const fetchMock = vi
+      .fn()
+      .mockReturnValueOnce(firstFetchPromise)
+      .mockResolvedValueOnce(jsonResponse([]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(<SharedAccountHarness identity={makeIdentity({ userId: "user-1" })} />);
+    });
+
+    await act(async () => {
+      host.querySelector<HTMLButtonElement>('button[aria-label="Menu du compte"]')!.click();
+    });
+    expect(host.querySelector("#mobile-account-menu-panel")).not.toBeNull();
+
+    // Switch account before first fetch resolves
+    act(() => {
+      root.render(<SharedAccountHarness identity={makeIdentity({ userId: "user-2" })} />);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Menu must reset to closed on identity change
+    expect(host.querySelector("#mobile-account-menu-panel")).toBeNull();
+
+    // Late response from user-1 must not overwrite user-2 state
+    await act(async () => {
+      resolveFirstFetch(jsonResponse([{ status: "pending_owner_review" }]));
+      await Promise.resolve();
+    });
+    await act(async () => {
+      host.querySelector<HTMLButtonElement>('button[aria-label="Menu du compte"]')!.click();
+    });
+    expect(host.textContent).toContain("Évolution du compte");
+    expect(host.textContent).not.toContain("En attente");
+  });
+
+  it("closes open mobile and desktop dropdowns when crossing the 1280px breakpoint", async () => {
     let mediaChangeListener: (() => void) | null = null;
     vi.stubGlobal("matchMedia", vi.fn().mockImplementation(() => ({
       matches: false,
-      media: "(min-width: 768px)",
+      media: "(min-width: 1280px)",
       addEventListener: (_event: string, listener: () => void) => {
         mediaChangeListener = listener;
       },

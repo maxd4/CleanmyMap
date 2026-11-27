@@ -12,15 +12,15 @@ async function dismissCookies(page: Page): Promise<void> {
 }
 
 test.describe("authenticated mobile header reception", () => {
-  test("keeps single-line compact geometry without overflow or collisions at 320/360/390/430/768px", async ({ page }) => {
+  test("keeps single-line compact geometry and >=44px touch targets without overflow or collisions under xl (320..1024px)", async ({ page }) => {
     test.setTimeout(120_000);
 
-    for (const width of [320, 360, 390, 430, 768] as const) {
+    for (const width of [320, 360, 390, 430, 768, 1024, 1280] as const) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
       await dismissCookies(page);
 
-      const accountTrigger = width < 768
+      const accountTrigger = width < 1280
         ? page.getByRole("button", { name: "Menu du compte" })
         : page.getByRole("button", { name: "Menu du profil actif" });
       await expect(accountTrigger).toBeVisible({ timeout: 15_000 });
@@ -35,15 +35,7 @@ test.describe("authenticated mobile header reception", () => {
         const overlaps = (a: DOMRect, b: DOMRect) =>
           Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
           Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
-        const controls = [...nav.querySelectorAll<HTMLElement>("a, button")].filter((el) => {
-          if (!visible(el)) return false;
-          // Exclude the desktop avatar's overlaid 16px status dot from collision/44px checks at 768px.
-          const isDesktopOverlayDot = Boolean(
-            el.closest("[data-navigation-account-identity]") &&
-            el.getAttribute("aria-label")?.startsWith("Statut :"),
-          );
-          return !isDesktopOverlayDot;
-        });
+        const controls = [...nav.querySelectorAll<HTMLElement>("a, button")].filter(visible);
         const collisions = controls.flatMap((a, i) =>
           controls
             .slice(i + 1)
@@ -63,15 +55,15 @@ test.describe("authenticated mobile header reception", () => {
 
       expect(metrics.height, `header height at ${width}px`).toBeLessThanOrEqual(72);
       expect(metrics.scrollWidth, `overflow at ${width}px`).toBeLessThanOrEqual(metrics.clientWidth + 1);
-      expect(metrics.collisions, `collisions at ${width}px`).toEqual([]);
-      if (width < 768) {
+      if (width < 1280) {
+        expect(metrics.collisions, `collisions at ${width}px`).toEqual([]);
         expect(metrics.minTouchW, `touch width at ${width}px`).toBeGreaterThanOrEqual(43.5);
         expect(metrics.minTouchH, `touch height at ${width}px`).toBeGreaterThanOrEqual(43.5);
       }
     }
   });
 
-  test("exercises MobileAccountMenu, UserButton, 44px activity toggle, role switch, keyboard, and 768px breakpoint", async ({ page }) => {
+  test("verifies MobileAccountMenu, UserButton, 44px status persistence, role switch + error, keyboard, and 1280px breakpoint", async ({ page }) => {
     test.setTimeout(120_000);
 
     await page.setViewportSize({ width: 390, height: 900 });
@@ -90,12 +82,10 @@ test.describe("authenticated mobile header reception", () => {
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();
 
-    // Open again via click and verify Clerk UserButton + 44x44 activity status button
+    // Open via click, verify Clerk UserButton + 44x44 activity status toggle + persistence after reload
     await accountBtn.click();
     await expect(panel).toBeVisible();
-
-    const clerkTrigger = panel.locator(".cl-userButtonTrigger");
-    await expect(clerkTrigger).toBeVisible({ timeout: 10_000 });
+    await expect(panel.locator(".cl-userButtonTrigger")).toBeVisible({ timeout: 10_000 });
 
     const statusBtn = panel.getByRole("button", { name: /Statut : (actif|inactif)/i });
     await expect(statusBtn).toBeVisible();
@@ -104,46 +94,72 @@ test.describe("authenticated mobile header reception", () => {
     expect(statusBox!.width).toBeGreaterThanOrEqual(44);
     expect(statusBox!.height).toBeGreaterThanOrEqual(44);
 
-    // Toggle activity status
     const initialPressed = await statusBtn.getAttribute("aria-pressed");
-    await statusBtn.click();
-    await expect(statusBtn).toHaveAttribute("aria-pressed", initialPressed === "true" ? "false" : "true");
+    const expectedPressedAfterToggle = initialPressed === "true" ? "false" : "true";
+    const [statusResponse] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes("/api/account/activity-status") && res.request().method() === "PATCH"),
+      statusBtn.click(),
+    ]);
+    expect(statusResponse.ok()).toBe(true);
+    await expect(statusBtn).toHaveAttribute("aria-pressed", expectedPressedAfterToggle);
 
-    // Role switch (click an available menuitemradio and verify either active role updates or error is surfaced)
+    // Reload and verify persisted status
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await dismissCookies(page);
+    await expect(accountBtn).toBeVisible({ timeout: 15_000 });
+    await accountBtn.click();
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole("button", { name: /Statut : (actif|inactif)/i })).toHaveAttribute(
+      "aria-pressed",
+      expectedPressedAfterToggle,
+    );
+
+    // Positive role switch: require 2xx response and aria-checked="true"
     const roleItems = panel.locator('button[role="menuitemradio"]');
     const roleCount = await roleItems.count();
-    expect(roleCount).toBeGreaterThan(0);
-    const secondRole = roleCount > 1 ? roleItems.nth(1) : roleItems.first();
+    expect(roleCount).toBeGreaterThan(1);
+    const secondRole = roleItems.nth(1);
     const [roleResponse] = await Promise.all([
       page.waitForResponse((res) => res.url().includes("/api/account/active-profile") && res.request().method() === "POST"),
       secondRole.click(),
     ]);
-    if (roleResponse.ok()) {
-      await expect(secondRole).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
-    } else {
-      await expect(panel.locator('[aria-live="polite"]')).toBeVisible({ timeout: 5_000 });
-    }
+    expect(roleResponse.ok()).toBe(true);
+    await expect(secondRole).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
 
-    // Cross 768px while mobile menu is open -> must close without orphaned portal
+    // Role switch refusal: mock 403 and verify error feedback is surfaced
+    await page.route("**/api/account/active-profile", (route) =>
+      route.fulfill({
+        status: 403,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Rôle non autorisé pour ce test." }),
+      }),
+    );
+    const inactiveRole = panel.locator('button[role="menuitemradio"][aria-checked="false"]').first();
+    await expect(inactiveRole).toBeEnabled({ timeout: 10_000 });
+    await inactiveRole.click();
+    await expect(panel.locator('[aria-live="polite"]')).toContainText("Rôle non autorisé pour ce test.");
+    await page.unroute("**/api/account/active-profile");
+
+    // Cross 1280px (xl) while mobile menu is open -> must close without orphaned portal
     await expect(panel).toBeVisible();
-    await page.setViewportSize({ width: 800, height: 900 });
+    await page.setViewportSize({ width: 1280, height: 900 });
     await expect(panel).toBeHidden();
 
-    // Open desktop role menu at 800px and cross back < 768px -> must close without orphaned portal
+    // Open desktop role menu at 1280px and cross back < 1280px -> must close without orphaned portal
     const desktopRoleBtn = page.getByRole("button", { name: "Menu du profil actif" });
     await expect(desktopRoleBtn).toBeVisible();
     await desktopRoleBtn.click();
     const desktopRolePanel = page.locator("#account-role-menu-panel");
     await expect(desktopRolePanel).toBeVisible();
-    await page.setViewportSize({ width: 390, height: 900 });
+    await page.setViewportSize({ width: 1024, height: 900 });
     await expect(desktopRolePanel).toBeHidden();
   });
 
-  test("preserves light/dark themes and all 3 display modes in authenticated mobile header", async ({ page }) => {
+  test("applies light/dark themes and all 3 display modes in authenticated mobile header", async ({ page }) => {
     test.setTimeout(120_000);
 
     await page.setViewportSize({ width: 390, height: 900 });
-    for (const theme of ["light", "dark"] as const) {
+    for (const theme of ["mixed", "dark"] as const) {
       for (const displayMode of ["exhaustif", "minimaliste", "sobre"] as const) {
         await page.goto("/methodologie", { waitUntil: "domcontentloaded" });
         await page.evaluate(
@@ -156,6 +172,8 @@ test.describe("authenticated mobile header reception", () => {
         await page.reload({ waitUntil: "domcontentloaded" });
         await dismissCookies(page);
 
+        await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+        await expect(page.locator("html")).toHaveAttribute("data-display-mode", displayMode);
         const accountBtn = page.getByRole("button", { name: "Menu du compte" });
         await expect(accountBtn).toBeVisible({ timeout: 15_000 });
         const navHeight = await page
