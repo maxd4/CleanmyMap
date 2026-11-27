@@ -2,7 +2,7 @@
 
 **Statut : PLAN / PROPOSITION.** Aucun partenariat, accès, déploiement ou nouveau comportement CURRENT n'est affirmé par ce document.
 
-**Révision : 26 novembre 2026.** Base de lecture Git : 19de2ffbca10ae3affe85d2e23b385c781791859.
+**Révision : 27 novembre 2026.** Base de lecture Git : 3890eb991521f4fefcc0171256db2d89716a2c7c.
 
 **Owner documentaire :** stratégie transverse d'interopérabilité des collectes, diffusion nationale et accompagnement des associations. Le [plan de synchronisation opérationnelle](./synchronisation-actions-externes.md) reste propriétaire du moteur d'import, des pré-actions, du rapprochement et de la synchronisation privée des inscriptions. Le présent plan complète ce chantier, sans le remplacer ni autoriser son activation.
 
@@ -12,33 +12,33 @@ CleanMyMap doit faciliter une publication unique à la source et la circulation 
 
 Objectifs progressifs :
 
-- Recevoir les missions de dépollution disponibles via API Engagement pour leur donner de la visibilité et identifier les organisations susceptibles d'utiliser CleanMyMap.
-- Faciliter la publication des missions de dépollution natives de CleanMyMap sur les diffuseurs nationaux, si elles répondent aux conditions du service.
-- Accompagner les plateformes spécialisées (Fondation de la Mer, Cleanwalk.org, organisateurs SPOGOMI et autres réseaux) dans leur propre raccordement à API Engagement ou dans un dispositif de publication déléguée expressément validé.
-- Permettre aux associations parisiennes, puis à d'autres territoires, de présenter sur leurs sites un agenda à jour des missions pertinentes, sans héberger chacune un catalogue indépendant.
-- Conserver la valeur spécifique de CleanMyMap : préparation, coordination locale, suivi de terrain, registre de présence et bilan d'impact. Une mission diffusée n'est pas une action réalisée.
+- Permettre à la Brigade Verte Paris de publier chaque collecte une seule fois, avec un canal de candidature unique et une diffusion sur plusieurs sites.
+- Évaluer en priorité JeVeuxAider.gouv.fr comme source de publication du pilote, puis API Engagement comme infrastructure de diffusion vers CleanMyMap, J'agis pour la nature et Un Geste pour la Mer.
+- Donner de la visibilité aux missions de dépollution accessibles et admissibles ; utiliser les annuaires et contacts publics indépendants pour identifier d'autres partenaires, jamais les données API pour prospecter.
+- Conserver la valeur spécifique de CleanMyMap : préparation, coordination locale, suivi de terrain, registre de présence et bilan d'impact, sous mandat distinct. Une mission diffusée n'est pas une action réalisée.
+- Étendre ensuite le modèle aux autres structures volontaires et aux agendas locaux, si les accords et l'utilité sont établis.
 
-Le pilote opérationnel concerne la Brigade Verte Paris. L'objectif initial n'est pas une synchronisation exhaustive de la France, mais une expérimentation bornée et réversible, suivie d'une ouverture aux autres structures volontaires. Un accès exploratoire à API Engagement reste utile même si le premier partenaire dispose finalement d'une intégration directe suffisante. L'utilisation quotidienne ne sera activée que si un besoin réel la justifie.
+**Décision produit :** priorité à la publication unique et à la multidiffusion, non à un rôle d'annonceur CleanMyMap. JeVeuxAider.gouv.fr est une source cible proposée, pas un choix déjà accepté par l'association ni une intégration active. Si les diffuseurs nécessaires ne peuvent pas relayer cette source, réévaluer avec l'association un autre canal unique autorisé ; ne pas lui imposer une double publication. Le raccordement direct aux plateformes reste une alternative ou un complément opérationnel conditionnel, pas un second canal de publication obligatoire.
 
 ## 2. Faits établis, hypothèses et accès
 
-| Élément | État au 26/11/2026 |
+| Élément | État au 27/11/2026 |
 | --- | --- |
 | API Engagement | Service public numérique de mutualisation des missions de bénévolat et volontariat. Un partenaire peut être annonceur, diffuseur ou les deux. [S1] |
 | Diffusion API | Lecture JSON HTTPS via le point d'entrée /mission avec clé partenaire ; le périmètre disponible dépend du compte et de sa configuration. [S2, S3] |
 | Mode test | La référence publique indique l'absence de sandbox dédiée ; les essais s'effectuent avec la clé de production. Un accès exploratoire restreint reste à négocier. [S3] |
-| Annonceur | La méthode publique documentée repose sur un flux XML accessible sans connexion, relu toutes les trois heures, et le suivi des candidatures issues du réseau. [S4, S5] |
+| Annonceur | La méthode publique documentée repose sur un flux XML accessible sans connexion, relu toutes les trois heures, et le suivi des candidatures issues du réseau. [S4, S5] Les nouveaux comptes annonceurs pour le bénévolat ne sont actuellement pas ouverts ; la publication directe par les associations sur JeVeuxAider.gouv.fr est la voie proposée. |
 | Conditions XML | Les annonces doivent être propres au site annonceur ; les annonces d'autres plateformes, fermées ou expirées sont exclues. [S4] |
 | Diffuseur | Redirection vers le site annonceur et mesure des impressions obligatoires ; le retour des refus/non-diffusions et leurs motifs fait également partie du contrat documenté pour les intégrations API. [S2, S6] |
-| J'agis pour la nature | Intégration à API Engagement signalée par l'équipe du service ; inventaire réel des missions de dépollution, couverture de la Brigade Verte et accès direct à vérifier. |
+| J'agis pour la nature | Déjà identifié comme annonceur d'API Engagement ; capacité et volonté de devenir également diffuseur des missions publiées sur JeVeuxAider.gouv.fr non prouvées. Accès opérationnel direct à négocier séparément. |
 | Fondation de la Mer | Le programme Un Geste pour la Mer présente une carte, un agenda et un réseau de structures. Son raccordement à API Engagement et ses capacités de flux sont non prouvés. [S8] |
 | Cleanwalk.org | Plateforme candidate spécialisée ; interface d'échange, droits, couverture et statut API Engagement non prouvés. [S9] |
 | SPOGOMI | Les éditions peuvent comprendre une compétition de collecte, distincte d'une mission de bénévolat. L'éligibilité des offres de bénévolat associées et les accords de publication sont à confirmer. [S10] |
-| Accès CleanMyMap | Pas de clé, d'habilitation annonceur/diffuseur ni de convention opérationnelle démontrée dans ce plan. La structure porteuse, son référent et les conditions d'accès doivent être établis. |
+| Accès CleanMyMap | Pas de clé, d'habilitation diffuseur ni de convention opérationnelle démontrée. Une structure garante identifiée et un référent sont demandés (université ou association pilote envisagées) ; une dispense pour les tests n'est pas établie. |
 
 La liste des plateformes annonceurs ne constitue pas un annuaire exhaustif des associations ni une preuve de présence de toutes leurs collectes. Une même organisation peut publier sur plusieurs plateformes et certaines missions peuvent être absentes, modérées, expirées ou complètes. Ne pas figer des nombres de partenaires ou de missions sans date, périmètre et preuve issue de l'API ou de statistiques officielles.
 
-La possibilité d'une publication directe par API, plutôt que par flux XML, doit être confirmée avec l'équipe API Engagement et son contrat applicable avant tout choix d'implémentation. Aucun endpoint non vérifié ne doit être inventé.
+Les contraintes d'accès et de finalité ci-dessus constituent le cadrage de travail du 27 novembre 2026, à reconfirmer avant activation ; elles ne sont pas un accord de partenariat. La diffusion est destinée aux bénévoles, avec redirection et impressions ; elle ne sert ni au démarchage d'associations ni aux échanges de données opérationnelles entre partenaires. Aucun endpoint non vérifié ne doit être inventé.
 
 ## 3. Rôles et responsabilités
 
@@ -48,27 +48,26 @@ La possibilité d'une publication directe par API, plutôt que par flux XML, doi
 | Plateforme d'origine | Publier l'annonce et gérer les candidatures lorsqu'elle offre cette capacité | Ne perd pas son rôle lors d'un import |
 | API Engagement | Mutualiser les missions admissibles, leur diffusion et les statistiques de diffusion | Ni registre d'émargement ni base canonique des actions CleanMyMap |
 | CleanMyMap diffuseur | Présenter les missions de dépollution éligibles, attribuer leur origine, rediriger | Pas de modification des contenus ni de nouvelle inscription par défaut |
-| CleanMyMap annonceur | Exposer les missions natives admissibles et mesurer les candidatures générées | Pas de republication d'annonces tierces sous son identité |
+| CleanMyMap annonceur (option différée) | Éventuellement exposer ses seules missions natives admissibles si la politique d'accès change | Nouveaux comptes actuellement fermés ; aucune republication tierce |
 | CleanMyMap opérateur métier | Préparer les actions d'organisations volontaires, suivre et mesurer les opérations | Mandat spécifique par organisation ; aucune extension automatique de droits |
 | Sites associatifs et collectivités | Relayer les missions choisies dans un agenda/widget | Conditions de diffusion et attribution à respecter |
 
-### Flux proposés
+### Flux cible du pilote (non activé)
 
 ```mermaid
 flowchart LR
-    J[J'agis pour la nature] -->|Annonceur existant| A[API Engagement]
-    F[Fondation de la Mer] -.->|Raccordement à négocier| A
-    W[Cleanwalk.org] -.->|Raccordement à négocier| A
-    S[SPOGOMI] -.->|Missions éligibles uniquement| A
-    A -->|Lecture partenaire| D[CleanMyMap : diffusion]
-    N[CleanMyMap : missions natives] -->|Publication autorisée| A
-    A -->|Widgets et API| L[Sites locaux et nationaux]
-    J -.->|Mandat et accès distincts| O[CleanMyMap : coordination]
-    F -.->|Mandat et accès distincts| O
-    D -.->|Rattachement autorisé| O
+    B[Brigade Verte Paris] -->|Publication unique proposée| J[JeVeuxAider.gouv.fr]
+    J -->|Annonce d'origine| A[API Engagement]
+    A -.->|Diffusion à autoriser| C[CleanMyMap : carte]
+    A -.->|Diffusion à négocier| F[J'agis pour la nature]
+    A -.->|Diffusion à négocier| M[Un Geste pour la Mer]
+    C -.->|Mandat et droit de réutilisation distincts| O[CleanMyMap : coordination]
+    J -.->|Accès privé distinct à négocier| O
 ```
 
-Les flèches sont des flux fonctionnels cibles et non des interfaces activées. Le canal d'inscription reste celui désigné par l'annonce d'origine. Une mission déjà fournie par un annonceur ne repasse pas par le flux annonceur de CleanMyMap : cette séparation interdit les boucles de réimport et de republication.
+Tous les diffuseurs du pilote renvoient les bénévoles vers le lien de candidature fourni pour la mission d'origine (JeVeuxAider.gouv.fr dans ce scénario). Chaque diffuseur doit disposer de sa propre relation autorisée avec API Engagement et respecter ses obligations. CleanMyMap ne redistribue pas son accès ni le catalogue aux autres plateformes. La synchronisation des mises à jour et retraits doit être vérifiée sur chaque canal ; une disparition du flux ne signifie pas nécessairement une annulation terrain.
+
+Les autres sources déjà annonceurs restent admissibles pour la diffusion publique selon les droits du compte. Aucun flux de republication des annonces tierces ne doit être créé. Les interfaces et accords représentés en pointillés ne sont pas acquis.
 
 ## 4. Politique de diffusion et d'éligibilité
 
@@ -87,9 +86,11 @@ Ne pas réécrire la description de la mission ; la normalisation interne et les
 
 Distinguer **annonce externe affichable** (sans effet métier) et **pré-action privée d'une organisation mandatante** (création via le moteur existant). Aucun import de toutes les missions dans les actions natives. Une mission peut être générale, récurrente, multi-adresses ou sans horaire précis ; elle ne correspond pas nécessairement à une occurrence terrain. En l'absence de correspondance démontrée, ne pas créer de pré-action ni compléter artificiellement les champs manquants.
 
-Les associations identifiées peuvent être contactées via leurs canaux professionnels/publics dans une démarche proportionnée et manuelle. Ne pas collecter automatiquement les données personnelles des bénévoles, créer de comptes ni constituer un annuaire de prospection nominatif à partir de l'API.
+Ne pas utiliser le compte diffuseur, ses données ou ses extractions pour identifier des associations à démarcher, même manuellement. Pour la prise de contact, utiliser indépendamment les pages publiques de JeVeuxAider.gouv.fr et les canaux publics des organisations. Ne pas constituer d'annuaire de prospection à partir de l'API, collecter automatiquement les données personnelles des bénévoles ou créer des comptes.
 
-### 4.2 Sortie : missions propres à CleanMyMap
+### 4.2 Sortie : missions propres à CleanMyMap (option différée)
+
+Aucun nouveau flux annonceur n'est à implémenter ou à activer tant que les nouveaux comptes bénévolat restent fermés. Les critères suivants sont conservés uniquement pour une éventuelle réouverture et un accord explicite.
 
 Utiliser une projection minimale du contenu public canonique de CleanMyMap, jamais une nouvelle source de vérité. Une mission ne devient exportable que si :
 
@@ -103,23 +104,23 @@ Les identifiants d'export restent stables et sont dérivés des identités canon
 
 Les données publiques exportées n'incluent aucune présence, liste de bénévoles, identité de compte, trace GPS privée, rapport non publié, coordonnées personnelles ni secret. Le suivi des candidatures générées est distinct du registre de participation et de la gamification.
 
-### 4.3 Plateformes tierces non encore raccordées
+### 4.3 Plateformes tierces
 
-Priorité : permettre à chaque plateforme de devenir son propre annonceur, en l'aidant à qualifier son contenu, produire son flux, tester la conformité et configurer son attribution. L'opérateur garde son compte et ses droits ; CleanMyMap ne se présente pas comme propriétaire des annonces.
+Priorité : proposer à J'agis pour la nature et à la Fondation de la Mer de relayer les collectes publiées une seule fois sur JeVeuxAider.gouv.fr, via leur propre accès diffuseur ou un widget officiel adapté. Vérifier le filtrage, l'affichage dans leurs agendas, le lien de candidature, le suivi des impressions et la gestion des changements. Ne pas présumer qu'un annonceur existant est déjà diffuseur.
 
-Une publication déléguée ou hébergée pour un partenaire reste une alternative uniquement après accord écrit de l'opérateur, de l'organisateur et validation explicite par API Engagement du modèle d'annonceur, de l'identité, du flux et de la candidature. Les CGU actuelles excluent l'agrégation/republication ordinaire de missions tierces dans le flux CleanMyMap. Même une autorisation de lecture ne lève pas cette restriction.
+La publication directe par les associations sur JeVeuxAider.gouv.fr remplace, à ce stade, l'hypothèse de nouveaux comptes annonceurs ou de publication déléguée. Une autre source unique reste possible uniquement si sa diffusion couvre les sites convenus avec l'association. Ne pas créer de flux de redistribution CleanMyMap, de republication XML tierce ou d'API bilatérales de diffusion redondantes. Les échanges opérationnels privés sont hors du périmètre API Engagement et nécessitent leurs propres accords.
 
 ## 5. Intégrations à qualifier
 
 | Source | Première étape | Cible conditionnelle |
 | --- | --- | --- |
-| J'agis pour la nature (FNH) | Tester la couverture via API Engagement et poursuivre la démarche directe avec la Brigade Verte | Diffusion via API Engagement ; synchronisation métier et, séparément, inscriptions uniquement par canal autorisé |
-| Fondation de la Mer / Un Geste pour la Mer | Qualifier l'agenda, l'origine des annonces et les possibilités d'échange | Aide à un flux annonceur propre et/ou connecteur direct autorisé |
-| Cleanwalk.org | Vérifier les fonctionnalités, opérateur, API/flux, conditions et besoins mutuels | Flux annonceur propre ou interopérabilité contractuelle ; aucun scraping présumé autorisé |
-| SPOGOMI / Dream in Green France et organisateurs | Distinguer bénévolat d'organisation, collecte sportive et inscription des équipes | Publier les missions de bénévolat admissibles ; partager éventuellement les événements sportifs par un agenda distinct si autorisé |
-| JeVeuxAider.gouv.fr | Inventorier les missions de dépollution disponibles et les structures | Diffusion avec lien d'origine ; pas de duplication de l'offre |
-| CleanMyMap | Qualifier les actions natives publiques ouvertes à candidatures | Annonceur des seules offres propres admissibles |
-| Associations parisiennes | Identifier les sites et leurs besoins, commencer par un partenaire volontaire | Widgets filtrés par territoire et/ou organisation ; publication unique par le canal convenu |
+| JeVeuxAider.gouv.fr | Vérifier avec la Brigade Verte la publication, la modération, les dates et le parcours d'inscription | Source unique du pilote, si acceptée |
+| J'agis pour la nature (FNH) | Vérifier si la plateforme est aussi diffuseur et peut relayer les missions JeVeuxAider | Diffusion dans son agenda ; accès métier distinct seulement si nécessaire et autorisé |
+| Fondation de la Mer / Un Geste pour la Mer | Proposer le raccordement diffuseur et qualifier les contraintes de son agenda | Relais de la même mission, sans seconde saisie |
+| CleanMyMap | Obtenir le compte diffuseur et tester une lecture bornée autorisée | Cartographie avec attribution et candidature d'origine ; coordination sous mandat distinct |
+| Cleanwalk.org | Vérifier fonctionnalités, droits, besoins et capacité diffuseur | Relais volontaire ou agenda distinct pour événements non admissibles |
+| SPOGOMI / Dream in Green France et organisateurs | Distinguer bénévolat d'organisation, collecte sportive et inscription des équipes | Missions de bénévolat admissibles ; agenda sportif distinct si autorisé |
+| Associations parisiennes | Identifier les sites volontaires via leurs canaux publics indépendants | Widgets filtrés et publication unique par le canal convenu |
 
 La couverture de toutes les collectes d'une plateforme est une cible de coopération, non une promesse : seules les annonces autorisées, admissibles et effectivement accessibles peuvent être diffusées. Les événements non éligibles à API Engagement peuvent relever d'un calendrier événementiel distinct si les droits sont établis.
 
@@ -176,14 +177,14 @@ Le périmètre affiché est choisi avec le site hôte : ses propres actions, les
 
 | Jalon | Résultat attendu | Dépendance / arrêt |
 | --- | --- | --- |
-| J0 : accès et inventaire | Identifier une structure porteuse (pistes : université ou association pilote), référent, responsabilités et conditions ; demander la liste des annonceurs, les capacités de filtrage et le cadre des essais | Pas de clé hors canal officiel ; pas de promesse de sandbox |
-| J1 : preuve de lecture | Fixtures locales puis lecture bornée autorisée en production sans publication ni création métier ; inventaire des missions de dépollution, couverture du pilote et mapping | Pas d'activation permanente ni de tracking fictif ; si aucun accès, conserver un résultat simulé |
-| J2 : diffusion pilote | Affichage des missions admissibles et lien de candidature d'origine ; feedback/impressions conformes et déduplication | Validation du partenaire API Engagement et des conditions de confidentialité |
-| J3 : coordination | Rattachement ou pré-action de la Brigade Verte via le plan opérationnel, après mandat et validation des données | Ne pas rejouer le lot moteur déjà livré ; inscriptions privées indépendantes |
-| J4 : annonceur | Test du flux des seules missions natives admissibles, contrôle de modération et réception ; gestion des fermetures et tracking des candidatures | Accord annonceur ; aucune annonce importée ou fictive |
-| J5 : coopération | Accompagner les plateformes candidates vers leur raccordement propre, tester un agenda/widget avec un site associatif volontaire | Accords spécifiques ; extension conditionnée à l'intérêt observé |
+| J0 : publication unique et accès | Confirmer avec l'association le canal unique ; vérifier le garant, le référent, le périmètre de diffusion et les conditions d'essai | Pas de clé hors canal officiel ; pas de promesse de sandbox ou de dispense |
+| J1 : coopération diffuseurs | Confirmer le statut diffuseur de J'agis pour la nature et la possibilité de raccordement de la Fondation de la Mer ; convenir des filtres et de l'affichage | Aucun accord présumé ; si un relais manque, réévaluer la source unique sans imposer une seconde saisie |
+| J2 : preuve de lecture et diffusion | Fixtures puis lecture autorisée, affichage fidèle sur CleanMyMap, lien d'origine, feedback et impressions conformes | Pas d'activation permanente ni de tracking fictif ; sans accès, résultat simulé seulement |
+| J3 : recette interplateformes | Une collecte réelle publiée une fois par l'association apparaît sur les trois diffuseurs cibles ; modification et retrait observés, sans seconde saisie | Accords et capacités réelles de tous les diffuseurs ; distinguer délai, retrait et annulation |
+| J4 : coordination | Rattachement ou pré-action de la Brigade Verte via le moteur existant, après mandat et droit de réutilisation opérationnelle | L'accès diffuseur seul ne suffit pas ; inscriptions privées indépendantes |
+| J5 : extension | Agendas locaux et autres associations volontaires | Utilité observée, accords spécifiques ; annonceur CleanMyMap différé jusqu'à réouverture explicite |
 
-L'ordre est une recommandation et non une priorité produit imposée : J3 peut avancer indépendamment de J2 avec un connecteur direct autorisé ; J4 et J5 ne bloquent pas l'expérimentation initiale. Ne pas construire toutes les intégrations en parallèle. Pour J0, les questions essentielles sont : droits du compte exploratoire, structure garante, périmètre réel des sources et associations, traitement des missions déjà diffusées, mode de feedback et de mesure, processus de raccordement d'un nouvel annonceur, faisabilité de la publication déléguée et critères d'éligibilité des offres liées à des événements sportifs.
+Les démarches J0 et J1 peuvent avancer en parallèle. La coordination peut avancer indépendamment si un canal direct autorisé répond au besoin sans seconde publication. Aucun flux annonceur nouveau n'est une dépendance du pilote. Ne pas construire toutes les intégrations en parallèle.
 
 Les contacts et négociations détaillés, conventions et identifiants privés restent dans les outils de pilotage autorisés, pas dans GitHub. Aucune démarche ou activation n'est effectuée par ce document.
 
@@ -197,7 +198,7 @@ Les contacts et négociations détaillés, conventions et identifiants privés r
 | Deux canaux pour la même occurrence | Une action métier au maximum après preuve de correspondance ; aucune boucle de publication |
 | Mission générale ou données temporelles incomplètes | Pas de création d'occurrence inventée |
 | Source indisponible ou réponse partielle | Pas de suppression, de duplication ni de faux état certain |
-| Mission native ouverte et autorisée | Une seule projection XML/contrat annonceur, stable et valide |
+| Mission native ouverte et autorisée (option annonceur différée) | Une seule projection conforme si réouverture et accord explicite |
 | Mission importée, privée, expirée ou sportive non qualifiée | Exclusion du flux annonceur, même après modification locale |
 | Annulation ou fermeture native | Retrait du flux, propagation observée ; historique local préservé |
 | Site associatif tiers | Affichage conforme aux droits, filtres, attribution, candidature et absence de secrets |
@@ -208,7 +209,7 @@ Indicateurs proposés, à mesurer sans objectif chiffré inventé : nombre de mi
 
 **STOP CONDITION du pilote de diffusion :** un périmètre autorisé de missions réelles est lisible, affichable et correctement attribué, les obligations de diffusion/feedback sont vérifiées, aucun doublon métier ni effet interdit, et l'organisateur pilote confirme l'utilité. Si l'accès reste bloqué, documenter la preuve manquante et ne pas déclarer le pilote opérationnel.
 
-**STOP CONDITION annonceur :** une mission native réelle admissible et autorisée est reçue par API Engagement, son retrait est observé, le tracking est conforme et les annonces importées sont démontrées exclues.
+**STOP CONDITION publication unique interplateformes :** la Brigade Verte publie une seule collecte sur le canal source convenu, celle-ci est effectivement affichée sur J'agis pour la nature, Un Geste pour la Mer et CleanMyMap avec le même canal de candidature ; mise à jour et retrait vérifiés, aucune seconde publication ni duplication métier. Si un partenaire refuse ou reste non raccordé, le pilote interplateformes est incomplet. L'option annonceur CleanMyMap reste différée et ne bloque pas ce pilote.
 
 **STOP CONDITION coopération locale :** au moins un site volontaire affiche un agenda conforme via une solution approuvée, sans double saisie supplémentaire ni redistribution non autorisée. La généralisation reste une décision ultérieure.
 
