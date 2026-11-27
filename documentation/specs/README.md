@@ -97,7 +97,7 @@ L'arbre de référence contient 18 dossiers et 224 fichiers en incluant ce READM
 | [empreinte-ia](./empreinte-ia/README_CODEX.md) | 0 | 51 | 22 AI-PROOF : 0+08 CURRENT ; 1/2 CODE_PUBLISHED / preuves à vérifier ; reste PLAN / CONDITIONAL |
 | [funding-ui](./funding-ui/README_CODEX.md) | 2 | 1 | 08 FUND : suivi des patches |
 | `gamification-ui` | 0 | 13 | 14 GAME : CODE_PUBLISHED (a5fb315, 6dcd008 ; dossier candidat retiré ; réception runtime non établie ici) |
-| [gamification-engine-refactor](./gamification-engine-refactor/README_CODEX.md) | 0 | 60 | Chantier moteur indépendant : CANDIDATE, réception requise |
+| [gamification-engine-refactor](./gamification-engine-refactor/README_CODEX.md) | 0 | 70 | Chantier moteur indépendant : CANDIDATE, réception requise |
 | [messagerie-ui](./messagerie-ui/README_CODEX.md) | 0 | 26 | 21 CHAT : PENDING (UI et SQL distincts) |
 | [methodologie-ui](./methodologie-ui/README_CODEX.md) | 2 | 2 | 19 METHOD : PENDING |
 | [open-data-sciences](./open-data-sciences/README_CODEX.md) | 2 | 1 | 07 DATA : suivi des patches |

@@ -40,7 +40,9 @@ function supabaseWithoutParticipants() {
       const chain = {
         select() { return chain; },
         in() { return chain; },
-        eq() { return Promise.resolve({ data: [], error: null }); },
+        eq() { return chain; },
+        order() { return chain; },
+        range() { return Promise.resolve({ data: [], error: null, count: 0 }); },
       };
       return chain;
     },
@@ -100,16 +102,21 @@ describe("canonical action source facts", () => {
       select: vi.fn(),
       in: vi.fn(),
       eq: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
     };
     participantQuery.select.mockReturnValue(participantQuery);
     participantQuery.in.mockReturnValue(participantQuery);
-    participantQuery.eq.mockResolvedValue({
+    participantQuery.eq.mockReturnValue(participantQuery);
+    participantQuery.order.mockReturnValue(participantQuery);
+    participantQuery.range.mockResolvedValue({
       data: [
-        { action_id: "action-owned", user_id: "user-2" },
-        { action_id: "action-owned", user_id: "user-2" },
-        { action_id: null, user_id: "ignored" },
+        { id: "p-1", action_id: "action-owned", user_id: "user-2" },
+        { id: "p-2", action_id: "action-owned", user_id: "user-2" },
+        { id: "p-3", action_id: null, user_id: "ignored" },
       ],
       error: null,
+      count: 3,
     });
     const supabase = { from: vi.fn(() => participantQuery) };
     const owned = action("action-owned", "2026-10-01");
@@ -140,7 +147,9 @@ describe("canonical action source facts", () => {
     const chain = {
       select: () => chain,
       in: () => chain,
-      eq: () => Promise.resolve({ data: null, error: { message: "participants unavailable" } }),
+      eq: () => chain,
+      order: () => chain,
+      range: () => Promise.resolve({ data: null, error: { message: "participants unavailable" }, count: null }),
     };
     await expect(buildActionFacts({ from: () => chain } as never, "user-1", [row], new Set([row.id])))
       .rejects.toThrow("participants unavailable");

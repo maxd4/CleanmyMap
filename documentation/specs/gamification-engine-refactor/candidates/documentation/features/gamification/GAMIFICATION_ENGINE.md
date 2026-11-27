@@ -291,6 +291,26 @@ La progression Modération réutilise l'échelle gem canonique : les paliers att
 
 Le parrainage utilise `referral-contribution-proof.ts` pour sélectionner la première action CURRENT admissible selon l'ordre date civile puis identifiant. Le parcours incrémental préserve une preuve existante encore valide sans recréditer ; une reconstruction complète converge vers la première preuve. L'XP et l'identité de l'événement par filleul sont inchangées.
 
+### Inventaires paginés de réconciliation
+
+Les sources raccordées au lecteur strict sont le journal `progression_events`,
+les actions et relations d'organisation de l'utilisateur, les participants
+confirmés des actions, `user_visited_places`, `quiz_type_progress`,
+`action_geometry_contributions`, les profils filleuls, les retours produit
+acceptés, les dossiers de modération et les zones propres utilisées pour
+la reconstruction. Le lecteur et ses budgets sont indexés dans le README
+runtime. Les filtres de propriétaire, états d'admissibilité et identités
+métier sont conservés ; aucun décompte exact ne remplace ces prédicats.
+
+Une page vide avant le décompte attendu, une identité manquante ou répétée,
+une cardinalité changeante, un échec de lecture ou un dépassement du budget
+interrompt le calcul avant le plan d'écriture du ledger. Ce contrôle
+ne détecte pas toutes les modifications concurrentes à cardinalité constante ;
+la RPC existante protège le snapshot du ledger et le profil, pas un snapshot
+transactionnel global des sources. Les chemins non migrés (notamment certaines
+lectures de spécialisations, preuves territoriales, statistiques de niveaux,
+identité et écritures incrémentales) ne sont pas réputés exhaustifs.
+
 ## Audit XP administratif
 
 La surface courante est :

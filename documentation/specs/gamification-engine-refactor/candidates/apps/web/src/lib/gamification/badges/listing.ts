@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { loadCompleteGamificationRows } from "../progression/gamification-evidence-pagination";
 import {
   collectEligibleCleanZoneSources,
   type CleanZoneCanonicalRow,
@@ -88,17 +89,22 @@ export async function loadCleanZoneRowsForUser(
 ): Promise<CleanZoneCanonicalRow[]> {
   const load = async (): Promise<CleanZoneCanonicalRow[]> => {
     const cooldownCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const result = await supabase
+    const query = (exact: boolean) => supabase
       .from("trash_spotter_spots")
-      .select("id, status, latitude, longitude, notes, validated_at, cleaned_at")
+      .select("id, status, latitude, longitude, notes, validated_at, cleaned_at", exact ? { count: "exact" } : undefined)
       .eq("user_id", userId)
       .eq("spot_type", "clean_place")
       .in("status", ["validated", "cleaned"])
       .not("latitude", "is", null)
       .not("longitude", "is", null)
       .not("notes", "is", null)
-      .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`)
-      .limit(CLEAN_ZONE_SOURCE_LIMIT);
+      .or(`validated_at.lte.${cooldownCutoff},cleaned_at.lte.${cooldownCutoff}`);
+    if (options.strict) {
+      return loadCompleteGamificationRows<CleanZoneCanonicalRow>("clean places", (from, to) =>
+        query(true).order("id", { ascending: true }).range(from, to),
+      );
+    }
+    const result = await query(false).limit(CLEAN_ZONE_SOURCE_LIMIT);
     if (result.error) throw new Error(result.error.message);
     return toCanonicalCleanZoneRows(result.data);
   };

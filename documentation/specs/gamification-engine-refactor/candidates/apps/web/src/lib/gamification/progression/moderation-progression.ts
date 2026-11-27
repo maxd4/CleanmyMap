@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { loadCompleteGamificationRows } from "./gamification-evidence-pagination";
 import { insertProgressionEvent } from "../progression-data";
 import {
   buildModerationProgressionState,
@@ -27,20 +28,18 @@ export async function loadResolvedModerationCasesForUser(
   supabase: SupabaseClient,
   actorUserId: string,
 ): Promise<ResolvedModerationCase[]> {
-  const result = await supabase
+  const rows = await loadCompleteGamificationRows<ModerationAuditRow & { id: string | number }>("admin_operations_audit", (from, to) =>
+    supabase
     .from("admin_operations_audit")
-    .select("operation_id, at, actor_user_id, operation_type, outcome, target_id, details")
+    .select("id, operation_id, at, actor_user_id, operation_type, outcome, target_id, details", { count: "exact" })
     .eq("actor_user_id", actorUserId)
     .eq("operation_type", "moderation")
     .eq("outcome", "success")
     .order("at", { ascending: true })
-    .limit(5000);
-
-  if (result.error) throw new Error(result.error.message);
-  return deriveResolvedModerationCases(
-    (result.data ?? []) as ModerationAuditRow[],
-    actorUserId,
+    .order("id", { ascending: true })
+    .range(from, to),
   );
+  return deriveResolvedModerationCases(rows, actorUserId);
 }
 
 function moderationEvent(

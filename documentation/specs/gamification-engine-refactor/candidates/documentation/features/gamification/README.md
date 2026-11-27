@@ -44,6 +44,11 @@ administratives sont protégées par leurs contrôles AuthN/AuthZ, notamment
 `/admin/gamification/xp-audit`. Les composants lisent les contrats exposés ;
 ils ne recalculent pas les niveaux, badges ou seuils.
 
+La reconstruction requiert des inventaires de preuves complets : les lecteurs
+stricts raccordés distinguent une absence de fait d'une lecture incomplète.
+Le détail des sources raccordées, des bornes et des limites de concurrence
+est détenu par le [contrat moteur](./GAMIFICATION_ENGINE.md).
+
 ## SPOGOMI et compatibilités
 
 SPOGOMI réutilise les propriétaires CURRENT et ajoute les distinctions

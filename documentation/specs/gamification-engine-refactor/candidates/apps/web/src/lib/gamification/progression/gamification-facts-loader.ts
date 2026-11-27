@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { loadCompleteGamificationRows } from "./gamification-evidence-pagination";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { appendCounterFacts } from "./gamification-counter-facts";
 import { loadCleanZoneFacts } from "./gamification-clean-zone-facts";
@@ -33,19 +34,19 @@ async function loadCurrentGamificationInputs(
   userId: string,
 ) {
   const [actions, counters, visitedResult, quizResult, participantResult, geometryContributionFacts, productFeedback, terrainSpecializationEvidence, territorialLegendAwardFacts] = await Promise.all([
-    loadActionRowsForUser(supabase, userId),
+    loadActionRowsForUser(supabase, userId, { complete: true }),
     loadGamificationUserCounters(supabase, userId),
-    supabase.from("user_visited_places").select("place_label, created_at").eq("user_id", userId).limit(10000),
-    supabase.from("quiz_type_progress").select("question_type, correct_count, updated_at").eq("user_id", userId).limit(100),
-    supabase.from("action_participants").select("action_id, joined_at, updated_at, participation_source").eq("user_id", userId).eq("participation_status", "confirmed").limit(10000),
+    loadCompleteGamificationRows("user_visited_places", (from, to) =>
+      supabase.from("user_visited_places").select("id, place_label, created_at", { count: "exact" }).eq("user_id", userId).order("id", { ascending: true }).range(from, to)),
+    loadCompleteGamificationRows("quiz_type_progress", (from, to) =>
+      supabase.from("quiz_type_progress").select("id, question_type, correct_count, updated_at", { count: "exact" }).eq("user_id", userId).order("id", { ascending: true }).range(from, to)),
+    loadCompleteGamificationRows("action_participants", (from, to) =>
+      supabase.from("action_participants").select("id, action_id, joined_at, updated_at, participation_source", { count: "exact" }).eq("user_id", userId).eq("participation_status", "confirmed").order("id", { ascending: true }).range(from, to)),
     loadGeometryContributionFacts(supabase, userId),
     loadProductFeedbackFacts(supabase, userId),
     loadTerrainSpecializationEvidence(supabase, userId),
     loadTerritorialLegendAwardFacts(supabase, userId),
   ]);
-  if (visitedResult.error) throw new Error(visitedResult.error.message);
-  if (quizResult.error) throw new Error(quizResult.error.message);
-  if (participantResult.error) throw new Error(participantResult.error.message);
   return {
     actions,
     counters,
@@ -144,10 +145,10 @@ async function buildCurrentGamificationFactState(
   ];
   const spogomiFirstReferee = await loadSpogomiFirstRefereeFact(supabase, userId);
   if (spogomiFirstReferee) facts.push(spogomiFirstReferee);
-  const participantRows = (participantResult.data ?? []) as unknown[];
-  appendCounterFacts(facts, userId, counters, (visitedResult.data ?? []) as unknown[], participantRows);
+  const participantRows = participantResult as unknown[];
+  appendCounterFacts(facts, userId, counters, visitedResult as unknown[], participantRows);
   facts.push(...await loadCleanZoneFacts(supabase, userId));
-  const quizState = buildQuizFacts(quizResult.data);
+  const quizState = buildQuizFacts(quizResult);
   facts.push(...quizState.facts);
   facts.push(...await buildParticipationReferralFacts(supabase, userId, participantRows));
   facts.push(...await loadModerationFacts(supabase, userId));

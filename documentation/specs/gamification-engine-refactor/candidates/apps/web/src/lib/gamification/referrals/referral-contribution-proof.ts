@@ -37,7 +37,7 @@ export async function loadCurrentReferralContribution(
   inviteeUserId: string,
   referredAt?: string | null,
 ): Promise<CurrentReferralContribution | null> {
-  const actions = await loadActionRowsForUser(supabase, inviteeUserId);
+  const actions = await loadActionRowsForUser(supabase, inviteeUserId, { complete: true });
   const validatedActionIds = await loadCurrentValidatedActionIdsForUser(supabase, inviteeUserId, { actionRows: actions });
   return selectReferralContribution(actions, validatedActionIds, referredAt);
 }

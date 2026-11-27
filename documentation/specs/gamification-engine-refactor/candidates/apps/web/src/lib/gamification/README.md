@@ -40,6 +40,27 @@ créée.
 
 La séparation préserve les identités et les interfaces existantes. Les corrections de preuve (parrainage, paliers infinis de modération, erreurs de lecture) ne créent ni nouvelle règle économique, ni permission, ni migration SQL.
 
+### Lectures complètes avant reconstruction
+
+`progression/gamification-evidence-pagination.ts` réutilise la primitive
+`readBoundedPages` du domaine Actions. Les lectures raccordées demandent
+un décompte exact et un ordre stable avec clé unique, avancent du nombre
+réel de lignes retournées et refusent tout inventaire incohérent, y compris
+les doublons entre pages. Le budget de 100 000 lignes par inventaire et
+le découpage des filtres IN en groupes de 200 identifiants bornent les
+lectures ; un dépassement provoque une erreur, jamais un résultat partiel.
+
+Les appels de reconstruction et de preuve de parrainage demandent
+`loadActionRowsForUser(..., { complete: true })` ; la lecture limitée
+historique reste réservée aux consommateurs existants non migrés.
+La lecture du journal avant la RPC est exhaustive selon ce contrat.
+La lecture stricte des zones propres reste distincte du best-effort
+d'affichage. Un inventaire vide explicitement complet est un résultat
+valide ; une erreur, un décompte inconnu, une page incohérente ou une
+relation organisateur dont l'action manque interrompent le traitement.
+Le décompte et les identités ne constituent pas un snapshot transactionnel
+des sources métier. Consulter le contrat technique pour les limites.
+
 ## Contrat courant
 
 Le contrat publié courant est `progression-rules-v2`, représenté par

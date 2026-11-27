@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { loadCompleteGamificationRows } from "./gamification-evidence-pagination";
 import { sourceFact } from "./gamification-fact-builders";
 import { occurredOnFrom } from "./gamification-fact-timestamps";
 import type { GamificationSourceFact } from "./gamification-reconstruction";
@@ -35,14 +36,16 @@ export async function buildParticipationReferralFacts(
     }));
   }
 
-  const referralChildren = await supabase
+  const referralChildren = await loadCompleteGamificationRows<{ id?: string; referred_at?: string }>("referral profiles", (from, to) =>
+    supabase
     .from("profiles")
-    .select("id, referred_at")
+    .select("id, referred_at", { count: "exact" })
     .eq("referred_by_profile_id", userId)
-    .limit(10000);
-  if (referralChildren.error) throw new Error(referralChildren.error.message);
+    .order("id", { ascending: true })
+    .range(from, to),
+  );
 
-  for (const child of (referralChildren.data ?? []) as Array<{ id?: string; referred_at?: string }>) {
+  for (const child of referralChildren) {
     if (!child.id) continue;
     const contribution = await loadCurrentReferralContribution(supabase, child.id, child.referred_at);
     if (!contribution) continue;

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { loadCompleteGamificationRowsByIds } from "./gamification-evidence-pagination";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { assessActionMilestones } from "./action-milestones";
 import { computeActionBalanceSummary } from "./action-balance-calculation";
@@ -76,13 +77,14 @@ async function loadConfirmedParticipantIds(
 ): Promise<Map<string, string[]>> {
   const confirmedParticipantIdsByAction = new Map<string, string[]>();
   if (validatedActions.length === 0) return confirmedParticipantIdsByAction;
-  const participantRows = await supabase
-    .from("action_participants")
-    .select("action_id, user_id")
-    .in("action_id", validatedActions.map((action) => action.id))
-    .eq("participation_status", "confirmed");
-  if (participantRows.error) throw new Error(participantRows.error.message);
-  for (const row of (participantRows.data ?? []) as Array<{ action_id?: string; user_id?: string }>) {
+  const participantRows = await loadCompleteGamificationRowsByIds<{ id: string; action_id?: string; user_id?: string }>(
+    "confirmed action participants", validatedActions.map((action) => action.id), (batch, from, to) =>
+      supabase.from("action_participants")
+        .select("id, action_id, user_id", { count: "exact" })
+        .in("action_id", batch).eq("participation_status", "confirmed")
+        .order("id", { ascending: true }).range(from, to),
+  );
+  for (const row of participantRows) {
     if (!row.action_id || !row.user_id) continue;
     const current = confirmedParticipantIdsByAction.get(row.action_id) ?? [];
     if (!current.includes(row.user_id)) current.push(row.user_id);

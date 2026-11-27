@@ -175,7 +175,7 @@ describe("moderation progression", () => {
     }));
     const chain = (result: unknown) => {
       const query = { select: () => query, eq: () => query, order: () => query,
-        limit: () => Promise.resolve(result) };
+        range: () => Promise.resolve({ ...(result as { data: ModerationAuditRow[] | null; error: unknown }), data: (result as { data: ModerationAuditRow[] | null }).data?.map((row, index) => ({ ...row, id: index + 1 })) ?? null, count: (result as { data: ModerationAuditRow[] | null }).data?.length ?? null }) };
       return { from: () => query };
     };
     const facts = await loadModerationFacts(chain({ data: rows, error: null }) as never, actorUserId);
@@ -201,6 +201,7 @@ describe("moderation progression", () => {
         in: () => query,
         order: () => query,
         limit: () => query,
+        range: () => { const page = result as { data?: ModerationAuditRow[]; error: unknown }; return Promise.resolve({ ...page, data: page.data?.map((row, index) => ({ ...row, id: index + 1 })), count: page.data?.length ?? null }); },
         then: (resolve: (value: unknown) => unknown) => Promise.resolve(result).then(resolve),
       };
       return query;

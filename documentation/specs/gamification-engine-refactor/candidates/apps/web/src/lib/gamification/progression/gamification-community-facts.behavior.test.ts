@@ -15,11 +15,13 @@ function supabaseFor(result: { data: unknown; error: unknown }) {
   const query = {
     select: vi.fn(),
     eq: vi.fn(),
-    limit: vi.fn(),
+    order: vi.fn(),
+    range: vi.fn(),
   };
   query.select.mockReturnValue(query);
   query.eq.mockReturnValue(query);
-  query.limit.mockResolvedValue(result);
+  query.order.mockReturnValue(query);
+  query.range.mockResolvedValue({ ...result, count: Array.isArray(result.data) ? result.data.length : null });
   return { from: vi.fn(() => query) } as unknown as SupabaseClient;
 }
 
@@ -40,7 +42,7 @@ describe("community referral fact builder", () => {
       : []);
     validatedMock.mockResolvedValue(new Set(["late", "early", "rejected"]));
     const facts = await buildParticipationReferralFacts(
-      supabaseFor({ data: [{ id: "child-1", referred_at: "2025-12-01" }, { id: null }], error: null }),
+      supabaseFor({ data: [{ id: "child-1", referred_at: "2025-12-01" }], error: null }),
       "user-1",
       [{ action_id: "action-1", participation_source: "post_action_claim", joined_at: "2026-01-03" }],
     );
