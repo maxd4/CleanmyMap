@@ -12,6 +12,7 @@ import {
 import { qualifyActionFormalities, type ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 import {
   buildFormalitiesWorkflowState,
+  availableFormalitiesTransitions,
   isFormalitiesPublicationBlocked,
 } from "@/lib/actions/formalities/workflow";
 import {
@@ -49,7 +50,10 @@ function buildDraftFormalitiesData(
   if (!effectiveDraftFacts) return null;
   const qualification = qualifyActionFormalities(effectiveDraftFacts);
   const workflow = buildFormalitiesWorkflowState({ facts: effectiveDraftFacts, qualification });
-  return { status: "ok", actionId: "draft", facts: effectiveDraftFacts, qualification, workflow, actionData: actionEmailData };
+  return { status: "ok", actionId: "draft", facts: effectiveDraftFacts, qualification, workflow,
+    availableTransitions: Object.fromEntries(qualification.formalities.map((formality) => [formality.id,
+      availableFormalitiesTransitions(formality, workflow.progress.find((progress) => progress.formalityId === formality.id))])),
+    actionData: actionEmailData };
 }
 
 function useActionFormalitiesData({
@@ -164,7 +168,7 @@ function useActionFormalitiesPersistence({
 
   const applyTransition = useCallback(async (
     formalityId: string,
-    kind: "mark_prepared" | "declare_sent",
+    kind: "mark_prepared" | "declare_sent" | "record_receipt" | "record_authorization" | "record_refusal",
   ) => {
     await persistFormalitiesUpdate(
       { transition: { formalityId, kind } },
@@ -237,7 +241,7 @@ function ActionFormalitiesWorkflowPanelRuntime({
   }
   const isLoading = !visibleData || visibleData.actionId !== (actionId ?? "draft");
   if (error && isLoading) return <p className="text-sm text-rose-700">{error}</p>;
-  if (isLoading) return <p className="text-sm text-emerald-900/70">Qualification en cours…</p>;
+  if (isLoading) return <p className="text-sm text-emerald-900">Qualification en cours…</p>;
   if (!visibleData || !visibleFacts) return null;
 
   return <ActionFormalitiesWorkflowContent
@@ -276,7 +280,7 @@ function ActionFormalitiesWorkflowContent({
   isSaving: boolean;
   updateDraftFacts: (next: ActionFormalitiesFacts) => void;
   saveFacts: () => Promise<void>;
-  applyTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent") => Promise<void>;
+  applyTransition: (formalityId: string, kind: "mark_prepared" | "declare_sent" | "record_receipt" | "record_authorization" | "record_refusal") => Promise<void>;
   visibleData: ActionFormalitiesResponse;
   visibleFacts: ActionFormalitiesFacts;
   actionEmailData?: FormalitiesEmailActionData;
@@ -353,7 +357,7 @@ function SelectField({
   return (
     <label className="grid gap-1 text-xs font-semibold text-emerald-950">
       <span>{label}</span>
-      {description ? <span id={descriptionId} className="text-xs font-normal leading-5 text-emerald-900/70">{description}</span> : null}
+      {description ? <span id={descriptionId} className="text-xs font-normal leading-5 text-emerald-900">{description}</span> : null}
       <select aria-describedby={descriptionId} value={value} onChange={(event) => onChange(event.target.value)} className="min-h-10 rounded-xl border border-emerald-200 bg-white px-3 text-sm font-normal text-emerald-950 outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
         {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>

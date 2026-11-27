@@ -490,6 +490,17 @@ simple collecte, un itinéraire ou un point non prouvé ne suffit pas. Le
 gestionnaire effectif, les délais et le canal restent à confirmer. Une preuve
 de point n'est jamais étendue aux communes traversées par un parcours.
 
+Pour une occupation événementielle du domaine municipal parisien, la
+qualification expose séparément l'AOT de la Ville et l'accord d'ordre public
+et de sécurité de la Préfecture de police. Chacun doit être déclaré obtenu
+pour satisfaire la publication/revue. La page de la Ville indique un délai
+minimal de deux mois, un dossier finalisé PDF et un silence de deux mois après
+réception comme rejet implicite ; le canal de la Préfecture n'a pas de délai
+général établi par cette source. La déclaration parisienne d'une manifestation
+sur la voie publique est une démarche distincte et conserve son propre délai.
+Les réponses restent des déclarations utilisateur, jamais une vérification de
+réception par l'administration.
+
 `formalitiesSupportNeeds` est un choix facultatif de préparation, séparé des
 faits juridiques et des démarches. Paris garde la priorité du formulaire
 officiel pour les demandes courantes ; les demandes complémentaires restent
@@ -497,17 +508,39 @@ officiel pour les demandes courantes ; les demandes complémentaires restent
 aux lieux ponctuels explicitement résolus et ne garantissent ni disponibilité,
 ni soutien, ni reprise des déchets. La recherche complémentaire IGN/DILA
 résout les communes à partir de la géométrie enregistrée d'une pré-action
-autorisée ; ses résultats peuvent être partiels ou indisponibles et ne prouvent
-ni compétence de collecte, ni accord. Seules des coordonnées et géométries
-nécessaires à cette résolution sont transmises aux fournisseurs ; aucune
-identité ou donnée personnelle n'est jointe. Les contacts ne sont pas
-persistés dans l'action et aucun envoi n'est automatique.
+autorisée ; IGN intersecte le point, la ligne ou le polygone. Le catalogue
+interroge les types de services réellement renvoyés par DILA, avec pages de
+100, plafond de 500 lignes de compétence et de 120 fiches par commune, et
+signale les plafonds comme couverture partielle. La requête est limitée à
+12 communes, les détails DILA sont chargés par groupes de 15 et le cache
+mémoire ne garde que les résultats complets durant six heures. Ces bornes
+protègent le fournisseur mais ne constituent pas une preuve d'exhaustivité.
+Les résultats DILA ne prouvent ni compétence de collecte ni accord. Seules des
+coordonnées et géométries nécessaires à la résolution sont transmises aux
+fournisseurs ; aucune identité ou donnée personnelle n'est jointe. Les contacts
+ne sont pas persistés dans l'action et aucun envoi n'est automatique.
+
+Les sources complémentaires sont des accès aux référentiels, pas des
+intégrations certifiées de couverture : BANATIC/SINOE orientent vers
+collectivités et déchets ; DataAsso permet une recherche géographique de sièges
+associatifs mais ne certifie ni activité locale ni interlocuteur disponible ;
+les bases INPN des espaces protégés identifient des gestionnaires selon les
+fiches disponibles mais aucune API de recherche opérationnelle de gestionnaire
+n'a été intégrée. Les déchèteries ADEME ne sont pas assimilées à un service de
+collecte citoyenne. Une recherche multicommunale IGN/DILA ne qualifie pas les
+règles juridiques de chaque commune traversée. Cette fonctionnalité ne revendique
+donc pas un inventaire métropolitain exhaustif des gestionnaires déchets,
+espaces naturels, associations ou échéances locales.
 
 La publication requalifie toujours les faits persistés. Une démarche
-`required` non déclarée envoyée peut bloquer la publication ou la soumission
-à la revue associative ; les besoins facultatifs, les contacts, leur
-indisponibilité et le statut `unknown` ne la bloquent pas. `sent` reste une
-déclaration de l'organisateur, pas un récépissé ni une autorisation. Les
+`required` non satisfaite bloque la publication ou la soumission à la revue
+associative : les autorisations d'occupation et accords de gestionnaire exigent
+`authorization_obtained`, les déclarations de manifestation exigent
+`receipt_received`, et un refus reste bloquant. Tous ces états sont des
+déclarations de l'organisateur, sans validation externe. Les besoins
+facultatifs, les contacts, leur indisponibilité et le statut `unknown` ne
+bloquent pas. Le serveur expose les transitions permises à Web et Mobile via
+la même route Clerk; la surface native n'embarque pas de règle métier. Les
 owners sont `apps/web/src/lib/actions/formalities/` et la route
 `/api/actions/[actionId]/formalities`. Le parcours produit est décrit dans
 [`actions-new-README.md`](../pages_site/routes/02-agir/actions-new/actions-new-README.md).

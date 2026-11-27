@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentUserIdentity, requireAuthenticatedAccess } from "@/lib/authz";
+import { getCurrentUserIdentity } from "@/lib/authz";
+import { requireActionRequestAccess } from "@/lib/auth/action-request-access";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import {
   handleApiError,
@@ -18,6 +19,7 @@ import {
   applyFormalitiesWorkflowTransition,
   buildFormalitiesWorkflowState,
   normalizeActionFormalitiesWorkflow,
+  availableFormalitiesTransitions,
   type FormalitiesWorkflowTransition,
 } from "@/lib/actions/formalities/workflow";
 import {
@@ -26,6 +28,8 @@ import {
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities/qualification";
 import { deriveActionFormalitiesFactsFromAction } from "@/lib/actions/formalities/action-context";
 import { loadMetropolitanContacts } from "@/lib/actions/formalities/metropolitan-coverage.server";
+import { normalizeSupportNeeds } from "@/lib/actions/formalities/accompaniment";
+import { nationalSupportResources } from "@/lib/actions/formalities/national-support-directory";
 import type { FormalitiesEmailActionData } from "@/lib/actions/formalities/email-draft";
 
 export const runtime = "nodejs";
@@ -35,7 +39,7 @@ export const dynamic = "force-dynamic";
 const formalitiesTransitionSchema = z
   .object({
     formalityId: z.string().trim().min(1).max(160),
-    kind: z.enum(["mark_prepared", "declare_sent"]),
+    kind: z.enum(["mark_prepared", "declare_sent", "record_receipt", "record_authorization", "record_refusal"]),
     proofReference: z.string().trim().max(500).nullable().optional(),
   })
   .strict();
@@ -56,9 +60,10 @@ function resolveFormalitiesActionId(actionId: string): string | NextResponse {
 }
 
 async function resolveFormalitiesRequestContext(
+  request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const access = await requireAuthenticatedAccess();
+  const access = await requireActionRequestAccess(request);
   if (!access.ok) return unauthorizedJsonResponse();
   const actionId = resolveFormalitiesActionId((await ctx.params).actionId);
   if (actionId instanceof Response) return actionId;
@@ -117,6 +122,10 @@ function responseFor(params: {
     facts: params.facts,
     qualification: params.qualification,
     workflow: params.workflow,
+    availableTransitions: Object.fromEntries(params.qualification.formalities.map((formality) => [
+      formality.id,
+      availableFormalitiesTransitions(formality, params.workflow.progress.find((progress) => progress.formalityId === formality.id)),
+    ])),
     actionData: buildFormalitiesEmailActionData(params.action, params.facts),
   });
 }
@@ -141,6 +150,10 @@ function buildFormalitiesEmailActionData(
     endTime: action.event_end_time ?? null,
     participantCount: action.volunteers_count,
     organizerName: action.organizer_name ?? action.actor_name,
+    materialsProvided: preparation.materialsProvided ?? null,
+    recommendedMaterials: preparation.recommendedMaterials ?? null,
+    safetyInstructions: preparation.safetyInstructions ?? null,
+    equipmentInventory: preparation.equipmentInventory ?? null,
     contactAreaMode,
     contactArrondissementCode:
       contactAreaMode === "single_location" ? facts.territory.arrondissement?.code ?? null : null,
@@ -151,7 +164,7 @@ export async function GET(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const requestContext = await resolveFormalitiesRequestContext(ctx);
+  const requestContext = await resolveFormalitiesRequestContext(request, ctx);
   if (requestContext instanceof Response) return requestContext;
   const { userId, actionId: trimmedActionId } = requestContext;
 
@@ -171,7 +184,10 @@ export async function GET(
     }
 
     if (new URL(request.url).searchParams.get("contacts") === "1") {
-      return NextResponse.json(await loadMetropolitanContacts(current), { headers: { "Cache-Control": "private, no-store" } });
+      // Private action responses and organizer-declared workflow are user-specific; never cache them.
+      const contacts = await loadMetropolitanContacts(current);
+      const needs = normalizeSupportNeeds(new URL(request.url).searchParams.getAll("need"));
+      return NextResponse.json({ ...contacts, resources: nationalSupportResources(needs) }, { headers: { "Cache-Control": "private, no-store" } });
     }
     const facts = await deriveActionFormalitiesFactsFromAction(current);
     const qualification = qualifyActionFormalities(facts);
@@ -203,7 +219,7 @@ export async function PATCH(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const requestContext = await resolveFormalitiesRequestContext(ctx);
+  const requestContext = await resolveFormalitiesRequestContext(request, ctx);
   if (requestContext instanceof Response) return requestContext;
   const { userId, actionId: trimmedActionId } = requestContext;
   const parsedBody = await parseJsonBodyWithValidation(request, formalitiesPatchSchema);

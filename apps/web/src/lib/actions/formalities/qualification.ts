@@ -30,6 +30,7 @@ export type FormalityRequirementStatus =
 export type FormalityProcedureKind =
   | "city_aot"
   | "police_declaration"
+  | "police_authorization"
   | "other_manager"
   | "information_only"
   | "none"
@@ -220,7 +221,35 @@ const CITY_AOT_DOCUMENTS = [
   "lettre d'intention signée",
   "extrait Kbis pour une société ou numéro RNA pour une association",
   "plan d'implantation et fiche technique des structures",
+  "dossier technique au format PDF",
 ];
+
+const PARIS_POLICE_EVENT_SOURCE: FormalitiesOfficialSource = {
+  id: "prefecture-police-evenements-espace-public-paris",
+  title: "Procédure parisienne des événements sur l'espace public",
+  authorityLevel: "police",
+  url: CITY_EVENTS_SOURCE.url,
+  verifiedOn: FORMALITIES_RULE_VERIFIED_ON,
+  scope: "Accord d'ordre public et de sécurité distinct de l'AOT municipale ; dépôt par la plateforme Déclaration-manifestations.",
+};
+
+function buildParisPoliceEventAuthorization(): ActionFormality {
+  return {
+    id: "paris-police-event-security-authorization",
+    requirementStatus: "required",
+    procedureKind: "police_authorization",
+    competentAuthority: { kind: "police_prefecture", label: "Préfecture de police de Paris — ordre public et sécurité" },
+    recipient: "Préfecture de police de Paris",
+    source: PARIS_POLICE_EVENT_SOURCE,
+    supportingSources: [],
+    scope: "Événement soumis à une AOT municipale parisienne ; accord de police distinct de l'autorisation de la Ville.",
+    justification: "La Ville indique que les organisateurs doivent aussi solliciter l'accord de la Préfecture de police pour l'ordre public et la sécurité. Cet accord ne remplace pas l'AOT municipale.",
+    deadline: null,
+    officialChannel: { kind: "official_platform", label: "Plateforme Déclaration-manifestations", url: POLICE_CHANNEL.url },
+    requestedInformation: ["éléments de l'événement demandés par la plateforme officielle", "aspects d'ordre public et de sécurité"],
+    requestedDocuments: [],
+  };
+}
 
 const POLICE_INFORMATION = [
   "coordonnées de l'association et de son représentant légal, le cas échéant",
@@ -469,7 +498,7 @@ function qualifyParisFormalities(
     unresolvedQuestions.push("gestionnaire effectif du lieu");
   }
 
-  if (hasCityOccupation) formalities.push(buildCityAotFormality());
+  if (hasCityOccupation) formalities.push(buildCityAotFormality(), buildParisPoliceEventAuthorization());
   if (hasPoliceManifestation) {
     formalities.push(
       buildPoliceFormality(facts.largeCrowdOrComplexInstallations),

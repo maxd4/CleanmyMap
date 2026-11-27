@@ -1161,3 +1161,7 @@ disponible dans l'environnement autorisé, la preuve doit rester marquée
 
 Le contrat du shell protège aussi les trois destinations V1 et les ponts vers les
 surfaces web existantes.
+
+## Formalités et accompagnement
+
+La création d’action native présente les obligations de qualification en premier, puis les formalités et accompagnements facultatifs sélectionnés. Le panneau appelle le même contrat Web `/api/actions/:actionId/formalities` pour charger la qualification, enregistrer les transitions déclarées et rechercher les contacts et ressources officielles associés aux besoins. Il réutilise les informations et l’inventaire de préparation déjà enregistrés. Les détails sont repliables ; destinataire, obligation, statut, délai et source restent lisibles. Les états de chargement, erreur, résultat partiel ou vide ont une reprise explicite. Les liens sont ouverts par le runtime natif et les échecs d’ouverture sont annoncés. Aucun contact ni décision administrative n’est simulé.

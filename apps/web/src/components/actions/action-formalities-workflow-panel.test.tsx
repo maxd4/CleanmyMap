@@ -65,10 +65,38 @@ describe("ActionFormalitiesQualificationView", () => {
     expect(markup).toContain("Obligatoire selon la règle");
     expect(markup).toContain("Ville de Paris — domaine public municipal");
     expect(markup).toContain("La Ville de Paris décrit une AOT préalable");
-    expect(markup).toContain("Délai indicatif");
+    expect(markup).toContain("Délai minimum");
     expect(markup).toContain("2 mois");
     expect(markup).toContain("Pièces listées pour la démarche requise");
     expect(markup).toContain("https://www.paris.fr/pages/evenements-dans-l-espace-public-33659");
+  });
+
+  it("keeps obligations visible while optional contacts appear only for selected needs", () => {
+    const facts = {
+      ...deriveActionFormalitiesFacts({ departmentCode: "75", departmentName: "Paris", plannedObjective: "nettoyage" }),
+      publicSpace: "public_domain" as const,
+      manager: { kind: "paris_city" as const, label: "Ville de Paris" },
+      hasInstallations: true,
+      requiresPhysicalOccupation: true,
+      isPublicRoadwayActivity: false,
+      isItinerant: false,
+      isClaiming: false,
+      localCustomaryUse: false,
+      largeCrowdOrComplexInstallations: false,
+    };
+    const qualification = qualifyActionFormalities(facts);
+    const workflow = buildFormalitiesWorkflowState({ facts, qualification });
+    const base = React.createElement(ActionFormalitiesQualificationView, {
+      qualification, workflow, facts, isSaving: false, onTransition: () => undefined,
+    });
+    const withoutNeeds = renderToStaticMarkup(base);
+    expect(withoutNeeds).toContain("Obligations et démarches requises");
+    expect(withoutNeeds).toContain("2 mois");
+    expect(withoutNeeds).not.toContain("Ouvrir le formulaire officiel Paris.fr");
+
+    const withNeeds = renderToStaticMarkup(React.cloneElement(base, { supportNeeds: ["equipment"] }));
+    expect(withNeeds).toContain("Obligations et démarches requises");
+    expect(withNeeds).toContain("Ouvrir le formulaire officiel Paris.fr");
   });
 
   it("presents an unknown national fallback without suggesting a local obligation", () => {
@@ -202,7 +230,7 @@ describe("ActionFormalitiesQualificationView", () => {
     expect(markup).toContain("Pièces listées pour la démarche requise");
     expect(markup).toContain("Canal officiel");
     expect(markup).toContain("Canal à confirmer");
-    expect(markup).toContain("Je déclare l&#x27;avoir envoyée");
+    expect(markup).toContain("Déclarer l’envoi");
     expect(markup).toContain("Requalifier cette démarche");
     expect(markup).toContain("Les faits ont changé : cette démarche doit être revue.");
   });

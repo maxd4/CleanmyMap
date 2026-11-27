@@ -1,7 +1,7 @@
 export const DILA_SOURCE = "https://www.data.gouv.fr/dataservices/api-annuaire-de-ladministration-competence-geographique-des-services-locaux";
 export const DILA_DIRECTORY = "https://lannuaire.service-public.gouv.fr/";
-export const SERVICE_TYPES = ["mairie","epci","prefecture","sous_pref","gendarmerie","commissariat_police","ddt","ddtm","dreal","sdis"] as const;
-export type ServiceType = (typeof SERVICE_TYPES)[number];
+/** DILA owns this evolving taxonomy; preserve provider codes instead of freezing a shortlist. */
+export type ServiceType = string;
 export type DirectoryContact = {
   id: string;
   name: string;
@@ -24,6 +24,7 @@ export type MetropolitanContacts = {
   contacts: DirectoryContact[];
   unresolvedCommuneCodes: string[];
   status: "complete" | "partial" | "unavailable" | "not_applicable";
+  resources?: Array<{ id: string; label: string; url: string; needs: string[]; guidance: string }>;
 };
 
 export function isMetropolitanCommune(code: unknown): code is string {

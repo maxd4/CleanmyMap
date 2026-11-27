@@ -1,5 +1,6 @@
 import type { ActionFormality } from "./qualification";
 import { buildSupportRequestLines, type SupportNeed } from "./accompaniment";
+import { ACTION_EQUIPMENT_INVENTORY, type ActionEquipmentInventory } from "../preparation-contract";
 
 export type FormalitiesEmailActionData = {
   title?: string | null;
@@ -10,6 +11,10 @@ export type FormalitiesEmailActionData = {
   endTime?: string | null;
   participantCount?: number | null;
   organizerName?: string | null;
+  materialsProvided?: string | null;
+  recommendedMaterials?: string | null;
+  safetyInstructions?: string | null;
+  equipmentInventory?: ActionEquipmentInventory | null;
   contactAreaMode?: "single_location" | "route_or_area" | "unknown";
   contactArrondissementCode?: string | null;
 };
@@ -42,6 +47,10 @@ export type FormalitiesEmailActionFormInput = {
   longitude?: string | null;
   operationalRoute?: unknown;
   interventionMode?: { mode?: string } | null;
+  materialsProvided?: string | null;
+  recommendedMaterials?: string | null;
+  safetyInstructions?: string | null;
+  equipmentInventory?: ActionEquipmentInventory | null;
   formalitiesContext?: { territory?: { arrondissement?: { code?: string } | null } } | null;
 };
 
@@ -70,6 +79,10 @@ export function buildFormalitiesEmailActionDataFromForm(
     endTime: form.eventEndTime ?? null,
     participantCount: parseOptionalCount(form.volunteersCount),
     organizerName: form.organizerName || form.associationName || form.actorName || null,
+    materialsProvided: form.materialsProvided ?? null,
+    recommendedMaterials: form.recommendedMaterials ?? null,
+    safetyInstructions: form.safetyInstructions ?? null,
+    equipmentInventory: form.equipmentInventory ?? null,
     contactAreaMode: isRouteOrArea ? "route_or_area" : hasCoordinates ? "single_location" : "unknown",
     contactArrondissementCode: form.formalitiesContext?.territory?.arrondissement?.code ?? null,
   };
@@ -112,6 +125,16 @@ export function buildReviewableFormalityEmailDraft(params: {
     isMeaningful(action.organizerName)
       ? `Organisateur : ${action.organizerName.trim()}`
       : null,
+    isMeaningful(action.materialsProvided) ? `Matériel déclaré fourni : ${action.materialsProvided.trim()}` : null,
+    isMeaningful(action.recommendedMaterials) ? `Matériel recommandé : ${action.recommendedMaterials.trim()}` : null,
+    isMeaningful(action.safetyInstructions) ? `Consignes de sécurité : ${action.safetyInstructions.trim()}` : null,
+    ...(action.equipmentInventory ? ACTION_EQUIPMENT_INVENTORY.flatMap((option) => {
+      const value = action.equipmentInventory?.[option.key];
+      if (value === undefined) return [];
+      return [typeof value === "boolean"
+        ? `${option.label} : ${value ? "déclaré disponible" : "déclaré indisponible"}`
+        : `${option.label} : ${value}`];
+    }) : []),
     "",
     params.purpose === "complementary"
       ? "Informations ou demande particulière non couverte par le formulaire : [à préciser]"

@@ -10,6 +10,8 @@ import {
   createMobileSignalement,
   loadActionReview,
   loadMobileActionDay,
+  loadMobileActionFormalities,
+  loadMobileActionFormalitiesContacts,
   loadMobileActionDetail,
   loadMobileActionEditor,
   loadMobileActionFieldRoles,
@@ -22,6 +24,7 @@ import {
   respondToInvitation,
   reviewActionRequest,
   updateMobileAction,
+  updateMobileActionFormality,
   updateMobileActionFieldRoles,
 } from '../features/actions/mobile-actions-service'
 
@@ -68,6 +71,21 @@ describe('mobile actions transport', () => {
     expect(requestMock).toHaveBeenNthCalledWith(7, '/api/actions/action%2F1', { method: 'PATCH', body: JSON.stringify({ locationLabel: 'Paris' }) })
     expect(requestMock).toHaveBeenNthCalledWith(8, '/api/actions/action%2F1/publish', { method: 'POST', body: JSON.stringify({}) })
     expect(requestMock).toHaveBeenNthCalledWith(9, '/api/actions/action%2F1/day')
+  })
+
+  it('uses the shared server formalities endpoint and submits only its typed transition', async () => {
+    await loadMobileActionFormalities('action/1')
+    expect(requestMock).toHaveBeenCalledWith('/api/actions/action%2F1/formalities')
+    await updateMobileActionFormality('action/1', 'paris-aot', 'record_authorization')
+    expect(requestMock).toHaveBeenLastCalledWith('/api/actions/action%2F1/formalities', {
+      method: 'PATCH',
+      body: JSON.stringify({ transition: { formalityId: 'paris-aot', kind: 'record_authorization' } }),
+    })
+  })
+
+  it('requests official support resources only for selected optional needs', async () => {
+    await loadMobileActionFormalitiesContacts('action/1', ['pickup', 'association'])
+    expect(requestMock).toHaveBeenCalledWith('/api/actions/action%2F1/formalities?contacts=1&need=pickup&need=association')
   })
 
   it('uses the canonical participation, invitation and review mutations', async () => {

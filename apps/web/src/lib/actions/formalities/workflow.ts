@@ -18,7 +18,7 @@ export {
 const ACTION_FORMALITIES_WORKFLOW_SCHEMA_VERSION =
   "action-formalities-workflow-v1" as const;
 
-type FormalitiesUserStatus = "not_started" | "prepared" | "sent";
+type FormalitiesUserStatus = "not_started" | "prepared" | "sent" | "receipt_received" | "authorization_obtained" | "refused";
 
 type FormalitySendProof = {
   kind: "user_declared" | "official_confirmation";
@@ -70,9 +70,31 @@ export type ActionFormalitiesWorkflowState = {
 
 export type FormalitiesWorkflowTransition = {
   formalityId: string;
-  kind: "mark_prepared" | "declare_sent";
+  kind: "mark_prepared" | "declare_sent" | "record_receipt" | "record_authorization" | "record_refusal";
   proofReference?: string | null;
 };
+export type FormalitiesTransitionKind = FormalitiesWorkflowTransition["kind"];
+
+/** The server supplies the same legal workflow choices to Web and native clients. */
+export function availableFormalitiesTransitions(
+  formality: Pick<ActionFormalitiesQualification["formalities"][number], "procedureKind">,
+  progress: ActionFormalityProgress | undefined,
+): FormalitiesTransitionKind[] {
+  if (!progress?.active || !progress.validForQualification) return ["mark_prepared"];
+  if (progress.userStatus === "not_started" || progress.userStatus === "refused") return ["mark_prepared"];
+  if (progress.userStatus === "prepared") return ["declare_sent"];
+  if (progress.userStatus === "sent") {
+    return formality.procedureKind === "city_aot" || formality.procedureKind === "police_authorization" || formality.procedureKind === "other_manager"
+      ? ["record_receipt", "record_authorization", "record_refusal"]
+      : ["record_receipt"];
+  }
+  if (progress.userStatus === "receipt_received") {
+    return formality.procedureKind === "city_aot" || formality.procedureKind === "police_authorization" || formality.procedureKind === "other_manager"
+      ? ["record_authorization", "record_refusal"]
+      : ["record_refusal"];
+  }
+  return [];
+}
 
 function isMeaningful(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -119,7 +141,7 @@ function isCanonicalTraceFormality(value: unknown): value is ActionFormalitiesTr
   if (!isRecord(value)) return false;
   return isMeaningful(value.id) &&
     ["required", "recommended", "not_required", "unknown"].includes(value.requirementStatus as string) &&
-    ["city_aot", "police_declaration", "other_manager", "information_only", "none", "unknown"].includes(value.procedureKind as string) &&
+    ["city_aot", "police_declaration", "police_authorization", "other_manager", "information_only", "none", "unknown"].includes(value.procedureKind as string) &&
     (value.sourceId === null || isMeaningful(value.sourceId));
 }
 
@@ -154,7 +176,7 @@ function isCanonicalFormalitiesTrace(value: unknown): value is ActionFormalities
 function isCanonicalProgress(value: unknown): value is ActionFormalityProgress {
   if (!isRecord(value)) return false;
   return isMeaningful(value.formalityId) &&
-    ["not_started", "prepared", "sent"].includes(value.userStatus as string) &&
+    ["not_started", "prepared", "sent", "receipt_received", "authorization_obtained", "refused"].includes(value.userStatus as string) &&
     isMeaningful(value.contentVersion) &&
     (value.statusChangedAt === null || isIso8601Timestamp(value.statusChangedAt)) &&
     (value.proof === null || isFormalitySendProof(value.proof)) &&
@@ -382,11 +404,11 @@ export function applyFormalitiesWorkflowTransition(params: {
   const now = params.now ?? new Date().toISOString();
   const progress: ActionFormalityProgress[] = params.workflow.progress.map((item): ActionFormalityProgress => {
     if (item.formalityId !== params.transition.formalityId || !item.active) return item;
-    if (
-      params.transition.kind === "mark_prepared" &&
-      item.userStatus === "sent" &&
-      item.validForQualification
-    ) return item;
+    if (item.userStatus === "authorization_obtained") return item;
+    if (params.transition.kind === "declare_sent" && item.userStatus !== "prepared") return item;
+    if (params.transition.kind === "record_receipt" && item.userStatus !== "sent") return item;
+    if (params.transition.kind === "record_authorization" && !["sent", "receipt_received"].includes(item.userStatus)) return item;
+    if (params.transition.kind === "record_refusal" && !["sent", "receipt_received"].includes(item.userStatus)) return item;
 
     if (params.transition.kind === "mark_prepared") {
       return {
@@ -399,9 +421,13 @@ export function applyFormalitiesWorkflowTransition(params: {
       };
     }
 
+    const userStatus: FormalitiesUserStatus = params.transition.kind === "declare_sent" ? "sent"
+      : params.transition.kind === "record_receipt" ? "receipt_received"
+        : params.transition.kind === "record_authorization" ? "authorization_obtained"
+          : params.transition.kind === "record_refusal" ? "refused" : item.userStatus;
     return {
       ...item,
-      userStatus: "sent",
+      userStatus,
       statusChangedAt: now,
       proof: {
         kind: "user_declared",
@@ -504,10 +530,15 @@ export function getBlockedRequiredFormalityIds(
   return qualification.formalities.filter((formality) => {
     if (formality.requirementStatus !== "required") return false;
     const progress = progressById.get(formality.id);
+    const acceptedStatuses = formality.procedureKind === "city_aot" || formality.procedureKind === "police_authorization" || formality.procedureKind === "other_manager"
+      ? ["authorization_obtained"]
+      : formality.procedureKind === "police_declaration"
+        ? ["receipt_received", "authorization_obtained"]
+        : ["sent", "receipt_received", "authorization_obtained"];
     return !progress ||
       !progress.active ||
       !progress.validForQualification ||
-      progress.userStatus !== "sent" ||
+      !acceptedStatuses.includes(progress.userStatus) ||
       !isFormalitySendProof(progress.proof);
   }).map((formality) => formality.id);
 }

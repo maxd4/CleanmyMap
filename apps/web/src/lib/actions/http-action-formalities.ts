@@ -25,6 +25,7 @@ export type ActionFormalitiesResponse = {
   facts: ActionFormalitiesFacts;
   qualification: ActionFormalitiesQualification;
   workflow: ActionFormalitiesWorkflowState;
+  availableTransitions: Record<string, FormalitiesWorkflowTransition["kind"][]>;
   actionData?: FormalitiesEmailActionData;
 };
 

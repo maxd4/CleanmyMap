@@ -31,6 +31,30 @@ describe("metropolitan directory", () => {
     const result = await lookupMetropolitanContacts("31496",fetchImpl);
     expect(result.contacts[0]?.emails).toEqual(["contact@example.test"]);
   });
+  it("uses newly published DILA service types without a local allowlist", async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValueOnce(payload([
+      {code_insee_commune:"31496",code_type_service_local:"parc_naturel_regional",id_service_local:[id]},
+    ])).mockResolvedValueOnce(payload([{
+      id,nom:"Parc test",statut_de_diffusion:true,
+      url_service_public:"https://lannuaire.service-public.gouv.fr/occitanie/test/"+id,
+    }]));
+    const result = await lookupMetropolitanContacts("31496",fetchImpl);
+    expect(result.contacts[0]?.types).toEqual(["parc_naturel_regional"]);
+    expect(new URL(String(fetchImpl.mock.calls[0][0])).searchParams.get("where")).toBe('code_insee_commune = "31496"');
+  });
+  it("follows DILA pagination and marks provider truncation as partial", async () => {
+    const firstPage = Array.from({length:100},(_,index) => ({
+      code_insee_commune:"31496",code_type_service_local:"service_"+index,id_service_local:[],
+    }));
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValueOnce(payload(firstPage,101))
+      .mockResolvedValueOnce(payload([{code_insee_commune:"31496",code_type_service_local:"police_municipale",id_service_local:[id]}],101))
+      .mockResolvedValueOnce(payload([{id,nom:"Police municipale test",statut_de_diffusion:true,
+        url_service_public:"https://lannuaire.service-public.gouv.fr/occitanie/test/"+id}]));
+    const result = await lookupMetropolitanContacts("31496",fetchImpl);
+    expect(result.contacts[0]?.types).toEqual(["police_municipale"]);
+    expect(result.complete).toBe(false);
+    expect(new URL(String(fetchImpl.mock.calls[1][0])).searchParams.get("offset")).toBe("100");
+  });
   it("reports truncation and excludes unpublished services",async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValueOnce(payload([{code_insee_commune:"31496",code_type_service_local:"mairie",id_service_local:[id]}],2))
       .mockResolvedValueOnce(payload([{id,nom:"Non public",statut_de_diffusion:"false",url_service_public:"https://lannuaire.service-public.gouv.fr/test"}]));

@@ -248,6 +248,64 @@ export async function publishMobileAction(actionId: string) {
   )
 }
 
+export type MobileFormalitiesContact = {
+  id: string
+  name: string
+  types: string[]
+  communeCodes: string[]
+  phones: string[]
+  emails: string[]
+  websites: string[]
+  directoryUrl: string
+  formUrl: string | null
+  retrievedAt: string
+}
+
+export type MobileActionFormalitiesContacts = {
+  status: 'complete' | 'partial' | 'unavailable' | 'not_applicable'
+  coverage: { status: 'resolved_point' | 'intersections' | 'partial' | 'unknown'; communeCodes: string[]; reason?: string }
+  contacts: MobileFormalitiesContact[]
+  unresolvedCommuneCodes: string[]
+  resources?: Array<{ id: string; label: string; url: string; needs: string[]; guidance: string }>
+}
+
+export type MobileActionFormalities = {
+  status: 'ok'
+  actionId: string
+  qualification: { formalities: Array<{
+    id: string
+    requirementStatus: 'required' | 'recommended' | 'not_required' | 'unknown'
+    procedureKind: string
+    competentAuthority: { label: string }
+    recipient: string | null
+    justification: string
+    scope: string
+    deadline: { minimumValue: number; unit: 'days' | 'months'; note: string } | null
+    officialChannel: { label: string; url: string | null } | null
+    source: { title: string; url: string | null; verifiedOn: string | null } | null
+    requestedInformation: string[]
+    requestedDocuments: string[]
+  }> }
+  workflow: { progress: Array<{ formalityId: string; userStatus: string; proof: { recordedAt: string; reference: string | null } | null; active: boolean; validForQualification: boolean }> }
+  availableTransitions: Record<string, Array<'mark_prepared' | 'declare_sent' | 'record_receipt' | 'record_authorization' | 'record_refusal'>>
+  actionData?: { title?: string | null; location?: string | null; date?: string | null; startTime?: string | null; endTime?: string | null; participantCount?: number | null; organizerName?: string | null; materialsProvided?: string | null; recommendedMaterials?: string | null; safetyInstructions?: string | null; equipmentInventory?: Record<string, number | boolean> | null }
+}
+
+export async function loadMobileActionFormalities(actionId: string) {
+  return mobileRequest<MobileActionFormalities>(`/api/actions/${encodeURIComponent(actionId)}/formalities`)
+}
+
+export async function loadMobileActionFormalitiesContacts(actionId: string, needs: readonly string[] = []) {
+  const query = ['contacts=1', ...needs.map(need => `need=${encodeURIComponent(need)}`)].join('&')
+  return mobileRequest<MobileActionFormalitiesContacts>(`/api/actions/${encodeURIComponent(actionId)}/formalities?${query}`)
+}
+
+export async function updateMobileActionFormality(actionId: string, formalityId: string, kind: MobileActionFormalities['availableTransitions'][string][number]) {
+  return mobileRequest<MobileActionFormalities>(`/api/actions/${encodeURIComponent(actionId)}/formalities`, {
+    method: 'PATCH', body: JSON.stringify({ transition: { formalityId, kind } }),
+  })
+}
+
 export async function loadMobileActionDay(actionId: string) {
   return mobileRequest<MobileActionDay>(
     `/api/actions/${encodeURIComponent(actionId)}/day`,

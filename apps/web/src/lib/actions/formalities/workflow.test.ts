@@ -39,11 +39,20 @@ function sentParisFormalitiesWorkflow(actionDependencies?: {
     now: "2026-09-17T10:00:00.000Z",
   });
   const sent = applyFormalitiesWorkflowTransition({
-    workflow: initial,
+    workflow: applyFormalitiesWorkflowTransition({ workflow: initial,
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "mark_prepared" },
+      now: "2026-09-17T10:00:30.000Z",
+    }),
     transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
     now: "2026-09-17T10:01:00.000Z",
   });
-  return { facts, qualification, sent };
+  const policePrepared = applyFormalitiesWorkflowTransition({ workflow: sent, transition: {
+    formalityId: "paris-police-event-security-authorization", kind: "mark_prepared" }, now: "2026-09-17T10:01:30.000Z" });
+  const policeSent = applyFormalitiesWorkflowTransition({ workflow: policePrepared, transition: {
+    formalityId: "paris-police-event-security-authorization", kind: "declare_sent" }, now: "2026-09-17T10:01:45.000Z" });
+  const policeAuthorized = applyFormalitiesWorkflowTransition({ workflow: policeSent, transition: {
+    formalityId: "paris-police-event-security-authorization", kind: "record_authorization" }, now: "2026-09-17T10:02:00.000Z" });
+  return { facts, qualification, sent: policeAuthorized };
 }
 
 describe("formalities workflow", () => {
@@ -92,7 +101,52 @@ describe("formalities workflow", () => {
         reference: "dossier-42",
       },
     });
-    expect(isFormalitiesPublicationBlocked(qualification, sent)).toBe(false);
+    expect(isFormalitiesPublicationBlocked(qualification, sent)).toBe(true);
+    const receipt = applyFormalitiesWorkflowTransition({ workflow: sent,
+      transition: { formalityId: qualification.formalities[0].id, kind: "record_receipt" },
+      now: "2026-09-17T10:03:00.000Z" });
+    expect(receipt.progress[0]?.userStatus).toBe("receipt_received");
+    const authorized = applyFormalitiesWorkflowTransition({ workflow: receipt,
+      transition: { formalityId: qualification.formalities[0].id, kind: "record_authorization" },
+      now: "2026-09-17T10:04:00.000Z" });
+    expect(authorized.progress[0]?.userStatus).toBe("authorization_obtained");
+    const policePrepared = applyFormalitiesWorkflowTransition({ workflow: authorized, transition: { formalityId: "paris-police-event-security-authorization", kind: "mark_prepared" } });
+    const policeSent = applyFormalitiesWorkflowTransition({ workflow: policePrepared, transition: { formalityId: "paris-police-event-security-authorization", kind: "declare_sent" } });
+    const fullyAuthorized = applyFormalitiesWorkflowTransition({ workflow: policeSent, transition: { formalityId: "paris-police-event-security-authorization", kind: "record_authorization" } });
+    expect(isFormalitiesPublicationBlocked(qualification, fullyAuthorized)).toBe(false);
+  });
+
+  it("requires a receipt for a declaration, an authorization for AOT, and keeps refusal blocking", () => {
+    const aotFacts = parisFacts();
+    const aotQualification = qualifyActionFormalities(aotFacts);
+    const aot = buildFormalitiesWorkflowState({ facts: aotFacts, qualification: aotQualification });
+    const directSend = applyFormalitiesWorkflowTransition({ workflow: aot,
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" } });
+    expect(directSend.progress[0]?.userStatus).toBe("not_started");
+    const prepared = applyFormalitiesWorkflowTransition({ workflow: aot,
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "mark_prepared" } });
+    const sent = applyFormalitiesWorkflowTransition({ workflow: prepared,
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" } });
+    expect(isFormalitiesPublicationBlocked(aotQualification, sent)).toBe(true);
+    const refused = applyFormalitiesWorkflowTransition({ workflow: sent,
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "record_refusal" } });
+    expect(refused.progress[0]?.userStatus).toBe("refused");
+    expect(isFormalitiesPublicationBlocked(aotQualification, refused)).toBe(true);
+
+    const declarationFacts = parisFacts({ isPublicRoadwayActivity: true, isCortegeOrGathering: true,
+      isClaiming: false, hasInstallations: false, requiresPhysicalOccupation: false });
+    const declarationQualification = qualifyActionFormalities(declarationFacts);
+    const declaration = buildFormalitiesWorkflowState({ facts: declarationFacts, qualification: declarationQualification });
+    const police = declarationQualification.formalities.find(item => item.procedureKind === "police_declaration");
+    expect(police).toBeDefined();
+    const policePrepared = applyFormalitiesWorkflowTransition({ workflow: declaration,
+      transition: { formalityId: police!.id, kind: "mark_prepared" } });
+    const policeSent = applyFormalitiesWorkflowTransition({ workflow: policePrepared,
+      transition: { formalityId: police!.id, kind: "declare_sent" } });
+    expect(isFormalitiesPublicationBlocked(declarationQualification, policeSent)).toBe(true);
+    const receipt = applyFormalitiesWorkflowTransition({ workflow: policeSent,
+      transition: { formalityId: police!.id, kind: "record_receipt" } });
+    expect(isFormalitiesPublicationBlocked(declarationQualification, receipt)).toBe(false);
   });
 
   it("invalidates only the affected formality and retains a prior proof", () => {
@@ -100,7 +154,7 @@ describe("formalities workflow", () => {
     const qualification = qualifyActionFormalities(facts);
     const initial = buildFormalitiesWorkflowState({ facts, qualification, now: "2026-09-17T10:00:00.000Z" });
     const sent = applyFormalitiesWorkflowTransition({
-      workflow: initial,
+      workflow: applyFormalitiesWorkflowTransition({ workflow: initial, transition: { formalityId: "paris-city-public-domain-aot", kind: "mark_prepared" } }),
       transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
       now: "2026-09-17T10:01:00.000Z",
     });
@@ -142,17 +196,19 @@ describe("formalities workflow", () => {
       "paris-city-public-domain-aot",
     );
 
-    const explicitlyResubmitted = applyFormalitiesWorkflowTransition({
-      workflow: applyFormalitiesWorkflowTransition({
-        workflow: restored,
-        transition: { formalityId: "paris-city-public-domain-aot", kind: "mark_prepared" },
-        now: "2026-09-17T10:04:00.000Z",
-      }),
+    const rePrepared = applyFormalitiesWorkflowTransition({ workflow: restored,
+      transition: { formalityId: "paris-city-public-domain-aot", kind: "mark_prepared" },
+      now: "2026-09-17T10:04:00.000Z" });
+    const explicitlyResubmitted = applyFormalitiesWorkflowTransition({ workflow: rePrepared,
       transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
-      now: "2026-09-17T10:05:00.000Z",
-    });
+      now: "2026-09-17T10:05:00.000Z" });
     expect(normalizeActionFormalitiesWorkflow(explicitlyResubmitted)).toEqual(explicitlyResubmitted);
-    expect(isFormalitiesPublicationBlocked(qualification, explicitlyResubmitted)).toBe(false);
+    const receipt = applyFormalitiesWorkflowTransition({ workflow: explicitlyResubmitted, transition: { formalityId: "paris-city-public-domain-aot", kind: "record_receipt" } });
+    const authorized = applyFormalitiesWorkflowTransition({ workflow: receipt, transition: { formalityId: "paris-city-public-domain-aot", kind: "record_authorization" } });
+    const policePrepared = applyFormalitiesWorkflowTransition({ workflow: authorized, transition: { formalityId: "paris-police-event-security-authorization", kind: "mark_prepared" } });
+    const policeSent = applyFormalitiesWorkflowTransition({ workflow: policePrepared, transition: { formalityId: "paris-police-event-security-authorization", kind: "declare_sent" } });
+    const fullyAuthorized = applyFormalitiesWorkflowTransition({ workflow: policeSent, transition: { formalityId: "paris-police-event-security-authorization", kind: "record_authorization" } });
+    expect(isFormalitiesPublicationBlocked(qualification, fullyAuthorized)).toBe(false);
   });
 
   it("invalidates a qualification when the venue or date changes, without using the title as a dependency", () => {
@@ -200,7 +256,7 @@ describe("formalities workflow", () => {
       now: "2026-09-17T10:00:00.000Z",
     });
     const sent = applyFormalitiesWorkflowTransition({
-      workflow: initial,
+      workflow: applyFormalitiesWorkflowTransition({ workflow: initial, transition: { formalityId: "paris-city-public-domain-aot", kind: "mark_prepared" } }),
       transition: { formalityId: "paris-city-public-domain-aot", kind: "declare_sent" },
       now: "2026-09-17T10:01:00.000Z",
     });
@@ -241,6 +297,9 @@ describe("formalities workflow", () => {
     );
   });
 
+});
+
+describe("formalities workflow validation", () => {
   it("requalifies a legacy FNV trace instead of accepting it as equivalent", () => {
     const { facts, qualification, sent } = sentParisFormalitiesWorkflow({
       locationLabel: "Rue A",
@@ -433,7 +492,7 @@ describe("formalities workflow", () => {
       now: "2026-11-23T10:00:00.000Z",
     });
     const sent = applyFormalitiesWorkflowTransition({
-      workflow: initial,
+      workflow: applyFormalitiesWorkflowTransition({ workflow: initial, transition: { formalityId: policeId, kind: "mark_prepared" } }),
       transition: { formalityId: policeId, kind: "declare_sent", proofReference: "déclaration déclarée par l’organisateur" },
       now: "2026-11-23T10:01:00.000Z",
     });

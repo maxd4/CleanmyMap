@@ -283,9 +283,9 @@ export const actionsAuthorizationContract = {
     GET: {
       expected: "Authenticated owner/organizer or admin/max action-management read of the local-formalities workflow",
       dimensions: ["authentication", "business permission", "ownership"],
-      actual: "requireAuthenticatedAccess + loadActionById + canonical organizer resolution + canManageAction; only pre-action formalities state is returned",
+      actual: "requireActionRequestAccess (Clerk session or Bearer token) + loadActionById + canonical organizer resolution + canManageAction; only pre-action formalities state is returned",
       evidence: [
-        "requireAuthenticatedAccess",
+        "requireActionRequestAccess",
         "loadActionById",
         "loadCanonicalActionOrganizerIdsForAction",
         "canManageAction",
@@ -295,9 +295,9 @@ export const actionsAuthorizationContract = {
     PATCH: {
       expected: "Authenticated owner/organizer or admin/max action-management update of facts and user formalities state",
       dimensions: ["authentication", "business permission", "ownership"],
-      actual: "requireAuthenticatedAccess + loadActionById + canonical organizer resolution + canManageAction before persisted qualification/workflow update",
+      actual: "requireActionRequestAccess (Clerk session or Bearer token) + loadActionById + canonical organizer resolution + canManageAction before persisted qualification/workflow update",
       evidence: [
-        "requireAuthenticatedAccess",
+        "requireActionRequestAccess",
         "loadActionById",
         "loadCanonicalActionOrganizerIdsForAction",
         "canManageAction",

@@ -74,12 +74,21 @@ describe("action formalities qualification", () => {
     const city = result.formalities.find(
       (formality) => formality.procedureKind === "city_aot",
     );
+    const police = result.formalities.find(
+      (formality) => formality.procedureKind === "police_authorization",
+    );
 
     expect(city?.requirementStatus).toBe("required");
     expect(city?.competentAuthority.kind).toBe("paris_city");
     expect(city?.deadline).toMatchObject({ minimumValue: 2, unit: "months" });
     expect(city?.source?.verifiedOn).toBe(FORMALITIES_RULE_VERIFIED_ON);
     expect(city?.officialChannel?.url).toContain("paris.fr");
+    expect(police).toMatchObject({
+      id: "paris-police-event-security-authorization",
+      requirementStatus: "required",
+      deadline: null,
+    });
+    expect(police?.officialChannel?.url).toContain("declaration-manifestations.gouv.fr");
     expect(result.unresolvedQuestions).toEqual([]);
   });
 

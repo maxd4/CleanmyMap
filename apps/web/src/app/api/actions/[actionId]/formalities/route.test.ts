@@ -32,6 +32,7 @@ const loadOrganizersMock = vi.hoisted(() =>
 const resolveActionTerritoryMock = vi.hoisted(() =>
   vi.fn<typeof import("@/lib/geo/action-territory-resolver").resolveActionTerritory>(),
 );
+const loadMetropolitanContactsMock = vi.hoisted(() => vi.fn());
 type FormalitiesUpdateQuery = {
   eq: (column: string, value: unknown) => FormalitiesUpdateQuery;
   select: (columns: string) => { maybeSingle: () => Promise<{ data: { id: string } | null; error: Error | null }> };
@@ -61,15 +62,18 @@ const unauthorizedMock = vi.hoisted(() =>
 );
 
 vi.mock("@/lib/authz", () => ({
-  requireAuthenticatedAccess: authMock,
   getCurrentUserIdentity: identityMock,
 }));
+vi.mock("@/lib/auth/action-request-access", () => ({ requireActionRequestAccess: authMock }));
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionMock }));
 vi.mock("@/lib/actions/participation/organizers", () => ({
   loadCanonicalActionOrganizerIdsForAction: loadOrganizersMock,
 }));
 vi.mock("@/lib/geo/action-territory-resolver", () => ({
   resolveActionTerritory: resolveActionTerritoryMock,
+}));
+vi.mock("@/lib/actions/formalities/metropolitan-coverage.server", () => ({
+  loadMetropolitanContacts: loadMetropolitanContactsMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: supabaseMock }));
 vi.mock("@/lib/http/api-errors", async () => {
@@ -150,7 +154,7 @@ const identity = (userId: string) => ({
 const responseFormalitySchema = z.object({
   id: z.string(),
   requirementStatus: z.enum(["required", "recommended", "not_required", "unknown"]),
-  procedureKind: z.enum(["city_aot", "police_declaration", "other_manager", "information_only", "none", "unknown"]),
+  procedureKind: z.enum(["city_aot", "police_declaration", "police_authorization", "other_manager", "information_only", "none", "unknown"]),
   source: z.object({ verifiedOn: z.literal(FORMALITIES_RULE_VERIFIED_ON) }).nullable(),
 });
 const formalitiesResponseSchema = z.object({
@@ -171,7 +175,7 @@ const formalitiesResponseSchema = z.object({
   workflow: z.object({
     progress: z.array(z.object({
       formalityId: z.string(),
-      userStatus: z.enum(["not_started", "prepared", "sent"]),
+      userStatus: z.enum(["not_started", "prepared", "sent", "receipt_received", "authorization_obtained", "refused"]),
       validForQualification: z.boolean(),
       invalidatedAt: z.string().nullable(),
     })),
@@ -219,6 +223,10 @@ describe("/api/actions/:actionId/formalities", () => {
     loadActionMock.mockResolvedValue(action());
     loadOrganizersMock.mockResolvedValue(["user-1"]);
     resolveActionTerritoryMock.mockResolvedValue(null);
+    loadMetropolitanContactsMock.mockResolvedValue({
+      coverage: { status: "resolved_point", communeCodes: ["75056"] },
+      contacts: [], unresolvedCommuneCodes: [], status: "complete",
+    });
     update = vi.fn<FormalitiesUpdate>().mockReturnValue(createFormalitiesUpdateQuery({ data: { id: "action-42" }, error: null }));
     from = vi.fn().mockReturnValue({ update });
     supabaseMock.mockReturnValue({ from });
@@ -278,6 +286,18 @@ describe("/api/actions/:actionId/formalities", () => {
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "Action introuvable." });
     expect(loadOrganizersMock).not.toHaveBeenCalled();
+  });
+
+  it("returns need-matched official resources with the on-demand contact search", async () => {
+    const request = new Request("http://localhost/api/actions/action-42/formalities?contacts=1&need=pickup&need=unsupported");
+    const response = await GET(request, { params: Promise.resolve({ actionId: "action-42" }) });
+
+    expect(response.headers.get("Cache-Control")).toContain("no-store");
+    expect(loadMetropolitanContactsMock).toHaveBeenCalledWith(action());
+    const body = await response.json() as { resources: Array<{ id: string; needs: string[] }> };
+    expect(body.resources.map(resource => resource.id)).toEqual(expect.arrayContaining(["sinoe", "ademe-circular"]));
+    expect(body.resources.every(resource => resource.needs.includes("pickup"))).toBe(true);
+    expect(body.resources.some(resource => resource.id === "insurance")).toBe(false);
   });
 
   it("refuses a GET when the authenticated user cannot manage the action", async () => {

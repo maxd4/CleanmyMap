@@ -74,23 +74,21 @@ describe("validateActionFormalitiesForPublication", () => {
     });
   });
 
-  it("accepts a current workflow whose required formalities are sent", async () => {
+  it("accepts a current workflow whose required authorization is declared obtained", async () => {
     const prepared = buildWorkflow();
     const sent = {
       ...prepared,
-      progress: prepared.progress.map((item) => item.formalityId === "paris-city-public-domain-aot"
-        ? {
-            ...item,
-            userStatus: "sent" as const,
-            validForQualification: true,
-            proof: { kind: "user_declared" as const, reference: null, recordedAt: "2026-10-30T10:01:00.000Z" },
-          }
-        : item),
+      progress: prepared.progress.map((item) => ({
+        ...item,
+        userStatus: "authorization_obtained" as const,
+        validForQualification: true,
+        proof: { kind: "user_declared" as const, reference: null, recordedAt: "2026-10-30T10:01:00.000Z" },
+      })),
     };
     const result = await validateActionFormalitiesForPublication(buildAction(sent));
 
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.formalitiesWorkflow.progress.find((item) => item.formalityId === "paris-city-public-domain-aot")?.userStatus).toBe("sent");
+    if (result.ok) expect(result.formalitiesWorkflow.progress.find((item) => item.formalityId === "paris-city-public-domain-aot")?.userStatus).toBe("authorization_obtained");
   });
 
   it.each([
@@ -116,14 +114,12 @@ describe("validateActionFormalitiesForPublication", () => {
     const prepared = buildWorkflow();
     const sent = {
       ...prepared,
-      progress: prepared.progress.map((item) => item.formalityId === "paris-city-public-domain-aot"
-        ? {
-            ...item,
-            userStatus: "sent" as const,
-            validForQualification: true,
-            proof: { kind: "user_declared" as const, reference: null, recordedAt: "2026-10-30T10:01:00.000Z" },
-          }
-        : item),
+      progress: prepared.progress.map((item) => ({
+        ...item,
+        userStatus: "authorization_obtained" as const,
+        validForQualification: true,
+        proof: { kind: "user_declared" as const, reference: null, recordedAt: "2026-10-30T10:01:00.000Z" },
+      })),
     };
 
     expect((await validateActionFormalitiesForPublication(buildAction(sent))).ok).toBe(true);

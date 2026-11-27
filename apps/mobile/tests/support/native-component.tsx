@@ -9,6 +9,8 @@ export function nativeComponent(name: string) {
 export function commonNativeComponents() {
   return {
     ActivityIndicator: nativeComponent('ActivityIndicator'),
+    Linking: { openURL: async () => undefined },
+    Pressable: nativeComponent('Pressable'),
     StyleSheet: { create: (styles: unknown) => styles },
     Text: nativeComponent('Text'),
     TextInput: nativeComponent('TextInput'),

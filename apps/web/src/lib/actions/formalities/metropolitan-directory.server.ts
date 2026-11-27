@@ -1,11 +1,12 @@
 import { fetchJsonWithTimeout, type FetchLike } from "@/lib/geo/action-department-resolver";
-import { SERVICE_TYPES, isMetropolitanCommune, type ServiceType, type DirectoryContact } from "./metropolitan-contacts-contract";
+import { isMetropolitanCommune, type ServiceType, type DirectoryContact } from "./metropolitan-contacts-contract";
 
 const BASE = "https://api-lannuaire.service-public.gouv.fr/api/explore/v2.1/catalog/datasets/";
 const COMPETENCE = "api-lannuaire-administration-locale-competence-geographique";
 const CONTACTS = "api-lannuaire-administration";
 const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const MAX_IDS = 60;
+const MAX_IDS = 120;
+const MAX_COMPETENCE_ROWS = 500;
 const BATCH = 15;
 const TTL = 6 * 60 * 60 * 1000;
 type Result = { contacts: DirectoryContact[]; complete: boolean };
@@ -42,19 +43,20 @@ function values(value: unknown, predicate: (value: string) => boolean): string[]
   return [...new Set(list)].slice(0, 10);
 }
 function isType(value: unknown): value is ServiceType {
-  return SERVICE_TYPES.some(t => t === value);
+  return typeof value === "string" && /^[a-z0-9_]{1,80}$/.test(value);
 }
-async function records(dataset: string, where: string, select: string, fetchImpl: FetchLike) {
+async function records(dataset: string, where: string, select: string, fetchImpl: FetchLike, offset = 0) {
   const url = new URL(BASE + dataset + "/records");
   url.searchParams.set("where", where);
   url.searchParams.set("select", select);
   url.searchParams.set("limit", "100");
+  url.searchParams.set("offset", String(offset));
   const data = record(await fetchJsonWithTimeout(fetchImpl, url.href));
   if (!data || !Array.isArray(data.results) || typeof data.total_count !== "number" ||
     !Number.isSafeInteger(data.total_count) || data.total_count < data.results.length) {
     throw new Error("Invalid DILA response");
   }
-  return { rows: data.results as unknown[], complete: data.total_count === data.results.length };
+  return { rows: data.results as unknown[], total_count: data.total_count, complete: offset + data.results.length >= data.total_count };
 }
 
 function parseContact(raw: unknown, types: ServiceType[], commune: string, retrievedAt: string): DirectoryContact | null {
@@ -77,12 +79,21 @@ function parseContact(raw: unknown, types: ServiceType[], commune: string, retri
 
 async function lookup(code: string, fetchImpl: FetchLike): Promise<Result> {
   if (!isMetropolitanCommune(code)) return { contacts: [], complete: false };
-  const types = SERVICE_TYPES.map(t => 'code_type_service_local = "' + t + '"').join(" OR ");
-  const competence = await records(COMPETENCE, 'code_insee_commune = "' + code + '" AND (' + types + ')',
+  const where = 'code_insee_commune = "' + code + '"';
+  const competence = await records(COMPETENCE, where,
     "code_insee_commune,code_type_service_local,id_service_local", fetchImpl);
+  const rows = [...competence.rows];
+  let complete = competence.total_count <= 100 || competence.rows.length === 100;
+  const cappedTotal = Math.min(competence.total_count, MAX_COMPETENCE_ROWS);
+  for (let offset = 100; offset < cappedTotal; offset += 100) {
+    const page = await records(COMPETENCE, where,
+      "code_insee_commune,code_type_service_local,id_service_local", fetchImpl, offset);
+    rows.push(...page.rows);
+    if (page.rows.length < Math.min(100, competence.total_count - offset)) complete = false;
+  }
+  if (competence.total_count > MAX_COMPETENCE_ROWS) complete = false;
   const ids = new Map<string, Set<ServiceType>>();
-  let complete = competence.complete;
-  for (const raw of competence.rows) {
+  for (const raw of rows) {
     const row = record(raw);
     if (!row || row.code_insee_commune !== code || !isType(row.code_type_service_local)) {
       complete = false; continue;
