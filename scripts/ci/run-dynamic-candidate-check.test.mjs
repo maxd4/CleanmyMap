@@ -30,7 +30,7 @@ function createFixture() {
   writeFileSync(join(root, "package-lock.json"), '{"name":"dynamic-fixture","lockfileVersion":3,"requires":true,"packages":{"":{"name":"dynamic-fixture","dependencies":{"fixture-dependency":"file:fixture-dependency"}},"node_modules/fixture-dependency":{"resolved":"fixture-dependency","link":true},"fixture-dependency":{"name":"fixture-dependency","version":"1.0.0"}}}\n');
   writeFileSync(join(root, "apps", "web", "package.json"), '{"name":"dynamic-web","private":true}\n');
   writeFileSync(join(root, "apps", "mobile", "package.json"), '{"name":"dynamic-mobile","private":true}\n');
-  writeFileSync(join(root, ".gitignore"), "node_modules/\n.next/\n");
+  writeFileSync(join(root, ".gitignore"), "node_modules\n.next\n");
   writeFileSync(join(root, "fixture-dependency", "package.json"), '{"name":"fixture-dependency","version":"1.0.0"}\n');
   writeFileSync(
     checkerPath,
