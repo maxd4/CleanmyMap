@@ -291,7 +291,7 @@ function normalizePlanInput({ mode, candidateScope, changedFiles }) {
   if (!(normalizedMode in VALIDATION_MODE_BUDGETS)) {
     throw new Error(`Unsupported validation mode: ${mode}`);
   }
-  if (!["WORKTREE", "STAGED"].includes(normalizedScope)) {
+  if (!["WORKTREE", "STAGED", "DYNAMIC_CANDIDATE"].includes(normalizedScope)) {
     throw new Error(`Unsupported candidate scope: ${candidateScope}`);
   }
   return {
