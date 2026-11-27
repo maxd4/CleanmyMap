@@ -54,6 +54,7 @@ declare
   v_sqlerrm text;
   v_sqlstate text;
   v_constraint_name text;
+  v_error_code text;
   v_count integer;
   v_err_item jsonb;
   v_idx integer;
@@ -582,7 +583,12 @@ exception when others then
   if nullif(v_constraint_name, '') is null then
     v_constraint_name := (regexp_match(v_sqlerrm, 'constraint "([a-z0-9_]+)"'))[1];
   end if;
-  raise notice 'PROOF_PHASE=spogomi.% SQLSTATE=% PROOF_CONSTRAINT=%', v_proof_phase, v_sqlstate, coalesce(v_constraint_name, 'none');
+  v_error_code := case v_sqlerrm
+    when 'SPOGOMI event access is invalid' then 'invalid_event_access_arguments'
+    when 'spogomi_competitor_referee_conflict' then 'competitor_referee_conflict'
+    else 'unclassified_postgres_error'
+  end;
+  raise notice 'PROOF_PHASE=spogomi.% SQLSTATE=% PROOF_CONSTRAINT=% PROOF_ERROR_CODE=%', v_proof_phase, v_sqlstate, coalesce(v_constraint_name, 'none'), v_error_code;
   raise;
 end;
 $$;

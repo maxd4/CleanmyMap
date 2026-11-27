@@ -151,9 +151,9 @@ intégral.
 
 En cas d'échec, l'artefact public conserve le chemin de la suite, sa catégorie,
 la phase `PROOF_PHASE` et le SQLSTATE observé. Un test peut aussi fournir un
-nom de contrainte `PROOF_CONSTRAINT` pour isoler une violation. Le runner ne
-conserve que ces champs structurés et des extraits assainis, sans les sorties
-SQL brutes.
+nom de contrainte `PROOF_CONSTRAINT` ou un code d'erreur allowlisté
+`PROOF_ERROR_CODE` pour isoler une violation. Le runner ne conserve que ces
+champs structurés et des extraits assainis, sans les sorties SQL brutes.
 
 Pour pgTAP, le runner accepte deux formats réellement produits par la commande
 `supabase test db` : le flux TAP détaillé lorsqu'il est disponible, et le

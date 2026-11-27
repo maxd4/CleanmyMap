@@ -219,7 +219,8 @@ allowlisté `evidence/supabase-sql.json`, contient le SHA exact testé, les
 catégories, le résultat et la raison de toute non-exécution ; il ne contient
 pas les sorties SQL brutes. Une défaillance conserve aussi le chemin de suite,
 la phase, le SQLSTATE et, si le test le fournit, le nom de contrainte sous forme
-de champs structurés, avec un extrait assaini. Les statuts sont
+de champs structurés, ainsi qu'un code d'erreur allowlisté si le test le
+fournit, avec un extrait assaini. Les statuts sont
 `INTEGRATION_PROOF`, `NOT_RUN` ou `DB_SEMANTICS_NOT_EXECUTED`. Une CI
 déclenchée par `push` sur `main` vérifie le commit déjà publié : elle fournit
 une vérification post-publication et ne constitue pas une protection serveur
