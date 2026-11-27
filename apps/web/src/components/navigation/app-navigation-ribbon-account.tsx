@@ -5,7 +5,11 @@ import { LogIn, UserPlus } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 import type { UserIdentity } from "@/lib/authz";
-import { AccountIdentityChip, MobileAccountMenu } from "@/components/account/account-identity-chip";
+import {
+  AccountIdentityChip,
+  MobileAccountMenu,
+  useAccountIdentityController,
+} from "@/components/account/account-identity-chip";
 import { NotificationBell } from "@/components/navigation/notification-bell";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { ActivityStatus } from "@/lib/account/activity-status";
@@ -81,18 +85,28 @@ export function AccountUserBubble({
             },
           }}
         />
-        <button
-          type="button"
-          aria-label={activityStatusLabel}
-          aria-pressed={activityStatus === "active"}
-          disabled={isUpdatingActivityStatus}
-          onClick={onActivityStatusChange}
-          className={cn(
-            "absolute bottom-0 right-0 z-10 h-4 w-4 rounded-full border-2 border-slate-900 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-900",
-            activityStatus === "active" ? "bg-emerald-400" : "bg-rose-400",
-            isUpdatingActivityStatus && "cursor-wait opacity-70",
-          )}
-        />
+        {showDetails ? (
+          <span
+            aria-hidden="true"
+            className={cn(
+              "absolute bottom-0 right-0 z-10 h-3.5 w-3.5 rounded-full border-2 border-slate-900",
+              activityStatus === "active" ? "bg-emerald-400" : "bg-rose-400",
+            )}
+          />
+        ) : (
+          <button
+            type="button"
+            aria-label={activityStatusLabel}
+            aria-pressed={activityStatus === "active"}
+            disabled={isUpdatingActivityStatus}
+            onClick={onActivityStatusChange}
+            className={cn(
+              "absolute bottom-0 right-0 z-10 h-4 w-4 rounded-full border-2 border-slate-900 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-900",
+              activityStatus === "active" ? "bg-emerald-400" : "bg-rose-400",
+              isUpdatingActivityStatus && "cursor-wait opacity-70",
+            )}
+          />
+        )}
       </div>
       <div className={cn("min-w-0 flex-1 overflow-hidden leading-tight", showDetails ? "block" : "hidden min-[1440px]:block")}>
         <p className="cmm-ribbon-text overflow-hidden text-ellipsis whitespace-nowrap font-bold text-white">
@@ -129,6 +143,146 @@ type RibbonAccountActionsViewProps = RibbonAccountActionsProps & {
   referralCode?: string;
 };
 
+function MobileActivityStatusButton({
+  activityStatus,
+  isUpdatingActivityStatus,
+  activityStatusError,
+  onActivityStatusChange,
+  locale,
+}: {
+  activityStatus: ActivityStatus;
+  isUpdatingActivityStatus: boolean;
+  activityStatusError: string | null;
+  onActivityStatusChange: () => void;
+  locale: Locale;
+}) {
+  const isActive = activityStatus === "active";
+  const label = isActive
+    ? locale === "fr" ? "Statut : actif" : "Status: active"
+    : locale === "fr" ? "Statut : inactif" : "Status: inactive";
+
+  return (
+    <div className="mt-2.5">
+      <button
+        type="button"
+        aria-label={label}
+        aria-pressed={isActive}
+        disabled={isUpdatingActivityStatus}
+        onClick={onActivityStatusChange}
+        className="flex min-h-11 min-w-11 w-full items-center justify-between gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-3 text-sm font-semibold text-white transition-colors hover:bg-white/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-wait disabled:opacity-60"
+      >
+        <span className="flex items-center gap-2">
+          <span
+            aria-hidden="true"
+            className={cn(
+              "h-2.5 w-2.5 shrink-0 rounded-full",
+              isActive ? "bg-emerald-400" : "bg-rose-400",
+            )}
+          />
+          <span>{label}</span>
+        </span>
+        <span className="cmm-text-caption font-medium text-slate-300">
+          {locale === "fr" ? "Changer" : "Toggle"}
+        </span>
+      </button>
+      {activityStatusError ? (
+        <span role="alert" aria-live="assertive" className="mt-1 block cmm-text-caption text-rose-300">
+          {activityStatusError}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function AuthenticatedAccountActions({
+  locale,
+  ribbonChrome,
+  effectiveIdentity,
+  identityForBubble,
+  user,
+  activity: {
+    activityStatus,
+    isUpdatingActivityStatus,
+    activityStatusError,
+    handleActivityStatusToggle,
+  },
+}: Pick<
+  RibbonAccountActionsViewProps,
+  "locale" | "ribbonChrome" | "effectiveIdentity" | "identityForBubble" | "user" | "activity"
+>) {
+  const controller = useAccountIdentityController(effectiveIdentity);
+  const mobileIdentity = identityForBubble ?? effectiveIdentity;
+  const triggerActivityToggle = () => {
+    void /* fire-and-forget -- the account bubble owns activity update state and errors. */ handleActivityStatusToggle();
+  };
+
+  return (
+    <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
+      <NotificationBell ribbonChrome={ribbonChrome} />
+      {mobileIdentity ? (
+        <div className="flex items-center md:hidden">
+          <MobileAccountMenu
+            identity={mobileIdentity}
+            activityStatus={activityStatus}
+            controller={controller}
+            accountHeader={
+              <div>
+                {user ? (
+                  <AccountUserBubble
+                    user={user}
+                    identity={mobileIdentity}
+                    activityStatus={activityStatus}
+                    isUpdatingActivityStatus={isUpdatingActivityStatus}
+                    activityStatusError={activityStatusError}
+                    onActivityStatusChange={triggerActivityToggle}
+                    showDetails
+                  />
+                ) : (
+                  <div
+                    role="group"
+                    aria-label={`${mobileIdentity.handle} · Niv. ${mobileIdentity.currentLevel}, ${mobileIdentity.displayName}`}
+                    data-navigation-account-identity
+                    className="rounded-2xl border border-white/12 bg-white/[0.07] px-3 py-2 text-white"
+                  >
+                    <p className="cmm-ribbon-text font-bold text-white">
+                      {mobileIdentity.handle} · Niv. {mobileIdentity.currentLevel}
+                    </p>
+                    <p className="cmm-ribbon-text font-medium text-slate-300">
+                      {mobileIdentity.displayName}
+                    </p>
+                  </div>
+                )}
+                <MobileActivityStatusButton
+                  activityStatus={activityStatus}
+                  isUpdatingActivityStatus={isUpdatingActivityStatus}
+                  activityStatusError={activityStatusError}
+                  onActivityStatusChange={triggerActivityToggle}
+                  locale={locale}
+                />
+              </div>
+            }
+          />
+        </div>
+      ) : null}
+      <div className="hidden md:flex md:items-center md:gap-2 lg:gap-3">
+        {effectiveIdentity ? (
+          <AccountIdentityChip identity={effectiveIdentity} controller={controller} />
+        ) : null}
+        {user && identityForBubble ? (
+          <AccountUserBubble
+            user={user}
+            identity={identityForBubble}
+            activityStatus={activityStatus}
+            isUpdatingActivityStatus={isUpdatingActivityStatus}
+            activityStatusError={activityStatusError}
+            onActivityStatusChange={triggerActivityToggle}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function RibbonAccountActionsView({
   locale,
   isAuthenticated,
@@ -139,12 +293,7 @@ function RibbonAccountActionsView({
   user,
   returnRoute,
   referralCode,
-  activity: {
-    activityStatus,
-    isUpdatingActivityStatus,
-    activityStatusError,
-    handleActivityStatusToggle,
-  },
+  activity,
 }: RibbonAccountActionsViewProps) {
   const signInHref = buildSignInRedirectHref(returnRoute, { referralCode });
   const signUpHref = buildSignUpRedirectHref(returnRoute, { referralCode });
@@ -185,43 +334,14 @@ function RibbonAccountActionsView({
             ) : null}
 
             {isAuthenticated ? (
-              <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
-                <NotificationBell ribbonChrome={ribbonChrome} />
-                {user && identityForBubble ? (
-                  <div className="flex items-center md:hidden">
-                    <MobileAccountMenu
-                      identity={identityForBubble}
-                      activityStatus={activityStatus}
-                      accountHeader={
-                        <AccountUserBubble
-                          user={user}
-                          identity={identityForBubble}
-                          activityStatus={activityStatus}
-                          isUpdatingActivityStatus={isUpdatingActivityStatus}
-                          activityStatusError={activityStatusError}
-                          onActivityStatusChange={() => { void /* fire-and-forget -- the account bubble owns activity update state and errors. */ handleActivityStatusToggle(); }}
-                          showDetails
-                        />
-                      }
-                    />
-                  </div>
-                ) : null}
-                <div className="hidden md:flex md:items-center md:gap-2 lg:gap-3">
-                  {effectiveIdentity ? (
-                    <AccountIdentityChip identity={effectiveIdentity} />
-                  ) : null}
-                  {user && identityForBubble ? (
-                    <AccountUserBubble
-                      user={user}
-                      identity={identityForBubble}
-                      activityStatus={activityStatus}
-                      isUpdatingActivityStatus={isUpdatingActivityStatus}
-                      activityStatusError={activityStatusError}
-                      onActivityStatusChange={() => { void /* fire-and-forget -- the account bubble owns activity update state and errors. */ handleActivityStatusToggle(); }}
-                    />
-                  ) : null}
-                </div>
-              </div>
+              <AuthenticatedAccountActions
+                locale={locale}
+                ribbonChrome={ribbonChrome}
+                effectiveIdentity={effectiveIdentity}
+                identityForBubble={identityForBubble}
+                user={user}
+                activity={activity}
+              />
             ) : null}
     </div>
   );

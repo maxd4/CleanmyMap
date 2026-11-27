@@ -21,7 +21,24 @@ vi.mock("next/link", () => ({
 }));
 vi.mock("@/components/account/account-identity-chip", () => ({
   AccountIdentityChip: () => React.createElement("div", { "data-testid": "identity-chip" }),
-  MobileAccountMenu: () => React.createElement("button", { "aria-label": "Menu du compte" }),
+  MobileAccountMenu: ({ accountHeader }: { accountHeader?: React.ReactNode }) =>
+    React.createElement("div", { "data-testid": "mobile-account-menu" }, accountHeader),
+  useAccountIdentityController: () => ({
+    locale: "fr",
+    handleActiveRoleMutation: vi.fn(),
+    isUpdatingProfile: false,
+    profileError: null,
+    hasPendingPromotionRequest: false,
+    gamificationBadges: [],
+    profileMenuGroups: { openProfiles: ["benevole"], obtainedProfiles: [] },
+    profileOptions: ["benevole"],
+    isRoleMenuOpen: false,
+    setIsRoleMenuOpen: vi.fn(),
+    isBadgeMenuOpen: false,
+    setIsBadgeMenuOpen: vi.fn(),
+    isMobileMenuOpen: false,
+    setIsMobileMenuOpen: vi.fn(),
+  }),
 }));
 vi.mock("@/components/navigation/notification-bell", () => ({
   NotificationBell: () => React.createElement("button", { "aria-label": "Notifications (0 à traiter)" }),
@@ -301,10 +318,46 @@ describe("AccountUserBubble", () => {
       );
     });
 
+    const statusButtons = authenticatedTree.root.findAllByProps({ "aria-label": "Statut : inactif" });
+    expect(statusButtons).toHaveLength(2);
+    expect(String(statusButtons[0].props.className)).toContain("min-h-11 min-w-11");
     await act(async () => {
-      authenticatedTree.root.findByProps({ "aria-label": "Statut : inactif" }).props.onClick();
+      statusButtons[0].props.onClick();
     });
     expect(handleActivityStatusToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the mobile role/account menu accessible while Clerk user is still loading", () => {
+    const markup = renderToStaticMarkup(
+      <RibbonAccountActions
+        locale="fr"
+        isAuthenticated
+        onTrackNavigation={() => undefined}
+        ribbonChrome={{} as never}
+        effectiveIdentity={{
+          handle: "loading_handle",
+          displayName: "Membre en cours",
+          currentLevel: 4,
+          role: "benevole",
+          activeRole: "benevole",
+          activeProfile: "benevole",
+          badges: [],
+        } as unknown as UserIdentity}
+        identityForBubble={null}
+        user={null}
+        activity={{
+          activityStatus: "active",
+          isUpdatingActivityStatus: false,
+          activityStatusError: null,
+          handleActivityStatusToggle: async () => undefined,
+        }}
+      />,
+    );
+
+    expect(markup).toContain('data-testid="mobile-account-menu"');
+    expect(markup).toContain("loading_handle");
+    expect(markup).toContain("Statut : actif");
+    expect(markup).toContain("min-h-11 min-w-11");
   });
 
   it("keeps the fallback authentication actions on the current route", () => {

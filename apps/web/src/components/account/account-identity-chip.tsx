@@ -21,32 +21,60 @@ import { cn } from "@/lib/utils";
 
 type AccountIdentityChipProps = {
   identity: UserIdentity;
+  controller?: AccountIdentityController;
 };
 
-export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
+export type AccountIdentityController = {
+  locale: Parameters<typeof getProfileLabel>[1];
+  handleActiveRoleMutation: (profile: AppProfile | null) => Promise<void>;
+  isUpdatingProfile: boolean;
+  profileError: string | null;
+  hasPendingPromotionRequest: boolean;
+  gamificationBadges: UserIdentity["badges"];
+  profileMenuGroups: ReturnType<typeof getRoleMenuGroups>;
+  profileOptions: AppProfile[];
+  isRoleMenuOpen: boolean;
+  setIsRoleMenuOpen: (open: boolean) => void;
+  isBadgeMenuOpen: boolean;
+  setIsBadgeMenuOpen: (open: boolean) => void;
+  isMobileMenuOpen: boolean;
+  setIsMobileMenuOpen: (open: boolean) => void;
+};
+
+export function useAccountIdentityController(
+  identity: UserIdentity | null,
+): AccountIdentityController {
   const { locale } = useSitePreferences();
   const { handleActiveRoleMutation, isUpdatingProfile, profileError } =
     useActiveRoleMutation();
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isBadgeMenuOpen, setIsBadgeMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasPendingPromotionRequest, setHasPendingPromotionRequest] = useState(false);
-  const gamificationBadges = identity.badges.filter(
-    (badge) =>
-      badge.id !== "admin" &&
-      !badge.id.startsWith("role_") &&
-      !badge.id.startsWith("profile_"),
+
+  const gamificationBadges = useMemo(
+    () =>
+      (identity?.badges ?? []).filter(
+        (badge) =>
+          badge.id !== "admin" &&
+          !badge.id.startsWith("role_") &&
+          !badge.id.startsWith("profile_"),
+      ),
+    [identity?.badges],
   );
 
   const profileMenuGroups = useMemo(
-    () => getRoleMenuGroups(identity.role),
-    [identity.role],
+    () => getRoleMenuGroups(identity?.role ?? "benevole"),
+    [identity?.role],
   );
+
   const profileOptions = useMemo(
     () => [...profileMenuGroups.openProfiles, ...profileMenuGroups.obtainedProfiles],
     [profileMenuGroups],
   );
 
   useEffect(() => {
+    if (!identity) return;
     let isMounted = true;
 
     void fetch("/api/account/promotion-requests", {
@@ -72,7 +100,59 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
     return () => {
       isMounted = false;
     };
+  }, [identity]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+    const closeBreakpointMenus = () => {
+      setIsRoleMenuOpen(false);
+      setIsBadgeMenuOpen(false);
+      setIsMobileMenuOpen(false);
+    };
+    mediaQuery.addEventListener("change", closeBreakpointMenus);
+    return () => {
+      mediaQuery.removeEventListener("change", closeBreakpointMenus);
+    };
   }, []);
+
+  return {
+    locale,
+    handleActiveRoleMutation,
+    isUpdatingProfile,
+    profileError,
+    hasPendingPromotionRequest,
+    gamificationBadges,
+    profileMenuGroups,
+    profileOptions,
+    isRoleMenuOpen,
+    setIsRoleMenuOpen,
+    isBadgeMenuOpen,
+    setIsBadgeMenuOpen,
+    isMobileMenuOpen,
+    setIsMobileMenuOpen,
+  };
+}
+
+export function AccountIdentityChip({ identity, controller }: AccountIdentityChipProps) {
+  const internalController = useAccountIdentityController(controller ? null : identity);
+  const activeController = controller ?? internalController;
+  const {
+    locale,
+    handleActiveRoleMutation,
+    isUpdatingProfile,
+    profileError,
+    hasPendingPromotionRequest,
+    gamificationBadges,
+    profileMenuGroups,
+    profileOptions,
+    isRoleMenuOpen,
+    setIsRoleMenuOpen,
+    isBadgeMenuOpen,
+    setIsBadgeMenuOpen,
+  } = activeController;
 
   return (
     <div className="flex items-center gap-2">
@@ -256,48 +336,27 @@ export function MobileAccountMenu({
   identity,
   activityStatus,
   accountHeader,
+  controller,
 }: {
   identity: UserIdentity;
   activityStatus: "active" | "inactive";
   accountHeader: ReactNode;
+  controller?: AccountIdentityController;
 }) {
-  const { locale } = useSitePreferences();
-  const { handleActiveRoleMutation, isUpdatingProfile, profileError } =
-    useActiveRoleMutation();
-  const [isOpen, setIsOpen] = useState(false);
-  const [hasPendingPromotionRequest, setHasPendingPromotionRequest] = useState(false);
-  const gamificationBadges = identity.badges.filter(
-    (badge) =>
-      badge.id !== "admin" &&
-      !badge.id.startsWith("role_") &&
-      !badge.id.startsWith("profile_"),
-  );
-  const profileMenuGroups = useMemo(
-    () => getRoleMenuGroups(identity.role),
-    [identity.role],
-  );
-  const profileOptions = useMemo(
-    () => [...profileMenuGroups.openProfiles, ...profileMenuGroups.obtainedProfiles],
-    [profileMenuGroups],
-  );
-
-  useEffect(() => {
-    if (!isOpen) return;
-    let isMounted = true;
-    void fetch("/api/account/promotion-requests", {
-      headers: { Accept: "application/json" },
-    })
-      .then(async (res) => (res.ok ? ((await res.json()) as { items?: Array<{ status?: unknown }> }) : null))
-      .then((payload) => {
-        if (isMounted && payload) {
-          setHasPendingPromotionRequest(payload.items?.[0]?.status === "pending_owner_review");
-        }
-      })
-      .catch(() => undefined);
-    return () => {
-      isMounted = false;
-    };
-  }, [isOpen]);
+  const internalController = useAccountIdentityController(controller ? null : identity);
+  const activeController = controller ?? internalController;
+  const {
+    locale,
+    handleActiveRoleMutation,
+    isUpdatingProfile,
+    profileError,
+    hasPendingPromotionRequest,
+    gamificationBadges,
+    profileMenuGroups,
+    profileOptions,
+    isMobileMenuOpen,
+    setIsMobileMenuOpen,
+  } = activeController;
 
   const renderProfileItems = (profiles: AppProfile[]) =>
     profiles.map((profile) => (
@@ -308,7 +367,7 @@ export function MobileAccountMenu({
         locale={locale}
         disabled={isUpdatingProfile}
         onSelect={handleActiveRoleMutation}
-        onClose={() => setIsOpen(false)}
+        onClose={() => setIsMobileMenuOpen(false)}
       />
     ));
 
@@ -316,8 +375,8 @@ export function MobileAccountMenu({
     <CmmDropdown
       id="mobile-account-menu-panel"
       ariaLabel={locale === "fr" ? "Menu du compte et du rôle" : "Account and role menu"}
-      open={isOpen}
-      onOpenChange={setIsOpen}
+      open={isMobileMenuOpen}
+      onOpenChange={setIsMobileMenuOpen}
       wrapperClassName="shrink-0"
       panelClassName="max-h-[calc(100vh-5.5rem)] w-[min(19rem,calc(100vw-1rem))] overflow-y-auto rounded-2xl border border-slate-600/70 bg-slate-950/98 p-3 text-white shadow-[0_24px_52px_-28px_rgba(2,6,23,0.95)]"
       renderTrigger={(triggerProps) => (
@@ -350,7 +409,7 @@ export function MobileAccountMenu({
           profileMenuGroups={profileMenuGroups}
           hasPendingPromotionRequest={hasPendingPromotionRequest}
           renderProfileItems={renderProfileItems}
-          onClose={() => setIsOpen(false)}
+          onClose={() => setIsMobileMenuOpen(false)}
         />
       ) : null}
       {profileError ? (

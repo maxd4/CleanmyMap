@@ -3,6 +3,7 @@
 import { useUser } from "@clerk/nextjs";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useSWRConfig } from "swr";
 import { getRoleSwitchTargetPath } from "@/lib/account/role-switch-navigation";
 import { getProfileEntryPath, type AppProfile } from "@/lib/profiles";
 
@@ -17,6 +18,7 @@ export function useActiveRoleMutation() {
   const { user } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const { mutate } = useSWRConfig();
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
@@ -49,6 +51,12 @@ export function useActiveRoleMutation() {
       if (user) {
         await user.reload();
       }
+      await mutate(
+        (key) => Array.isArray(key) && key[0] === "current-account-identity",
+        (current: { activeRole?: AppProfile; activeProfile?: AppProfile } | null | undefined) =>
+          current ? { ...current, activeRole: targetRole, activeProfile: targetRole } : current,
+        { revalidate: true },
+      );
 
       const profilePath = payload?.profilePath ?? getProfileEntryPath(targetRole);
       const targetPath = getRoleSwitchTargetPath(pathname, profilePath);

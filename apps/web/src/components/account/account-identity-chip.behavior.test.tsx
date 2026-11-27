@@ -88,7 +88,11 @@ vi.mock("./account-evolution-status-link", () => ({
   ),
 }));
 
-import { AccountIdentityChip } from "./account-identity-chip";
+import {
+  AccountIdentityChip,
+  MobileAccountMenu,
+  useAccountIdentityController,
+} from "./account-identity-chip";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -270,5 +274,142 @@ describe("AccountIdentityChip behavior", () => {
     await open("Menu du profil actif");
     expect(host.textContent).toContain("Évolution du compte");
     expect(host.textContent).not.toContain("En attente");
+  });
+});
+
+describe("MobileAccountMenu and shared controller behavior", () => {
+  let host: HTMLDivElement;
+  let root: Root;
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    host?.remove();
+    mocks.locale = "fr";
+    mocks.mutation.handleActiveRoleMutation.mockReset();
+    mocks.mutation.isUpdatingProfile = false;
+    mocks.mutation.profileError = null;
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  function SharedAccountHarness({ identity }: { identity: UserIdentity }) {
+    const controller = useAccountIdentityController(identity);
+    return (
+      <div>
+        <MobileAccountMenu
+          identity={identity}
+          activityStatus="active"
+          controller={controller}
+          accountHeader={<div data-testid="mobile-header">En-tête compte</div>}
+        />
+        <AccountIdentityChip identity={identity} controller={controller} />
+      </div>
+    );
+  }
+
+  it("shares a single promotion-requests fetch across mobile and desktop menus", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse([{ status: "pending_owner_review" }]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(<SharedAccountHarness identity={makeIdentity()} />);
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const mobileTrigger = host.querySelector<HTMLButtonElement>('button[aria-label="Menu du compte"]');
+    expect(mobileTrigger).not.toBeNull();
+    await act(async () => {
+      mobileTrigger!.click();
+    });
+
+    const panel = host.querySelector('[role="menu"][aria-label="Menu du compte et du rôle"]');
+    expect(panel).not.toBeNull();
+    expect(panel!.textContent).toContain("En-tête compte");
+    expect(panel!.textContent).toContain("UTILISER LE SITE COMME");
+    expect(panel!.textContent).toContain("En attente");
+    expect(panel!.textContent).toContain("BADGES");
+
+    const roleButton = Array.from(panel!.querySelectorAll<HTMLButtonElement>('button[role="menuitemradio"]'))
+      .find((btn) => btn.textContent?.includes("Coordinateur"));
+    expect(roleButton).toBeDefined();
+    await act(async () => {
+      roleButton!.click();
+    });
+    expect(mocks.mutation.handleActiveRoleMutation).toHaveBeenCalledWith("coordinateur");
+  });
+
+  it("closes open mobile and desktop dropdowns when crossing the 768px breakpoint", async () => {
+    let mediaChangeListener: (() => void) | null = null;
+    vi.stubGlobal("matchMedia", vi.fn().mockImplementation(() => ({
+      matches: false,
+      media: "(min-width: 768px)",
+      addEventListener: (_event: string, listener: () => void) => {
+        mediaChangeListener = listener;
+      },
+      removeEventListener: vi.fn(),
+    })));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([])));
+
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(<SharedAccountHarness identity={makeIdentity()} />);
+    });
+
+    const mobileTrigger = host.querySelector<HTMLButtonElement>('button[aria-label="Menu du compte"]')!;
+    await act(async () => {
+      mobileTrigger.click();
+    });
+    expect(host.querySelector("#mobile-account-menu-panel")).not.toBeNull();
+
+    expect(mediaChangeListener).not.toBeNull();
+    await act(async () => {
+      mediaChangeListener!();
+    });
+    expect(host.querySelector("#mobile-account-menu-panel")).toBeNull();
+
+    const desktopRoleTrigger = host.querySelector<HTMLButtonElement>('button[aria-label="Menu du profil actif"]')!;
+    await act(async () => {
+      desktopRoleTrigger.click();
+    });
+    expect(host.querySelector("#account-role-menu-panel")).not.toBeNull();
+
+    await act(async () => {
+      mediaChangeListener!();
+    });
+    expect(host.querySelector("#account-role-menu-panel")).toBeNull();
+  });
+
+  it("surfaces role mutation error inside MobileAccountMenu", async () => {
+    mocks.mutation.profileError = "Erreur de bascule";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([])));
+
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(
+        <MobileAccountMenu
+          identity={makeIdentity({ badges: [] })}
+          activityStatus="inactive"
+          accountHeader={<div>Header</div>}
+        />,
+      );
+    });
+
+    await act(async () => {
+      host.querySelector<HTMLButtonElement>('button[aria-label="Menu du compte"]')!.click();
+    });
+    expect(host.textContent).toContain("Erreur de bascule");
+    expect(host.textContent).not.toContain("BADGES");
   });
 });
