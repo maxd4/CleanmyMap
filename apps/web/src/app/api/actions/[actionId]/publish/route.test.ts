@@ -175,6 +175,7 @@ describe("POST /api/actions/:actionId/publish", () => {
         departmentCode: "75", departmentName: "Paris", plannedObjective: "nettoyage", resolvedPoint: true,
         resolvedTerritory: {
           commune: { code: "75056", name: "Paris" }, department: { code: "75", name: "Paris" },
+          region: { code: "11", name: "Île-de-France" },
           specialTerritory: { code: "FR-PARIS", name: "Paris" }, source: "geo.api.gouv.fr",
         },
       }),
@@ -196,6 +197,7 @@ describe("POST /api/actions/:actionId/publish", () => {
     resolveActionTerritoryMock.mockResolvedValue({
       commune: { code: "75056", name: "Paris" },
       department: { code: "75", name: "Paris" },
+      region: { code: "11", name: "Île-de-France" },
       specialTerritory: { code: "FR-PARIS", name: "Paris" },
       source: "geo.api.gouv.fr",
     });

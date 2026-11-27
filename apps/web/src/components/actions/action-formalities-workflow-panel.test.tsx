@@ -19,6 +19,7 @@ const verifiedParisFacts = () => deriveActionFormalitiesFacts({
   resolvedTerritory: {
     commune: { code: "75056", name: "Paris" },
     department: { code: "75", name: "Paris" },
+    region: { code: "11", name: "Île-de-France" },
     specialTerritory: { code: "FR-PARIS", name: "Paris" },
     source: "geo.api.gouv.fr",
   },
