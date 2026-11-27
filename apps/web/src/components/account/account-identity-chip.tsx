@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
+import useSWR from "swr";
 import type { UserIdentity } from "@/lib/authz";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { BadgePictogram, getAccountBadgeIconName } from "@/components/gamification/badge-icon";
@@ -41,6 +42,23 @@ export type AccountIdentityController = {
   setIsMobileMenuOpen: (open: boolean) => void;
 };
 
+async function fetchPromotionPendingStatus(): Promise<boolean> {
+  try {
+    const promotionResponse = await fetch("/api/account/promotion-requests", {
+      headers: { Accept: "application/json" },
+    });
+    if (!promotionResponse.ok) {
+      return false;
+    }
+    const promotionPayload = (await promotionResponse.json()) as {
+      items?: Array<{ status?: unknown }>;
+    };
+    return promotionPayload.items?.[0]?.status === "pending_owner_review";
+  } catch {
+    return false;
+  }
+}
+
 export function useAccountIdentityController(
   identity: UserIdentity | null,
 ): AccountIdentityController {
@@ -48,48 +66,34 @@ export function useAccountIdentityController(
   const { locale } = useSitePreferences();
   const { handleActiveRoleMutation, isUpdatingProfile, profileError } =
     useActiveRoleMutation(userId);
-  const [menuState, setMenuState] = useState<{
-    userId: string | null;
-    openMenu: "role" | "badge" | "mobile" | null;
-  }>({ userId, openMenu: null });
-  const [pendingState, setPendingState] = useState<{
-    userId: string | null;
-    pending: boolean;
-  }>({ userId, pending: false });
+  const [trackedUserId, setTrackedUserId] = useState<string | null>(userId);
+  const [openMenu, setOpenMenu] = useState<"role" | "badge" | "mobile" | null>(null);
+  if (trackedUserId !== userId) {
+    setTrackedUserId(userId);
+    setOpenMenu(null);
+  }
 
-  const isRoleMenuOpen = menuState.userId === userId && menuState.openMenu === "role";
-  const isBadgeMenuOpen = menuState.userId === userId && menuState.openMenu === "badge";
-  const isMobileMenuOpen = menuState.userId === userId && menuState.openMenu === "mobile";
-  const hasPendingPromotionRequest =
-    pendingState.userId === userId ? pendingState.pending : false;
+  const { data: hasPendingPromotionRequest = false } = useSWR<boolean>(
+    userId ? ["account-promotion-requests", userId] : null,
+    fetchPromotionPendingStatus,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      shouldRetryOnError: false,
+      dedupingInterval: 120_000,
+    },
+  );
+
+  const isRoleMenuOpen = openMenu === "role";
+  const isBadgeMenuOpen = openMenu === "badge";
+  const isMobileMenuOpen = openMenu === "mobile";
 
   const setIsRoleMenuOpen = (open: boolean) =>
-    setMenuState((current) => ({
-      userId,
-      openMenu: open
-        ? "role"
-        : current.userId === userId && current.openMenu === "role"
-          ? null
-          : current.openMenu,
-    }));
+    setOpenMenu((current) => (open ? "role" : current === "role" ? null : current));
   const setIsBadgeMenuOpen = (open: boolean) =>
-    setMenuState((current) => ({
-      userId,
-      openMenu: open
-        ? "badge"
-        : current.userId === userId && current.openMenu === "badge"
-          ? null
-          : current.openMenu,
-    }));
+    setOpenMenu((current) => (open ? "badge" : current === "badge" ? null : current));
   const setIsMobileMenuOpen = (open: boolean) =>
-    setMenuState((current) => ({
-      userId,
-      openMenu: open
-        ? "mobile"
-        : current.userId === userId && current.openMenu === "mobile"
-          ? null
-          : current.openMenu,
-    }));
+    setOpenMenu((current) => (open ? "mobile" : current === "mobile" ? null : current));
 
   const gamificationBadges = useMemo(
     () =>
@@ -113,42 +117,12 @@ export function useAccountIdentityController(
   );
 
   useEffect(() => {
-    if (!userId) return;
-    let isCurrent = true;
-
-    void fetch("/api/account/promotion-requests", {
-      headers: { Accept: "application/json" },
-    })
-      .then(async (promotionResponse) => {
-        if (!promotionResponse.ok) {
-          return null;
-        }
-        return (await promotionResponse.json()) as {
-          items?: Array<{ status?: unknown }>;
-        };
-      })
-      .then((promotionPayload) => {
-        if (isCurrent && promotionPayload) {
-          setPendingState({
-            userId,
-            pending: promotionPayload.items?.[0]?.status === "pending_owner_review",
-          });
-        }
-      })
-      .catch(() => undefined);
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [userId]);
-
-  useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return;
     }
     const mediaQuery = window.matchMedia("(min-width: 1280px)");
     const closeBreakpointMenus = () => {
-      setMenuState((current) => ({ ...current, openMenu: null }));
+      setOpenMenu(null);
     };
     mediaQuery.addEventListener("change", closeBreakpointMenus);
     return () => {

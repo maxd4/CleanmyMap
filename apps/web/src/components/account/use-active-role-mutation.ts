@@ -20,32 +20,30 @@ export function useActiveRoleMutation(identityUserId?: string | null) {
   const pathname = usePathname();
   const { mutate } = useSWRConfig();
   const resolvedUserId = user?.id ?? identityUserId ?? null;
-  const latestUserIdRef = useRef<string | null>(resolvedUserId);
-  const [updatingState, setUpdatingState] = useState<{
-    userId: string | null;
-    busy: boolean;
-  }>({ userId: resolvedUserId, busy: false });
-  const [profileErrorState, setProfileErrorState] = useState<{
-    userId: string | null;
-    message: string | null;
-  }>({ userId: resolvedUserId, message: null });
-
-  const isUpdatingProfile =
-    updatingState.userId === resolvedUserId ? updatingState.busy : false;
-  const profileError =
-    profileErrorState.userId === resolvedUserId ? profileErrorState.message : null;
+  const [trackedUserId, setTrackedUserId] = useState<string | null>(resolvedUserId);
+  const [sessionEpoch, setSessionEpoch] = useState(0);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  if (trackedUserId !== resolvedUserId) {
+    setTrackedUserId(resolvedUserId);
+    setSessionEpoch((epoch) => epoch + 1);
+    setIsUpdatingProfile(false);
+    setProfileError(null);
+  }
+  const latestEpochRef = useRef(sessionEpoch);
 
   useEffect(() => {
-    latestUserIdRef.current = resolvedUserId;
-  }, [resolvedUserId]);
+    latestEpochRef.current = sessionEpoch;
+  }, [sessionEpoch]);
 
   const handleActiveRoleMutation = async (targetRole: AppProfile | null) => {
     if (!targetRole || isUpdatingProfile) {
       return;
     }
     const requestUserId = resolvedUserId;
-    setUpdatingState({ userId: requestUserId, busy: true });
-    setProfileErrorState({ userId: requestUserId, message: null });
+    const requestEpoch = sessionEpoch;
+    setIsUpdatingProfile(true);
+    setProfileError(null);
 
     try {
       const response = await fetch("/api/account/active-profile", {
@@ -57,7 +55,7 @@ export function useActiveRoleMutation(identityUserId?: string | null) {
         | ActiveRoleMutationResponse
         | null;
 
-      if (latestUserIdRef.current !== requestUserId) {
+      if (latestEpochRef.current !== requestEpoch) {
         return;
       }
 
@@ -65,7 +63,7 @@ export function useActiveRoleMutation(identityUserId?: string | null) {
         if (payload?.status === "clerk_updated_supabase_sync_pending") {
           // Clerk already persisted the selection; reload and re-read the server identity without claiming convergence.
           await user?.reload().catch(() => undefined);
-          if (latestUserIdRef.current === requestUserId) {
+          if (latestEpochRef.current === requestEpoch) {
             router.refresh();
           }
         }
@@ -75,7 +73,7 @@ export function useActiveRoleMutation(identityUserId?: string | null) {
       if (user) {
         await user.reload();
       }
-      if (latestUserIdRef.current !== requestUserId) {
+      if (latestEpochRef.current !== requestEpoch) {
         return;
       }
 
@@ -91,7 +89,7 @@ export function useActiveRoleMutation(identityUserId?: string | null) {
         );
       }
 
-      if (latestUserIdRef.current !== requestUserId) {
+      if (latestEpochRef.current !== requestEpoch) {
         return;
       }
 
@@ -102,16 +100,14 @@ export function useActiveRoleMutation(identityUserId?: string | null) {
       }
       router.refresh();
     } catch (error) {
-      if (latestUserIdRef.current === requestUserId) {
-        setProfileErrorState({
-          userId: requestUserId,
-          message:
-            error instanceof Error ? error.message : "Mutation de rôle refusée.",
-        });
+      if (latestEpochRef.current === requestEpoch) {
+        setProfileError(
+          error instanceof Error ? error.message : "Mutation de rôle refusée.",
+        );
       }
     } finally {
-      if (latestUserIdRef.current === requestUserId) {
-        setUpdatingState({ userId: requestUserId, busy: false });
+      if (latestEpochRef.current === requestEpoch) {
+        setIsUpdatingProfile(false);
       }
     }
   };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSWRConfig } from "swr";
 import { CheckCircle2, Clock3, FileClock, ShieldCheck, XCircle } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
@@ -72,6 +73,7 @@ export function AccountEvolutionPanel({
   initialRequest,
   initialStatusAvailable,
 }: AccountEvolutionPanelProps) {
+  const { mutate } = useSWRConfig();
   const [latestRequest, setLatestRequest] = useState<AccountEvolutionRequest | null>(initialRequest);
   const [statusAvailable, setStatusAvailable] = useState(initialStatusAvailable);
   const [isRefreshing, setIsRefreshing] = useState(!initialStatusAvailable);
@@ -84,14 +86,20 @@ export function AccountEvolutionPanel({
       });
       if (!response.ok) throw new Error("status_unavailable");
       const payload = (await response.json()) as StatusResponse;
-      setLatestRequest(payload.items?.[0] ?? null);
+      const latest = payload.items?.[0] ?? null;
+      setLatestRequest(latest);
       setStatusAvailable(true);
+      void mutate(
+        (key) => Array.isArray(key) && key[0] === "account-promotion-requests",
+        latest?.status === "pending_owner_review",
+        { revalidate: false },
+      );
     } catch {
       setStatusAvailable(false);
     } finally {
       setIsRefreshing(false);
     }
-  }, []);
+  }, [mutate]);
 
   useEffect(() => {
     if (!initialStatusAvailable) {

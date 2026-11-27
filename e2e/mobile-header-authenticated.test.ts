@@ -126,7 +126,7 @@ test.describe("authenticated mobile header reception", () => {
     expect(roleResponse.ok()).toBe(true);
     await expect(secondRole).toHaveAttribute("aria-checked", "true", { timeout: 10_000 });
 
-    // Role switch refusal: mock 403 and verify error feedback is surfaced
+    // Simulated UI error handling via Playwright route interception (not a server AuthZ proof)
     await page.route("**/api/account/active-profile", (route) =>
       route.fulfill({
         status: 403,

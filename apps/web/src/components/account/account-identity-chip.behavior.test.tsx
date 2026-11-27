@@ -3,6 +3,7 @@
 import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { SWRConfig } from "swr";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UserIdentity } from "@/lib/authz";
 
@@ -76,22 +77,33 @@ vi.mock("@/components/gamification/badge-surface", () => ({
   BadgeSurface: ({ label }: { label: string }) => <span data-badge-label={label} />,
 }));
 
-vi.mock("./account-evolution-status-link", () => ({
-  AccountEvolutionStatusLink: ({
-    label,
-    pendingLabel,
-    pendingInitially,
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
     onClick,
+    prefetch: _prefetch,
+    ...props
   }: {
-    label: string;
-    pendingLabel: string;
-    pendingInitially: boolean;
-    onClick: () => void;
-  }) => (
-    <button type="button" onClick={onClick}>
-      {pendingInitially ? pendingLabel : label}
-    </button>
-  ),
+    href: string;
+    children: React.ReactNode;
+    onClick?: React.MouseEventHandler<HTMLAnchorElement>;
+    prefetch?: boolean;
+  }) => {
+    void _prefetch;
+    return (
+      <a
+        href={href}
+        {...props}
+        onClick={(event) => {
+          event.preventDefault();
+          onClick?.(event);
+        }}
+      >
+        {children}
+      </a>
+    );
+  },
 }));
 
 import {
@@ -156,7 +168,11 @@ describe("AccountIdentityChip behavior", () => {
     document.body.appendChild(host);
     act(() => {
       root = createRoot(host);
-      root.render(<AccountIdentityChip identity={identity} />);
+      root.render(
+        <SWRConfig value={{ provider: () => new Map() }}>
+          <AccountIdentityChip identity={identity} />
+        </SWRConfig>,
+      );
     });
   }
 
@@ -323,9 +339,14 @@ describe("MobileAccountMenu and shared controller behavior", () => {
 
     host = document.createElement("div");
     document.body.appendChild(host);
+    const provider = () => new Map();
     act(() => {
       root = createRoot(host);
-      root.render(<SharedAccountHarness identity={makeIdentity()} />);
+      root.render(
+        <SWRConfig value={{ provider }}>
+          <SharedAccountHarness identity={makeIdentity()} />
+        </SWRConfig>,
+      );
     });
 
     await act(async () => {
@@ -348,7 +369,11 @@ describe("MobileAccountMenu and shared controller behavior", () => {
 
     // Re-render with new object reference for the same userId -> no redundant fetch
     act(() => {
-      root.render(<SharedAccountHarness identity={makeIdentity({ displayName: "Alex Updated" })} />);
+      root.render(
+        <SWRConfig value={{ provider }}>
+          <SharedAccountHarness identity={makeIdentity({ displayName: "Alex Updated" })} />
+        </SWRConfig>,
+      );
     });
     await act(async () => {
       await Promise.resolve();
@@ -384,9 +409,14 @@ describe("MobileAccountMenu and shared controller behavior", () => {
 
     host = document.createElement("div");
     document.body.appendChild(host);
+    const provider = () => new Map();
     act(() => {
       root = createRoot(host);
-      root.render(<SharedAccountHarness identity={makeIdentity({ userId: "user-1" })} />);
+      root.render(
+        <SWRConfig value={{ provider }}>
+          <SharedAccountHarness identity={makeIdentity({ userId: "user-1" })} />
+        </SWRConfig>,
+      );
     });
 
     await act(async () => {
@@ -396,7 +426,11 @@ describe("MobileAccountMenu and shared controller behavior", () => {
 
     // Switch account before first fetch resolves
     act(() => {
-      root.render(<SharedAccountHarness identity={makeIdentity({ userId: "user-2" })} />);
+      root.render(
+        <SWRConfig value={{ provider }}>
+          <SharedAccountHarness identity={makeIdentity({ userId: "user-2" })} />
+        </SWRConfig>,
+      );
     });
     await act(async () => {
       await Promise.resolve();
@@ -415,6 +449,46 @@ describe("MobileAccountMenu and shared controller behavior", () => {
     });
     expect(host.textContent).toContain("Évolution du compte");
     expect(host.textContent).not.toContain("En attente");
+  });
+
+  it("does not restore an old open menu across an A -> B -> A session transition", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([])));
+
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    const provider = () => new Map();
+    act(() => {
+      root = createRoot(host);
+      root.render(
+        <SWRConfig value={{ provider }}>
+          <SharedAccountHarness identity={makeIdentity({ userId: "user-A" })} />
+        </SWRConfig>,
+      );
+    });
+
+    await act(async () => {
+      host.querySelector<HTMLButtonElement>('button[aria-label="Menu du compte"]')!.click();
+    });
+    expect(host.querySelector("#mobile-account-menu-panel")).not.toBeNull();
+
+    // A -> B -> A
+    act(() => {
+      root.render(
+        <SWRConfig value={{ provider }}>
+          <SharedAccountHarness identity={makeIdentity({ userId: "user-B" })} />
+        </SWRConfig>,
+      );
+    });
+    expect(host.querySelector("#mobile-account-menu-panel")).toBeNull();
+
+    act(() => {
+      root.render(
+        <SWRConfig value={{ provider }}>
+          <SharedAccountHarness identity={makeIdentity({ userId: "user-A" })} />
+        </SWRConfig>,
+      );
+    });
+    expect(host.querySelector("#mobile-account-menu-panel")).toBeNull();
   });
 
   it("closes open mobile and desktop dropdowns when crossing the 1280px breakpoint", async () => {

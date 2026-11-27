@@ -115,4 +115,47 @@ describe("useActiveRoleMutation identity isolation", () => {
     expect(latestHook.profileError).toBeNull();
     expect(mocks.mutate).not.toHaveBeenCalled();
   });
+
+  it("rejects late async responses across an A -> B -> A session cycle", async () => {
+    let resolveStaleA!: (value: Response) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockReturnValue(
+        new Promise<Response>((resolve) => {
+          resolveStaleA = resolve;
+        }),
+      ),
+    );
+
+    mocks.user = { id: "user-A", reload: vi.fn().mockResolvedValue(undefined) };
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(<Harness identityUserId="user-A" />);
+    });
+
+    let pendingMutation!: Promise<void>;
+    act(() => {
+      pendingMutation = latestHook.handleActiveRoleMutation("coordinateur");
+    });
+
+    // A -> B -> A while A's request is still in flight
+    mocks.user = { id: "user-B", reload: vi.fn().mockResolvedValue(undefined) };
+    act(() => {
+      root.render(<Harness identityUserId="user-B" />);
+    });
+    mocks.user = { id: "user-A", reload: vi.fn().mockResolvedValue(undefined) };
+    act(() => {
+      root.render(<Harness identityUserId="user-A" />);
+    });
+
+    await act(async () => {
+      resolveStaleA(new Response(JSON.stringify({ error: "Ancien A" }), { status: 403 }));
+      await pendingMutation;
+    });
+
+    expect(latestHook.profileError).toBeNull();
+    expect(mocks.mutate).not.toHaveBeenCalled();
+  });
 });
