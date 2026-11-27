@@ -3,10 +3,12 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { pathToFileURL } from "node:url";
 import test from "node:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const RUNNER_PATH = join(REPO_ROOT, "scripts", "ci", "run-dynamic-candidate-check.mjs");
+const VALIDATION_EVIDENCE_URL = pathToFileURL(join(REPO_ROOT, "scripts", "ci", "validation-evidence.mjs")).href;
 
 function git(root, args) {
   const env = { ...process.env };
@@ -28,6 +30,7 @@ function createFixture() {
   writeFileSync(join(root, "package-lock.json"), '{"name":"dynamic-fixture","lockfileVersion":3,"requires":true,"packages":{"":{"name":"dynamic-fixture","dependencies":{"fixture-dependency":"file:fixture-dependency"}},"node_modules/fixture-dependency":{"resolved":"fixture-dependency","link":true},"fixture-dependency":{"name":"fixture-dependency","version":"1.0.0"}}}\n');
   writeFileSync(join(root, "apps", "web", "package.json"), '{"name":"dynamic-web","private":true}\n');
   writeFileSync(join(root, "apps", "mobile", "package.json"), '{"name":"dynamic-mobile","private":true}\n');
+  writeFileSync(join(root, ".gitignore"), "node_modules/\n.next/\n");
   writeFileSync(join(root, "fixture-dependency", "package.json"), '{"name":"fixture-dependency","version":"1.0.0"}\n');
   writeFileSync(
     checkerPath,
@@ -95,6 +98,39 @@ test("forwards a candidate failure", () => {
     const result = runRunner(root, ref, "node", ["-e", "process.exitCode = 7"]);
     assert.equal(result.status, 7, result.stderr);
     assert.equal(existsSync(join(root, "artifacts", "validation", "prepush-candidate")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("materializes the requested SHA even when canonical HEAD has advanced", () => {
+  const root = createFixture();
+  try {
+    const candidateSha = git(root, ["rev-parse", "HEAD"]);
+    writeFileSync(join(root, "new-head.ts"), "export const newer = true;\n");
+    git(root, ["add", "new-head.ts"]);
+    git(root, ["commit", "--quiet", "-m", "advance canonical HEAD"]);
+    const canonicalSha = git(root, ["rev-parse", "HEAD"]);
+    assert.notEqual(canonicalSha, candidateSha);
+    const result = runRunner(root, candidateSha, "node", [
+      "-e",
+      `const {execFileSync}=require('node:child_process'); const {existsSync}=require('node:fs'); const head=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(); if(head!==process.env.CMM_DYNAMIC_CANDIDATE_SHA || existsSync('new-head.ts')) process.exit(21); import(${JSON.stringify(VALIDATION_EVIDENCE_URL)}).then(({verifyDynamicCandidateMaterialization})=>{ const proof=verifyDynamicCandidateMaterialization({repositoryRoot:process.env.CMM_CANONICAL_REPO_ROOT,candidateRoot:process.env.CMM_DYNAMIC_CANDIDATE_ROOT,candidateSha:head}); if(!proof.verified) { console.error(proof.reason); process.exit(22); } });`,
+    ]);
+    assert.equal(result.status, 0, result.stderr);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("materialization verification rejects a modified candidate tree", () => {
+  const root = createFixture();
+  try {
+    const ref = git(root, ["rev-parse", "HEAD"]);
+    const result = runRunner(root, ref, "node", [
+      "-e",
+      `const {writeFileSync}=require('node:fs'); writeFileSync('apps/web/src/candidate.ts','tampered\\n'); import(${JSON.stringify(VALIDATION_EVIDENCE_URL)}).then(({verifyDynamicCandidateMaterialization})=>{const result=verifyDynamicCandidateMaterialization({repositoryRoot:process.env.CMM_CANONICAL_REPO_ROOT,candidateRoot:process.env.CMM_DYNAMIC_CANDIDATE_ROOT,candidateSha:process.env.CMM_DYNAMIC_CANDIDATE_SHA}); if(result.verified) process.exit(23);});`,
+    ]);
+    assert.equal(result.status, 0, result.stderr);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

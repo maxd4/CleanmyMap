@@ -268,6 +268,50 @@ test("authenticated Vercel inspection accepts the real deployment Git metadata w
   }
 });
 
+test("authenticated Vercel inspection verifies CLI provenance metadata against deployment id, SHA, tree, and validation fingerprint", async () => {
+  const root = makeRepository();
+  try {
+    const productionSha = git(root, ["rev-parse", "HEAD"]);
+    const treeSha = "a".repeat(40);
+    const validationFingerprint = "b".repeat(64);
+    const result = await inspectVercelProduction({
+      repositoryRoot: root,
+      proof: proof(productionSha, { treeSha, validationFingerprint }),
+      token: "test-token",
+      projectId: "prj_test",
+      fetchImpl: makeVercelFetch(productionSha, {
+        deployment: { gitSource: undefined, meta: {
+          cleanmymapProvenanceVersion: "1",
+          cleanmymapGitSha: productionSha,
+          cleanmymapTreeSha: treeSha,
+          cleanmymapValidationFingerprint: validationFingerprint,
+        } },
+      }),
+    });
+    assert.equal(result.valid, true);
+    assert.equal(result.inspection.gitSha, productionSha);
+    assert.equal(result.inspection.gitTreeSha, treeSha);
+    assert.equal(result.inspection.validationFingerprint, validationFingerprint);
+
+    const mismatch = await inspectVercelProduction({
+      repositoryRoot: root,
+      proof: proof(productionSha, { treeSha, validationFingerprint }),
+      token: "test-token",
+      projectId: "prj_test",
+      fetchImpl: makeVercelFetch(productionSha, { deployment: { gitSource: undefined, meta: {
+        cleanmymapProvenanceVersion: "1",
+        cleanmymapGitSha: productionSha,
+        cleanmymapTreeSha: "c".repeat(40),
+        cleanmymapValidationFingerprint: validationFingerprint,
+      } } }),
+    });
+    assert.equal(mismatch.valid, false);
+    assert.equal(mismatch.reason, "DEPLOY_VERCEL_PROVENANCE_MISMATCH");
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
 test("authenticated Vercel inspection rejects contradictory project and deployment repositories", async () => {
   const root = makeRepository();
   try {

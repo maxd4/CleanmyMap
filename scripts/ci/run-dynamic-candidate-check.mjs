@@ -9,6 +9,7 @@ import {
   installCandidateSignalCleanup,
 } from "./candidate-lifecycle.mjs";
 import { gitExecutable } from "./git-executable.mjs";
+import { isVerifiedDynamicCandidateEvidence, verifyDynamicCandidateMaterialization } from "./validation-evidence.mjs";
 
 const DEPENDENCY_MANIFESTS = Object.freeze([
   "package.json",
@@ -383,9 +384,46 @@ function run() {
       );
       return 127;
     }
+    let effectiveArguments = commandArguments;
+    if (command === "vercel" && commandArguments[0] === "deploy" && commandArguments.includes("--prod")) {
+      const evidencePath = path.join(repositoryRoot, "artifacts", "validation", "deploy", `${materialization.candidateSha}.json`);
+      if (!fs.existsSync(evidencePath)) throw new Error("VERCEL_DEPLOY_REQUIRES_CURRENT_DEPLOY_VALIDATION");
+      const evidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+      if (evidence.version !== 2 || evidence.candidateScope !== "DYNAMIC_CANDIDATE"
+        || evidence.candidateSha !== materialization.candidateSha
+        || evidence.candidateTreeSha !== execFileSync(gitExecutable(), ["rev-parse", `${materialization.candidateSha}^{tree}`], { cwd: repositoryRoot, encoding: "utf8" }).trim()
+        || !isVerifiedDynamicCandidateEvidence(evidence.dynamicCandidate, evidence.candidateSha, evidence.candidateTreeSha)) {
+        throw new Error("VERCEL_DEPLOY_REQUIRES_VERIFIED_DYNAMIC_CANDIDATE");
+      }
+      const gate = spawnSync(process.execPath, [
+        path.join(repositoryRoot, "scripts", "ci", "release-gate.mjs"),
+        `--sha=${materialization.candidateSha}`,
+        "--target=production",
+        "--profile=deploy",
+      ], { cwd: repositoryRoot, env: cleanGitEnvironment(), stdio: "inherit", windowsHide: true });
+      if (gate.error || gate.status !== 0) throw new Error("VERCEL_DEPLOY_RELEASE_GATE_NOT_READY");
+      const publishedHead = git(repositoryRoot, ["rev-parse", "HEAD"]);
+      const remoteHead = git(repositoryRoot, ["ls-remote", "origin", "refs/heads/main"]).split(/\s+/)[0] ?? "";
+      const uploadTree = verifyDynamicCandidateMaterialization({
+        repositoryRoot,
+        candidateRoot: materialization.candidateTreeRoot,
+        candidateSha: materialization.candidateSha,
+      });
+      if (publishedHead !== materialization.candidateSha || remoteHead !== materialization.candidateSha
+        || !uploadTree.verified || uploadTree.candidateTreeSha !== evidence.candidateTreeSha) {
+        throw new Error("VERCEL_DEPLOY_CANDIDATE_NOT_CURRENTLY_PUBLISHED");
+      }
+      effectiveArguments = [
+        ...commandArguments,
+        "--meta", "cleanmymapProvenanceVersion=1",
+        "--meta", `cleanmymapGitSha=${evidence.candidateSha}`,
+        "--meta", `cleanmymapTreeSha=${evidence.candidateTreeSha}`,
+        "--meta", `cleanmymapValidationFingerprint=${evidence.candidateFingerprint}`,
+      ];
+    }
     const childEnvironment = cleanGitEnvironment();
     delete childEnvironment.CMM_DYNAMIC_CANDIDATE_ROOT;
-    const result = spawnSync(invocation.executable, [...invocation.prefixArguments, ...commandArguments], {
+    const result = spawnSync(invocation.executable, [...invocation.prefixArguments, ...effectiveArguments], {
       cwd: materialization.candidateTreeRoot,
       env: {
         ...childEnvironment,

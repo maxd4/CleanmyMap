@@ -123,6 +123,8 @@ function normalizePublicationReference({ publicationReference, deploymentReferen
     projectId: proof.projectId ?? "",
     deploymentId: proof.deploymentId ?? proof.deploymentUid ?? proof.uid ?? "",
     productionAlias: proof.productionAlias ?? proof.alias ?? "",
+    treeSha: proof.treeSha ?? source?.treeSha ?? "",
+    validationFingerprint: proof.validationFingerprint ?? source?.validationFingerprint ?? "",
     verified: proof.verified === true,
     verificationMethod: proof.verificationMethod ?? "",
     vercelInspection: proof.vercelInspection ?? null,
@@ -193,7 +195,15 @@ export async function inspectVercelProduction({
     const aliases = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v2/deployments/${encodeURIComponent(proof.deploymentId)}/aliases${query}`, token);
     const alias = await fetchVercelJson(fetchImpl, `${VERCEL_API_BASE}/v4/aliases/${encodeURIComponent(proof.productionAlias)}${query}`, token);
     const repository = resolveVercelRepository(project, deployment);
-    const gitSha = deployment.gitSource?.sha ?? deployment.meta?.githubCommitSha ?? deployment.meta?.gitCommitSha ?? "";
+    const meta = deployment.meta ?? {};
+    const verifiedCliProvenance = meta.cleanmymapProvenanceVersion === "1"
+      && meta.cleanmymapGitSha === expectedSha
+      && meta.cleanmymapTreeSha === proof.treeSha
+      && meta.cleanmymapValidationFingerprint === proof.validationFingerprint
+      && /^[0-9a-f]{40}$/i.test(meta.cleanmymapTreeSha ?? "")
+      && /^[0-9a-f]{64}$/i.test(meta.cleanmymapValidationFingerprint ?? "");
+    const gitSha = deployment.gitSource?.sha ?? meta.githubCommitSha ?? meta.gitCommitSha
+      ?? (verifiedCliProvenance ? meta.cleanmymapGitSha : "");
     const aliasNames = (Array.isArray(aliases) ? aliases : aliases.aliases ?? []).map((alias) => typeof alias === "string" ? alias : alias?.alias).filter(Boolean);
     const aliasDeploymentId = alias?.deploymentId ?? alias?.deployment?.id ?? "";
     const aliasProjectId = alias?.projectId ?? "";
@@ -223,6 +233,8 @@ export async function inspectVercelProduction({
       target: deployment.target ?? "",
       readyState: deployment.readyState ?? "",
       gitSha,
+      gitTreeSha: verifiedCliProvenance ? meta.cleanmymapTreeSha : "",
+      validationFingerprint: verifiedCliProvenance ? meta.cleanmymapValidationFingerprint : "",
       productionAlias: proof.productionAlias,
       aliases: aliasNames,
       alias: alias?.alias ?? "",

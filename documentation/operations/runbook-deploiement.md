@@ -59,6 +59,18 @@ npm run release:check -- --sha=<sha-candidat> --target=production --profile=depl
 node scripts/ci/run-dynamic-candidate-check.mjs --ref=<sha-candidat> --command=vercel --dependency-mode=reuse -- deploy --prod --yes --scope maxdperso
 ```
 
+Pour une production CLI, ce runner exige la preuve DEPLOY persistée du même SHA
+et arbre Git, vérifie l'attestation de matérialisation, puis réexécute
+`release:check` immédiatement avant l'envoi. Il ajoute aux métadonnées Vercel
+`cleanmymapProvenanceVersion`, `cleanmymapGitSha`, `cleanmymapTreeSha` et
+`cleanmymapValidationFingerprint`. Le deployment doit ensuite être inspecté par
+son `deploymentId` et son alias actif : les quatre métadonnées doivent
+correspondre à la preuve locale validée. L'API Vercel retourne ces valeurs dans
+`meta`; leur absence bloque la provenance. Une ancienne deployment sans
+`gitSource` ni ces métadonnées reste non attestée et ne peut pas être réparée
+rétroactivement. Ne lancer aucune commande CLI `vercel deploy` directe pour
+contourner ce contrôle.
+
 Pour une campagne DEPLOY autorisée à publier automatiquement, fournir en plus
 la liste complète des fichiers attribués au chantier :
 

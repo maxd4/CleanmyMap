@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { test } from "node:test";
 
 import { evaluateReleaseGate } from "./release-gate.mjs";
@@ -77,7 +78,7 @@ const deployPublicationReference = {
   },
 };
 const deployEvidence = {
-  version: 1,
+  version: 2,
   mode: "DEPLOY",
   profile: "deploy",
   candidateSha: sha,
@@ -409,8 +410,22 @@ test("DEPLOY never becomes release-ready when alias or deployment project proven
 });
 
 test("release gate accepts DYNAMIC_CANDIDATE DEPLOY attestation and rejects stale or incomplete DYNAMIC_CANDIDATE proof", () => {
+  const dynamicPayload = {
+    verified: true,
+    method: "materialized-git-tree-v1",
+    candidateSha: sha,
+    candidateTreeSha: deployTreeSha,
+    repositoryRoot: "C:/repo",
+    materializedRoot: "C:/repo/artifacts/validation/prepush-candidate/run",
+    candidateRoot: "C:/repo/artifacts/validation/prepush-candidate/run/tree",
+  };
+  const dynamicAttestation = {
+    ...dynamicPayload,
+    proofSha: createHash("sha256").update(JSON.stringify(dynamicPayload)).digest("hex"),
+  };
+  const dynamicEvidence = { ...deployEvidence, candidateScope: "DYNAMIC_CANDIDATE", dynamicCandidate: dynamicAttestation };
   const dynamicValid = evaluateReleaseGate({
-    evidence: { ...deployEvidence, candidateScope: "DYNAMIC_CANDIDATE" },
+    evidence: dynamicEvidence,
     current: sha,
     clean: true,
     deploymentEnabled,
@@ -421,8 +436,20 @@ test("release gate accepts DYNAMIC_CANDIDATE DEPLOY attestation and rejects stal
   });
   assert.equal(dynamicValid.ready, true);
 
+  const missingIsolationProof = evaluateReleaseGate({
+    evidence: { ...dynamicEvidence, dynamicCandidate: null },
+    current: sha,
+    clean: true,
+    deploymentEnabled,
+    provenance,
+    profile: "deploy",
+    requiredChecks: deployRequiredChecks,
+    deployScope,
+  });
+  assert.equal(missingIsolationProof.ready, false);
+
   const dynamicStale = evaluateReleaseGate({
-    evidence: { ...deployEvidence, candidateScope: "DYNAMIC_CANDIDATE", candidateSha: otherSha },
+    evidence: { ...dynamicEvidence, candidateSha: otherSha },
     current: sha,
     clean: true,
     deploymentEnabled,
@@ -434,7 +461,7 @@ test("release gate accepts DYNAMIC_CANDIDATE DEPLOY attestation and rejects stal
   assert.equal(dynamicStale.ready, false);
 
   const dynamicDirtyTracked = evaluateReleaseGate({
-    evidence: { ...deployEvidence, candidateScope: "DYNAMIC_CANDIDATE" },
+    evidence: dynamicEvidence,
     current: sha,
     clean: false,
     deploymentEnabled,

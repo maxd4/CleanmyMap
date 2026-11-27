@@ -191,6 +191,52 @@ export function getCandidateTreeSha(repositoryRoot, candidateSha) {
   }
 }
 
+export function verifyDynamicCandidateMaterialization({ repositoryRoot, candidateRoot, candidateSha } = {}) {
+  const fail = (reason) => ({ verified: false, reason });
+  if (!/^[0-9a-f]{40}$/i.test(String(candidateSha ?? "")) || !candidateRoot) return fail("DYNAMIC_CANDIDATE_MATERIALIZATION_MISSING");
+  const canonicalRoot = path.resolve(repositoryRoot ?? "");
+  const materializedRoot = path.dirname(path.resolve(candidateRoot));
+  const markerPath = path.join(materializedRoot, ".cleanmymap-candidate.json");
+  try {
+    const marker = JSON.parse(fs.readFileSync(markerPath, "utf8"));
+    const rootReal = fs.realpathSync(candidateRoot);
+    const expectedRootReal = fs.realpathSync(path.join(materializedRoot, "tree"));
+    if (rootReal !== expectedRootReal || marker.generated !== true || marker.cleanupRequired !== true
+      || marker.family !== "prepush-candidate" || marker.purpose !== "dynamic-validation"
+      || marker.key !== candidateSha || path.resolve(marker.repositoryRoot) !== canonicalRoot
+      || path.resolve(marker.materializedRoot) !== materializedRoot) return fail("DYNAMIC_CANDIDATE_MARKER_MISMATCH");
+    const head = getCandidateSha(candidateRoot);
+    const treeSha = getCandidateTreeSha(candidateRoot, head);
+    const status = execFileSync(gitExecutable(), ["status", "--porcelain", "--untracked-files=all"], {
+      cwd: candidateRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (head !== candidateSha || !/^[0-9a-f]{40}$/i.test(treeSha) || status) return fail(`DYNAMIC_CANDIDATE_TREE_NOT_CLEAN: ${status || "HEAD_OR_TREE_MISMATCH"}`);
+    const attestation = {
+      verified: true,
+      method: "materialized-git-tree-v1",
+      candidateSha: head,
+      candidateTreeSha: treeSha,
+      repositoryRoot: canonicalRoot,
+      materializedRoot,
+      candidateRoot: rootReal,
+    };
+    attestation.proofSha = createHash("sha256").update(JSON.stringify(attestation)).digest("hex");
+    return attestation;
+  } catch (error) {
+    return fail(`DYNAMIC_CANDIDATE_MATERIALIZATION_INVALID: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+export function isVerifiedDynamicCandidateEvidence(attestation, candidateSha, candidateTreeSha) {
+  if (attestation?.verified !== true || attestation.method !== "materialized-git-tree-v1"
+    || attestation.candidateSha !== candidateSha || attestation.candidateTreeSha !== candidateTreeSha
+    || !/^[0-9a-f]{64}$/i.test(attestation.proofSha ?? "")) return false;
+  const { proofSha, ...payload } = attestation;
+  return createHash("sha256").update(JSON.stringify(payload)).digest("hex") === proofSha;
+}
+
 export function getCoverageCandidateTreeSha(repositoryRoot = process.cwd(), candidateSha) {
   return getCandidateTreeSha(repositoryRoot, candidateSha);
 }
@@ -523,6 +569,7 @@ export function writeDeployValidationEvidence({
   reused = [],
   preexisting = [],
   verdict,
+  dynamicCandidate = null,
 } = {}) {
   if (!candidateSha || candidateSha === "NO_GIT_HEAD") return;
   const root = path.join(repositoryRoot, DEPLOY_VALIDATION_EVIDENCE_RELATIVE_ROOT);
@@ -534,7 +581,7 @@ export function writeDeployValidationEvidence({
   fs.writeFileSync(
     deployEvidencePath(repositoryRoot, candidateSha),
     `${JSON.stringify({
-      version: 1,
+      version: 2,
       mode: "DEPLOY",
       profile: "deploy",
       candidateSha,
@@ -547,6 +594,7 @@ export function writeDeployValidationEvidence({
       attestationStatus: attested ? "ATTESTED_CANDIDATE" : "NOT_ATTESTED_CHECKOUT_CHANGED",
       generatedAt: new Date().toISOString(),
       candidateScope: plan?.candidateScope,
+      dynamicCandidate: plan?.candidateScope === "DYNAMIC_CANDIDATE" ? dynamicCandidate : null,
       baseRef,
       baseSha,
       productionBaseSha,

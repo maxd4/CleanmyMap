@@ -7,13 +7,14 @@ import { fileURLToPath } from "node:url";
 import { gitExecutable } from "./git-executable.mjs";
 import { resolveDeployCandidate } from "./deploy-validation.mjs";
 import { createModeValidationPlan } from "./validation-modes.mjs";
+import { isVerifiedDynamicCandidateEvidence } from "./validation-evidence.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const CANONICAL_REPOSITORY = "maxd4/CleanmyMap";
 const REQUIRED_FULL_CHECK_IDS = Object.freeze(
   createModeValidationPlan({ mode: "FULL", candidateScope: "WORKTREE", changedFiles: [] }).checks.map((check) => check.id),
 );
-const DEPLOY_VALIDATION_EVIDENCE_VERSION = 1;
+const DEPLOY_VALIDATION_EVIDENCE_VERSION = 2;
 
 function checkIds(entries) {
   return Array.isArray(entries)
@@ -78,6 +79,8 @@ function isVerifiedPublicationReference(reference, validSha) {
       && reference.vercelInspection.target === "production"
       && reference.vercelInspection.readyState === "READY"
       && reference.vercelInspection.gitSha === reference.sha
+      && (!reference.treeSha || reference.vercelInspection.gitTreeSha === reference.treeSha)
+      && (!reference.validationFingerprint || reference.vercelInspection.validationFingerprint === reference.validationFingerprint)
       && reference.vercelInspection.productionAlias === reference.productionAlias
       && reference.vercelInspection.alias === reference.productionAlias
       && reference.vercelInspection.aliasDeploymentId === reference.deploymentId
@@ -86,9 +89,11 @@ function isVerifiedPublicationReference(reference, validSha) {
   );
 }
 
-function isClean(candidateScope = "WORKTREE") {
+function isClean(candidateScope = "WORKTREE", evidence = null, current = "") {
   if (String(candidateScope ?? "WORKTREE").toUpperCase() === "DYNAMIC_CANDIDATE") {
-    return true;
+    return evidence?.candidateScope === "DYNAMIC_CANDIDATE"
+      && evidence.candidateSha === current
+      && isVerifiedDynamicCandidateEvidence(evidence.dynamicCandidate, evidence.candidateSha, evidence.candidateTreeSha);
   }
   return execFileSync(gitExecutable(), ["status", "--porcelain", "--untracked-files=all"], {
     cwd: repositoryRoot,
@@ -137,6 +142,8 @@ export function evaluateReleaseGate({
     && evidence.verdict === "PASS"
     && evidence.releaseReady === true
     && (evidence.candidateScope === "WORKTREE" || evidence.candidateScope === "DYNAMIC_CANDIDATE")
+    && (evidence.candidateScope !== "DYNAMIC_CANDIDATE"
+      || isVerifiedDynamicCandidateEvidence(evidence.dynamicCandidate, evidence.candidateSha, evidence.candidateTreeSha))
     && evidence.checkoutStable === true
     && evidence.attestationStatus === "ATTESTED_CANDIDATE"
     && evidence.completionFingerprint === evidence.candidateFingerprint
@@ -299,7 +306,7 @@ async function main() {
   const result = evaluateReleaseGate({
     evidence,
     current,
-    clean: isClean(deployCandidateScope),
+    clean: isClean(deployCandidateScope, evidence, current),
     deploymentEnabled: { ...vercelPolicy, sha },
     provenance,
     profile,

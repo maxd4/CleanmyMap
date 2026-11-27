@@ -79,6 +79,23 @@ test("keeps executables other than npm and npx unchanged", () => {
   );
 });
 
+test("rejects a DYNAMIC_CANDIDATE scope declared without a verified materialization", async () => {
+  const saved = Object.fromEntries(["CMM_DYNAMIC_CANDIDATE_ROOT", "CMM_CANONICAL_REPO_ROOT", "CMM_VALIDATION_SCOPE", "CMM_DYNAMIC_CANDIDATE_SHA"]
+    .map((key) => [key, process.env[key]]));
+  for (const key of Object.keys(saved)) delete process.env[key];
+  try {
+    await assert.rejects(
+      runValidationMode({ mode: "FAST", candidateScope: "DYNAMIC_CANDIDATE", changedFiles: [] }, { repositoryRoot: process.cwd() }),
+      /DYNAMIC_CANDIDATE_REQUIRES_VERIFIED_MATERIALIZATION/,
+    );
+  } finally {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
 test("FULL checks do not install a timeout when the global budget is unlimited", async () => {
   const result = await runCheck(
     {

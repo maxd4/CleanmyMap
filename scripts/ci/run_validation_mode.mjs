@@ -14,6 +14,7 @@ import {
   writeFullValidationEvidence,
   writeDeployValidationEvidence,
   writeFastValidationEvidence,
+  verifyDynamicCandidateMaterialization,
 } from "./validation-evidence.mjs";
 import { resolveDeployCandidate } from "./deploy-validation.mjs";
 import { runCoveragePublicationGate } from "./coverage-publication.mjs";
@@ -471,15 +472,34 @@ export async function runValidationMode(
       process.env.GIT_INDEX_FILE = publicationCandidate.indexPath;
       publicationIndexRestored = false;
     }
+    const dynamicRequested = options.candidateScope === "DYNAMIC_CANDIDATE" || process.env.CMM_DYNAMIC_CANDIDATE_ROOT;
     const effectiveOptions = options.autoPublish
       ? { ...options, candidateScope: "STAGED" }
       : process.env.CMM_DYNAMIC_CANDIDATE_ROOT && options.candidateScope === "WORKTREE"
         ? { ...options, candidateScope: "DYNAMIC_CANDIDATE" }
         : options;
+    if (dynamicRequested && (!process.env.CMM_DYNAMIC_CANDIDATE_ROOT || !process.env.CMM_CANONICAL_REPO_ROOT
+      || process.env.CMM_VALIDATION_SCOPE !== "DYNAMIC_CANDIDATE" || !process.env.CMM_DYNAMIC_CANDIDATE_SHA)) {
+      throw new Error("DYNAMIC_CANDIDATE_REQUIRES_VERIFIED_MATERIALIZATION");
+    }
+    const candidateContentRoot = effectiveOptions.candidateScope === "DYNAMIC_CANDIDATE"
+      ? path.resolve(process.env.CMM_DYNAMIC_CANDIDATE_ROOT)
+      : repositoryRoot;
     const provenanceRoot = effectiveOptions.candidateScope === "DYNAMIC_CANDIDATE"
       ? (process.env.CMM_CANONICAL_REPO_ROOT || repositoryRoot)
       : repositoryRoot;
-    const candidateSha = getCandidateSha(provenanceRoot);
+    const candidateSha = getCandidateSha(candidateContentRoot);
+    const dynamicCandidate = effectiveOptions.candidateScope === "DYNAMIC_CANDIDATE"
+      ? verifyDynamicCandidateMaterialization({
+        repositoryRoot: provenanceRoot,
+        candidateRoot: candidateContentRoot,
+        candidateSha,
+      })
+      : null;
+    if (effectiveOptions.candidateScope === "DYNAMIC_CANDIDATE"
+      && (!dynamicCandidate?.verified || process.env.CMM_DYNAMIC_CANDIDATE_SHA !== candidateSha)) {
+      throw new Error(dynamicCandidate?.reason ?? "DYNAMIC_CANDIDATE_SHA_MISMATCH");
+    }
     const deploymentProof = effectiveOptions.mode === "DEPLOY"
       ? readDeploymentProof(options.deploymentProofPath)
       : null;
@@ -490,7 +510,7 @@ export async function runValidationMode(
         baseRef: options.baseRef,
         deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
         deploymentProof,
-        candidateTreeSha: publicationCandidate?.candidateTreeSha,
+        candidateTreeSha: publicationCandidate?.candidateTreeSha ?? dynamicCandidate?.candidateTreeSha,
         candidateScope: effectiveOptions.candidateScope,
         allowDirtyCandidate: Boolean(publicationCandidate),
         allowedDirtyFiles: options.deploymentProofPath ? [options.deploymentProofPath] : [],
@@ -501,7 +521,7 @@ export async function runValidationMode(
       ? deployScope?.changedFiles ?? []
       : effectiveOptions.changedFiles.length > 0
         ? effectiveOptions.changedFiles
-        : getCandidateFiles(effectiveOptions.candidateScope, repositoryRoot);
+        : getCandidateFiles(effectiveOptions.candidateScope, candidateContentRoot);
     const plan = createModeValidationPlan({
       ...effectiveOptions,
       candidateSha,
@@ -511,11 +531,11 @@ export async function runValidationMode(
         ?? (options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null),
       publicationProofPath: options.deploymentProofPath,
       dependencyGraphChanged: deployScope?.dependencyGraphChanged,
-      candidateTreeSha: publicationCandidate?.candidateTreeSha,
+      candidateTreeSha: publicationCandidate?.candidateTreeSha ?? dynamicCandidate?.candidateTreeSha,
       allowDirtyCandidate: Boolean(publicationCandidate),
     });
     const candidateFingerprint = createCandidateFingerprint({
-      repositoryRoot,
+      repositoryRoot: candidateContentRoot,
       candidateScope: plan.candidateScope,
       changedFiles,
       candidateSha,
@@ -647,7 +667,14 @@ export async function runValidationMode(
     }
 
     const elapsedSeconds = (performance.now() - startedAt) / 1000;
-    const completionSha = getCandidateSha(provenanceRoot);
+    const completionSha = getCandidateSha(candidateContentRoot);
+    const completionDynamicCandidate = effectiveOptions.candidateScope === "DYNAMIC_CANDIDATE"
+      ? verifyDynamicCandidateMaterialization({
+        repositoryRoot: provenanceRoot,
+        candidateRoot: candidateContentRoot,
+        candidateSha: completionSha,
+      })
+      : null;
     const completionDeployScope = plan.mode === "DEPLOY"
       ? await resolveDeployCandidate({
         repositoryRoot: provenanceRoot,
@@ -655,7 +682,7 @@ export async function runValidationMode(
         baseRef: options.baseRef,
         deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
         deploymentProof,
-        candidateTreeSha: publicationCandidate?.candidateTreeSha,
+        candidateTreeSha: publicationCandidate?.candidateTreeSha ?? dynamicCandidate?.candidateTreeSha,
         candidateScope: effectiveOptions.candidateScope,
         allowDirtyCandidate: Boolean(publicationCandidate),
         allowedDirtyFiles: options.deploymentProofPath ? [options.deploymentProofPath] : [],
@@ -669,7 +696,7 @@ export async function runValidationMode(
         : [];
     const completionFingerprint = plan.mode === "FULL" || plan.mode === "DEPLOY"
       ? createCandidateFingerprint({
-        repositoryRoot,
+        repositoryRoot: candidateContentRoot,
         candidateScope: plan.candidateScope,
         changedFiles: completionChangedFiles,
         candidateSha,
@@ -685,8 +712,12 @@ export async function runValidationMode(
         }
       })()
       : true;
+    const dynamicStable = effectiveOptions.candidateScope !== "DYNAMIC_CANDIDATE"
+      || (completionDynamicCandidate?.verified === true
+        && completionDynamicCandidate.candidateSha === dynamicCandidate?.candidateSha
+        && completionDynamicCandidate.candidateTreeSha === dynamicCandidate?.candidateTreeSha);
     const checkoutStable = plan.mode === "FULL"
-      ? completionSha === candidateSha && completionFingerprint === candidateFingerprint
+      ? completionSha === candidateSha && completionFingerprint === candidateFingerprint && dynamicStable
       : plan.mode === "DEPLOY"
         ? Boolean(
           deployScope?.valid
@@ -697,11 +728,15 @@ export async function runValidationMode(
             && completionDeployScope.publicationReference?.sha === deployScope.publicationReference?.sha
             && completionSha === candidateSha
             && completionFingerprint === candidateFingerprint
+            && dynamicStable
             && worktreeStable,
         )
         : true;
     if (plan.mode === "DEPLOY" && !deployScope?.valid) {
       failed.push(`deploy-candidate: ${deployScope?.reason ?? "DEPLOY_SCOPE_NOT_ESTABLISHED"}`);
+    }
+    if (effectiveOptions.candidateScope === "DYNAMIC_CANDIDATE" && !dynamicStable) {
+      failed.push("candidate: DYNAMIC_CANDIDATE_CHANGED_DURING_VALIDATION");
     }
     if (plan.mode === "DEPLOY" && !checkoutStable) failed.push("candidate: CHECKOUT_CHANGED");
     if (plan.mode === "FULL" && !checkoutStable) failed.push("candidate: CHECKOUT_CHANGED");
@@ -857,6 +892,7 @@ export async function runValidationMode(
         reused,
         preexisting,
         verdict,
+        dynamicCandidate: dynamicStable ? dynamicCandidate : null,
       });
       log(`CANDIDATE_SHA: ${candidateSha}`);
       log(`DEPLOY_ATTESTATION: ${checkoutStable ? "ATTESTED_CANDIDATE" : "NOT_ATTESTED_CHECKOUT_CHANGED"}`);

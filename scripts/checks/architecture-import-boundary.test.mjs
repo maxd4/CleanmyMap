@@ -119,9 +119,11 @@ test("the real Learn Comprendre client entry propagates its context to the local
   const graph = buildArchitectureImportGraph({ source: "worktree" });
   const page = graph.nodes.find((candidate) => candidate.path === "apps/web/src/app/learn/comprendre/page.tsx");
   const client = graph.nodes.find((candidate) => candidate.path === "apps/web/src/app/learn/comprendre/client.tsx");
+  const tabs = graph.nodes.find((candidate) => candidate.path === "apps/web/src/app/learn/comprendre/learn-comprendre-tabs.tsx");
   const sections = graph.nodes.find((candidate) => candidate.path === "apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx");
   const pageToClient = edge(graph, "apps/web/src/app/learn/comprendre/page.tsx", "apps/web/src/app/learn/comprendre/client.tsx");
-  const clientToSections = edge(graph, "apps/web/src/app/learn/comprendre/client.tsx", "apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx");
+  const clientToTabs = edge(graph, "apps/web/src/app/learn/comprendre/client.tsx", "apps/web/src/app/learn/comprendre/learn-comprendre-tabs.tsx");
+  const tabsToSections = edge(graph, "apps/web/src/app/learn/comprendre/learn-comprendre-tabs.tsx", "apps/web/src/app/learn/comprendre/learn-comprendre-sections.tsx");
 
   assert.equal(page?.layer, "application");
   assert.equal(page?.clientEntry, false);
@@ -129,12 +131,17 @@ test("the real Learn Comprendre client entry propagates its context to the local
   assert.equal(client?.clientEntry, true);
   assert.equal(pageToClient?.kind, "runtime");
   assert.equal(pageToClient?.toClientContext, true);
+  assert.equal(clientToTabs?.kind, "runtime");
+  assert.equal(clientToTabs?.fromClientContext, true);
+  assert.equal(clientToTabs?.toClientContext, true);
+  assert.equal(tabs?.effectiveLayer, "ui");
+  assert.equal(tabs?.clientReachable, true);
   assert.equal(sections?.layer, "application");
   assert.equal(sections?.clientReachable, true);
   assert.equal(sections?.effectiveLayer, "ui");
-  assert.equal(clientToSections?.kind, "runtime");
-  assert.equal(clientToSections?.fromClientContext, true);
-  assert.equal(clientToSections?.toClientContext, true);
+  assert.equal(tabsToSections?.kind, "runtime");
+  assert.equal(tabsToSections?.fromClientContext, true);
+  assert.equal(tabsToSections?.toClientContext, true);
 });
 
 test("comments and ordinary strings do not create a use-client directive", () => {
