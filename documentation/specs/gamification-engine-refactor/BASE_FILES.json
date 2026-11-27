@@ -74,7 +74,7 @@
     {
       "path": "apps/web/src/lib/gamification/README.md",
       "baseBlob": "395e3032916b588043eef623a6a8235b5970c01f",
-      "lines": 240
+      "lines": 243
     },
     {
       "path": "documentation/features/gamification/README.md",
@@ -84,7 +84,7 @@
     {
       "path": "documentation/features/gamification/GAMIFICATION_ENGINE.md",
       "baseBlob": "4fe24be4279ff2b4b63b536b08b9bec6499ffe81",
-      "lines": 591
+      "lines": 592
     },
     {
       "path": "apps/web/src/lib/gamification/progression/milestones.ts",
@@ -340,6 +340,26 @@
       "path": "apps/web/src/lib/gamification/progression/gamification-complete-action-inventory.test.ts",
       "baseBlob": null,
       "lines": 41
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/terrain-specialization-evidence.ts",
+      "baseBlob": "3dc91487819174a2f4d0c1f87de62f9d29a867e8",
+      "lines": 119
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression/terrain-specializations.test.ts",
+      "baseBlob": "5e9ebacf4c283e437d487ad4f728bff2042d1993",
+      "lines": 233
+    },
+    {
+      "path": "apps/web/src/lib/gamification/territorial-legends/award-facts.ts",
+      "baseBlob": "9234e1d521476d76ca5ef673d44bed571c263c1c",
+      "lines": 206
+    },
+    {
+      "path": "apps/web/src/lib/gamification/territorial-legends/award-facts.test.ts",
+      "baseBlob": "afe40875c3bc874d208a40ed74de499a8aadc25f",
+      "lines": 145
     }
   ]
 }

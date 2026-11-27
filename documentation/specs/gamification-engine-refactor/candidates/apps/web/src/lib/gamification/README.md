@@ -55,7 +55,10 @@ Les appels de reconstruction et de preuve de parrainage demandent
 historique reste réservée aux consommateurs existants non migrés.
 La lecture du journal avant la RPC est exhaustive selon ce contrat.
 La lecture stricte des zones propres reste distincte du best-effort
-d'affichage. Un inventaire vide explicitement complet est un résultat
+d'affichage. La reconstruction des spécialisations terrain utilise le même
+owner d'attestations en mode complet, y compris actions liées et présences
+confirmées ; les preuves territoriales actives sont lues selon leur clé
+`proof_id` et une preuve mal formée bloque la reconstruction. Un inventaire vide explicitement complet est un résultat
 valide ; une erreur, un décompte inconnu, une page incohérente ou une
 relation organisateur dont l'action manque interrompent le traitement.
 Le décompte et les identités ne constituent pas un snapshot transactionnel

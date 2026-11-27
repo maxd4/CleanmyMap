@@ -44,7 +44,7 @@ async function loadCurrentGamificationInputs(
       supabase.from("action_participants").select("id, action_id, joined_at, updated_at, participation_source", { count: "exact" }).eq("user_id", userId).eq("participation_status", "confirmed").order("id", { ascending: true }).range(from, to)),
     loadGeometryContributionFacts(supabase, userId),
     loadProductFeedbackFacts(supabase, userId),
-    loadTerrainSpecializationEvidence(supabase, userId),
+    loadTerrainSpecializationEvidence(supabase, userId, { complete: true }),
     loadTerritorialLegendAwardFacts(supabase, userId),
   ]);
   return {

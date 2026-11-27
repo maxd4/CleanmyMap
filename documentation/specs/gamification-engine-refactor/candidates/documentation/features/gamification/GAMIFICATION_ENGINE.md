@@ -297,8 +297,9 @@ Les sources raccordées au lecteur strict sont le journal `progression_events`,
 les actions et relations d'organisation de l'utilisateur, les participants
 confirmés des actions, `user_visited_places`, `quiz_type_progress`,
 `action_geometry_contributions`, les profils filleuls, les retours produit
-acceptés, les dossiers de modération et les zones propres utilisées pour
-la reconstruction. Le lecteur et ses budgets sont indexés dans le README
+acceptés, les dossiers de modération, les zones propres, les attestations
+terrain et leurs actions/présences liées, ainsi que les preuves territoriales
+actives utilisées pour la reconstruction. Le lecteur et ses budgets sont indexés dans le README
 runtime. Les filtres de propriétaire, états d'admissibilité et identités
 métier sont conservés ; aucun décompte exact ne remplace ces prédicats.
 
@@ -308,7 +309,7 @@ interrompt le calcul avant le plan d'écriture du ledger. Ce contrôle
 ne détecte pas toutes les modifications concurrentes à cardinalité constante ;
 la RPC existante protège le snapshot du ledger et le profil, pas un snapshot
 transactionnel global des sources. Les chemins non migrés (notamment certaines
-lectures de spécialisations, preuves territoriales, statistiques de niveaux,
+lectures d'organisateurs par action, statistiques de niveaux,
 identité et écritures incrémentales) ne sont pas réputés exhaustifs.
 
 ## Audit XP administratif
