@@ -103,6 +103,20 @@ test("late auth, join persistence, idempotence, leave and reread", async ({ page
 
   await page.goto("/");
   await signIn(page);
+  const formalitiesForbidden = await fetchJson(
+    page,
+    `/api/actions/${GROUP_JOIN_FIXTURE_ID}/formalities`,
+  );
+  expect(formalitiesForbidden.status).toBe(403);
+  evidence.push({
+    surface: "action-formalities",
+    state: "authenticated non-organizer",
+    PAGE_OK: true,
+    INTERACTION_OK: true,
+    END_TO_END_OK: true,
+    proof: { fixtureId: GROUP_JOIN_FIXTURE_ID, deniedStatus: formalitiesForbidden.status },
+  });
+
   await page.goto("/sections/rejoindre-un-formulaire");
   const card = groupJoinCard(page);
   await expect(card.getByRole("button", { name: "Demander à participer" })).toBeVisible();

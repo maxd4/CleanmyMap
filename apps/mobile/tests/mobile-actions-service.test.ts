@@ -25,6 +25,7 @@ import {
   reviewActionRequest,
   updateMobileAction,
   updateMobileActionFormality,
+  updateMobileActionFormalitiesFacts,
   updateMobileActionFieldRoles,
 } from '../features/actions/mobile-actions-service'
 
@@ -80,6 +81,21 @@ describe('mobile actions transport', () => {
     expect(requestMock).toHaveBeenLastCalledWith('/api/actions/action%2F1/formalities', {
       method: 'PATCH',
       body: JSON.stringify({ transition: { formalityId: 'paris-aot', kind: 'record_authorization' } }),
+    })
+  })
+
+  it('updates qualification facts through the canonical formalities PATCH', async () => {
+    const facts = {
+      territory: { countryCode: 'FR' as const, code: 'FR-75', label: 'Paris' },
+      publicSpace: 'public_domain' as const,
+      manager: { kind: 'paris_city' as const, label: 'Ville de Paris' },
+      isCleanwalk: true, isPublicRoadwayActivity: true, isCortegeOrGathering: false,
+      isItinerant: false, isClaiming: false, hasInstallations: true,
+      requiresPhysicalOccupation: true, localCustomaryUse: false, largeCrowdOrComplexInstallations: false,
+    }
+    await updateMobileActionFormalitiesFacts('action/1', facts)
+    expect(requestMock).toHaveBeenCalledWith('/api/actions/action%2F1/formalities', {
+      method: 'PATCH', body: JSON.stringify({ facts }),
     })
   })
 

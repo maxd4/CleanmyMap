@@ -87,6 +87,14 @@ function scopeMatchesTerritory(
     return false;
   }
 
+  // A stored department or a provider's cached fallback can locate a record,
+  // but cannot establish which local authority's rules apply. Local scopes
+  // require the server-verified metropolitan point; the national fallback
+  // remains available while the location is uncertain.
+  if (scope.kind !== "national" && territory.jurisdictionEvidence !== "metropolitan_point") {
+    return false;
+  }
+
   switch (scope.kind) {
     case "national":
       return true;

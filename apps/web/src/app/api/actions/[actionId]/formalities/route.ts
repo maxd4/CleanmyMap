@@ -184,7 +184,7 @@ export async function GET(
     }
 
     if (new URL(request.url).searchParams.get("contacts") === "1") {
-      // Private action responses and organizer-declared workflow are user-specific; never cache them.
+      // Private action responses and organizer-declared workflow are user-specific; the no-store cache directive prevents cross-user disclosure.
       const needs = normalizeSupportNeeds(new URL(request.url).searchParams.getAll("need"));
       const contacts = await loadMetropolitanContacts(current, needs);
       return NextResponse.json({ ...contacts, resources: nationalSupportResources(needs) }, { headers: { "Cache-Control": "private, no-store" } });

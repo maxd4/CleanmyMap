@@ -4,6 +4,7 @@ import { deriveActionFormalitiesFacts } from "./facts";
 import { qualifyActionFormalities } from "./qualification";
 import { buildFormalitiesActionDependencies } from "./action-context";
 import { buildFormalitiesWorkflowState } from "./workflow";
+import { deriveActionFormalitiesFactsFromAction } from "./action-context";
 import { validateActionFormalitiesForPublication } from "./publication-validation";
 
 const resolveActionTerritoryMock = vi.hoisted(() => vi.fn());
@@ -15,7 +16,20 @@ vi.mock("@/lib/geo/action-territory-resolver", () => ({
 const parisFacts = deriveActionFormalitiesFacts({
   departmentCode: "75",
   departmentName: "Paris",
+  resolvedPoint: true,
+  resolvedTerritory: {
+    commune: { code: "75056", name: "Paris" },
+    department: { code: "75", name: "Paris" },
+    specialTerritory: { code: "FR-PARIS", name: "Paris" },
+    source: "geo.api.gouv.fr",
+  },
 });
+const verifiedParisTerritory = {
+  commune: { code: "75056", name: "Paris" },
+  department: { code: "75", name: "Paris" },
+  specialTerritory: { code: "FR-PARIS", name: "Paris" },
+  source: "geo.api.gouv.fr",
+};
 const factsWithRequiredFormality = {
   ...parisFacts,
   publicSpace: "public_domain" as const,
@@ -34,8 +48,8 @@ function buildAction(workflow: unknown, actionDate = "2026-12-01") {
     department_name: "Paris",
     latitude: 48.8566,
     longitude: 2.3522,
-    derived_geometry_kind: "polyline",
-    derived_geometry_geojson: '{"type":"LineString","coordinates":[[2.35,48.85],[2.36,48.86]]}',
+    derived_geometry_kind: "point",
+    derived_geometry_geojson: null,
     location_label: "Paris",
     action_date: actionDate,
     preparation_data: {
@@ -57,12 +71,15 @@ function buildWorkflow(previous?: ReturnType<typeof buildFormalitiesWorkflowStat
 
 describe("validateActionFormalitiesForPublication", () => {
   beforeEach(() => {
-    resolveActionTerritoryMock.mockResolvedValue(null);
+    resolveActionTerritoryMock.mockResolvedValue(verifiedParisTerritory);
   });
 
   it("blocks approval when a required formalité is not sent", async () => {
     const workflow = buildWorkflow();
-    const result = await validateActionFormalitiesForPublication(buildAction(workflow));
+    const action = buildAction(workflow);
+    const rebuiltFacts = await deriveActionFormalitiesFactsFromAction(action);
+    expect(rebuiltFacts.territory.jurisdictionEvidence).toBe("metropolitan_point");
+    const result = await validateActionFormalitiesForPublication(action);
 
     expect(result).toEqual({
       ok: false,
@@ -91,6 +108,7 @@ describe("validateActionFormalitiesForPublication", () => {
     ["without proof", null],
     ["with an invalid proof kind", { kind: "nonsense", reference: null, recordedAt: "2026-10-30T10:01:00.000Z" }],
   ])("blocks approval when a required formality is sent %s", async (_label, proof) => {
+    resolveActionTerritoryMock.mockResolvedValueOnce(verifiedParisTerritory);
     const prepared = buildWorkflow();
     const sent = {
       ...prepared,
@@ -122,6 +140,7 @@ describe("validateActionFormalitiesForPublication", () => {
   });
 
   it("rejects an absent or malformed workflow when a formalité is required", async () => {
+    resolveActionTerritoryMock.mockResolvedValueOnce(verifiedParisTerritory);
     expect((await validateActionFormalitiesForPublication(buildAction(null))).ok).toBe(false);
 
     const malformed = {

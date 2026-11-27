@@ -3,6 +3,9 @@ import { deriveActionFormalitiesFacts } from "@/lib/actions/formalities/facts";
 import { qualifyActionFormalities } from "@/lib/actions/formalities/qualification";
 import { buildFormalitiesWorkflowState } from "@/lib/actions/formalities/workflow";
 import { parseJsonSafely } from "@/lib/actions/http-errors";
+import { validateActionFormalitiesForPublication } from "@/lib/actions/formalities/publication-validation";
+import { isAssociationActionReviewRequired } from "@/lib/actions/association-action-review";
+import type { ActionRow } from "@/types/database";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
@@ -10,6 +13,7 @@ const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const emitAdministrativeRequirementNotificationsMock = vi.hoisted(() => vi.fn());
+const resolveActionTerritoryMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
@@ -26,6 +30,7 @@ vi.mock("@/lib/actions/administrative-requirement-notifications", () => ({
   emitAdministrativeRequirementNotifications:
     emitAdministrativeRequirementNotificationsMock,
 }));
+vi.mock("@/lib/geo/action-territory-resolver", () => ({ resolveActionTerritory: resolveActionTerritoryMock }));
 vi.mock("@/lib/http/auth-responses", () => ({
   unauthorizedJsonResponse: vi.fn(() => new Response("Unauthorized", { status: 401 })),
 }));
@@ -67,6 +72,7 @@ describe("POST /api/actions/:actionId/publish", () => {
       published_at: null,
     });
     emitAdministrativeRequirementNotificationsMock.mockResolvedValue(true);
+    resolveActionTerritoryMock.mockResolvedValue(null);
   });
 
   it("publishes a private pre-action without changing moderation status", async () => {
@@ -165,7 +171,13 @@ describe("POST /api/actions/:actionId/publish", () => {
 
   it("does not let the internal administrative attestation bypass a required formality", async () => {
     const facts = {
-      ...deriveActionFormalitiesFacts({ departmentCode: "75", departmentName: "Paris", plannedObjective: "nettoyage" }),
+      ...deriveActionFormalitiesFacts({
+        departmentCode: "75", departmentName: "Paris", plannedObjective: "nettoyage", resolvedPoint: true,
+        resolvedTerritory: {
+          commune: { code: "75056", name: "Paris" }, department: { code: "75", name: "Paris" },
+          specialTerritory: { code: "FR-PARIS", name: "Paris" }, source: "geo.api.gouv.fr",
+        },
+      }),
       publicSpace: "public_domain" as const,
       manager: { kind: "paris_city" as const, label: "Ville de Paris" },
       hasInstallations: true,
@@ -177,9 +189,24 @@ describe("POST /api/actions/:actionId/publish", () => {
       largeCrowdOrComplexInstallations: false,
     };
     const qualification = qualifyActionFormalities(facts);
+    expect(qualification.formalities).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "paris-city-public-domain-aot", requirementStatus: "required" }),
+    ]));
     const workflow = buildFormalitiesWorkflowState({ facts, qualification });
-    loadActionByIdMock.mockResolvedValueOnce({
+    resolveActionTerritoryMock.mockResolvedValue({
+      commune: { code: "75056", name: "Paris" },
+      department: { code: "75", name: "Paris" },
+      specialTerritory: { code: "FR-PARIS", name: "Paris" },
+      source: "geo.api.gouv.fr",
+    });
+    const current = {
       id: "action-1",
+      action_date: "2026-12-01",
+      location_label: "Paris",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      derived_geometry_kind: "point",
+      derived_geometry_geojson: null,
       created_by_clerk_id: "owner-1",
       action_phase: "pre_action",
       published_at: null,
@@ -192,7 +219,10 @@ describe("POST /api/actions/:actionId/publish", () => {
         formalitiesWorkflow: workflow,
         administrativeRequirements: { status: "validated", validatedAt: "2026-10-10T10:00:00.000Z" },
       },
-    });
+    } as unknown as ActionRow;
+    expect(isAssociationActionReviewRequired(current)).toBe(true);
+    expect(await validateActionFormalitiesForPublication(current)).toMatchObject({ ok: false });
+    loadActionByIdMock.mockResolvedValueOnce(current);
     const supabase = createUpdateClient({ data: { id: "action-1", published_at: null }, error: null });
     getSupabaseServerClientMock.mockReturnValue(supabase);
     const { POST } = await import("./route");

@@ -123,7 +123,7 @@ const formalitiesRequest = (init?: RequestInit) =>
   new Request("http://localhost/api/actions/action-42/formalities", init);
 
 const formalitiesFacts = (overrides: Record<string, unknown> = {}) => ({
-  territory: { countryCode: "FR", code: "FR-75", label: "Paris (75)" },
+  territory: { countryCode: "FR", jurisdictionEvidence: "metropolitan_point", code: "FR-75", label: "Paris (75)" },
   publicSpace: "public_domain",
   manager: { kind: "paris_city", label: null },
   isCleanwalk: true,
@@ -224,7 +224,15 @@ describe("/api/actions/:actionId/formalities", () => {
     identityMock.mockResolvedValue(identity("user-1"));
     loadActionMock.mockResolvedValue(action());
     loadOrganizersMock.mockResolvedValue(["user-1"]);
-    resolveActionTerritoryMock.mockResolvedValue(null);
+    resolveActionTerritoryMock.mockResolvedValue({
+      commune: { code: "75056", name: "Paris" },
+      department: { code: "75", name: "Paris" },
+      region: { code: "11", name: "Île-de-France" },
+      epci: { code: "200054781", name: "Métropole du Grand Paris" },
+      arrondissement: { code: "75101", name: "Paris 1er" },
+      specialTerritory: { code: "FR-PARIS", name: "Paris" },
+      source: "geo.api.gouv.fr",
+    });
     loadMetropolitanContactsMock.mockResolvedValue({
       coverage: { status: "resolved_point", communeCodes: ["75056"] },
       contacts: [], unresolvedCommuneCodes: [], status: "complete",
@@ -488,6 +496,7 @@ describe("/api/actions/:actionId/formalities", () => {
   });
 
   it("ignores a forged Paris territory while preserving other declarative facts", async () => {
+    resolveActionTerritoryMock.mockResolvedValueOnce(null);
     loadActionMock.mockResolvedValueOnce({
       ...action(),
       department_code: "92",
@@ -798,6 +807,7 @@ describe("/api/actions/:actionId/formalities", () => {
   });
 
   it("invalidates the workflow after a real action territory change", async () => {
+    resolveActionTerritoryMock.mockResolvedValueOnce(null);
     const previousFacts = deriveActionFormalitiesFacts({
       departmentCode: "92",
       departmentName: "Hauts-de-Seine",

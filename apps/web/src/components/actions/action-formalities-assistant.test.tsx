@@ -9,10 +9,17 @@ import { ActionFormalitiesQualificationView } from "./action-formalities-qualifi
 import { ActionFormalitiesWorkflowPanel } from "./action-formalities-workflow-panel";
 
 function parisCleanwalk(arrondissementCode: string) {
+  const resolvedTerritory = {
+    commune: { code: "75056", name: "Paris" },
+    department: { code: "75", name: "Paris" },
+    specialTerritory: { code: "FR-PARIS", name: "Paris" },
+    source: "geo.api.gouv.fr" as const,
+  };
+  const facts = deriveActionFormalitiesFacts({ departmentCode: "75", departmentName: "Paris", plannedObjective: "nettoyage", resolvedPoint: true, resolvedTerritory });
   return {
-    ...deriveActionFormalitiesFacts({ departmentCode: "75", departmentName: "Paris", plannedObjective: "nettoyage" }),
+    ...facts,
     territory: {
-      ...deriveActionFormalitiesFacts({ departmentCode: "75", departmentName: "Paris", plannedObjective: "nettoyage" }).territory,
+      ...facts.territory,
       arrondissement: { code: arrondissementCode, label: `Paris ${arrondissementCode.slice(-2)}e` },
     },
     publicSpace: "public_domain" as const,

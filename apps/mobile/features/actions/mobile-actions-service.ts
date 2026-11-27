@@ -272,9 +272,25 @@ export type MobileActionFormalitiesContacts = {
   resources?: Array<{ id: string; label: string; url: string; needs: string[]; guidance: string }>
 }
 
+export type MobileActionFormalitiesFacts = {
+  territory: { countryCode: 'FR'; jurisdictionEvidence?: 'metropolitan_point'; code: string; label: string }
+  publicSpace: 'public_domain' | 'private_domain' | 'unknown'
+  manager: { kind: 'paris_city' | 'state' | 'sncf' | 'haropa' | 'other_public' | 'private' | 'unknown'; label: string | null }
+  isCleanwalk: boolean
+  isPublicRoadwayActivity: boolean | 'unknown'
+  isCortegeOrGathering: boolean | 'unknown'
+  isItinerant: boolean | 'unknown'
+  isClaiming: boolean | 'unknown'
+  hasInstallations: boolean | 'unknown'
+  requiresPhysicalOccupation: boolean | 'unknown'
+  localCustomaryUse: boolean | 'unknown'
+  largeCrowdOrComplexInstallations: boolean | 'unknown'
+}
+
 export type MobileActionFormalities = {
   status: 'ok'
   actionId: string
+  facts: MobileActionFormalitiesFacts
   qualification: { formalities: Array<{
     id: string
     requirementStatus: 'required' | 'recommended' | 'not_required' | 'unknown'
@@ -306,6 +322,12 @@ export async function loadMobileActionFormalitiesContacts(actionId: string, need
 export async function updateMobileActionFormality(actionId: string, formalityId: string, kind: MobileActionFormalities['availableTransitions'][string][number]) {
   return mobileRequest<MobileActionFormalities>(`/api/actions/${encodeURIComponent(actionId)}/formalities`, {
     method: 'PATCH', body: JSON.stringify({ transition: { formalityId, kind } }),
+  })
+}
+
+export async function updateMobileActionFormalitiesFacts(actionId: string, facts: MobileActionFormalitiesFacts) {
+  return mobileRequest<MobileActionFormalities>(`/api/actions/${encodeURIComponent(actionId)}/formalities`, {
+    method: 'PATCH', body: JSON.stringify({ facts }),
   })
 }
 

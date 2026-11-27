@@ -4,10 +4,11 @@ import {
   qualifyActionFormalities,
   type ActionFormalitiesFacts,
 } from "./qualification";
+import { deriveActionFormalitiesFacts } from "./facts";
 import type { AdministrativeFormalityRule } from "./rules";
 
 const parisFacts: ActionFormalitiesFacts = {
-  territory: { countryCode: "FR", code: "FR-75", label: "Paris" },
+  territory: { countryCode: "FR", jurisdictionEvidence: "metropolitan_point", code: "FR-75", label: "Paris" },
   publicSpace: "public_domain",
   manager: { kind: "paris_city", label: "Ville de Paris" },
   isCleanwalk: true,
@@ -66,6 +67,23 @@ function testRule(params: {
 }
 
 describe("action formalities qualification", () => {
+  it("does not apply local rules from a persisted department without verified point evidence", () => {
+    const facts = deriveActionFormalitiesFacts({
+      departmentCode: "75",
+      departmentName: "Paris",
+    });
+
+    const result = qualifyActionFormalities(facts);
+
+    expect(result.formalities.map((formality) => formality.id)).toEqual([
+      "national-formalities-fallback",
+    ]);
+    expect(result.formalities[0]).toMatchObject({
+      requirementStatus: "unknown",
+      procedureKind: "unknown",
+    });
+  });
+
   it("qualifies a municipal public-space installation as a Ville de Paris AOT", () => {
     const result = qualifyActionFormalities({
       ...parisFacts,
@@ -536,6 +554,7 @@ describe("action formalities qualification — existing scopes", () => {
         ...parisFacts,
         territory: {
           countryCode: "FR",
+          jurisdictionEvidence: "metropolitan_point",
           code: "FR-69",
           label: "Lyon",
           commune: { codeInsee: "69123", label: "Lyon" },
@@ -565,6 +584,7 @@ describe("action formalities qualification — existing scopes", () => {
         ...parisFacts,
         territory: {
           countryCode: "FR",
+          jurisdictionEvidence: "metropolitan_point",
           code: "FR-69",
           label: "Rhône",
           department: { code: "69", label: "Rhône" },
@@ -595,6 +615,7 @@ describe("action formalities qualification — existing scopes", () => {
         ...parisFacts,
         territory: {
           countryCode: "FR",
+          jurisdictionEvidence: "metropolitan_point",
           code: "FR-69",
           label: "Lyon",
           commune: { codeInsee: "69123", label: "Lyon" },

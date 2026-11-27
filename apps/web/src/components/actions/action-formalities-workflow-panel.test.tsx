@@ -11,14 +11,23 @@ import {
   ActionFormalitiesWorkflowPanel,
 } from "./action-formalities-workflow-panel";
 
+const verifiedParisFacts = () => deriveActionFormalitiesFacts({
+  departmentCode: "75",
+  departmentName: "Paris",
+  plannedObjective: "nettoyage",
+  resolvedPoint: true,
+  resolvedTerritory: {
+    commune: { code: "75056", name: "Paris" },
+    department: { code: "75", name: "Paris" },
+    specialTerritory: { code: "FR-PARIS", name: "Paris" },
+    source: "geo.api.gouv.fr",
+  },
+});
+
 describe("ActionFormalitiesQualificationView", () => {
   it("clarifies the difference between an ordinary itinerant cleanwalk and a cortège in the preparation questions", () => {
     const facts = {
-      ...deriveActionFormalitiesFacts({
-        departmentCode: "75",
-        departmentName: "Paris",
-        plannedObjective: "nettoyage",
-      }),
+      ...verifiedParisFacts(),
       publicSpace: "public_domain" as const,
       manager: { kind: "paris_city" as const, label: "Ville de Paris" },
     };
@@ -35,11 +44,7 @@ describe("ActionFormalitiesQualificationView", () => {
 
   it("renders the qualification facts, explanation, authority, deadline and official link", () => {
     const facts = {
-      ...deriveActionFormalitiesFacts({
-        departmentCode: "75",
-        departmentName: "Paris",
-        plannedObjective: "nettoyage",
-      }),
+      ...verifiedParisFacts(),
       publicSpace: "public_domain" as const,
       manager: { kind: "paris_city" as const, label: "Ville de Paris" },
       hasInstallations: true,
@@ -73,7 +78,7 @@ describe("ActionFormalitiesQualificationView", () => {
 
   it("keeps obligations visible while optional contacts appear only for selected needs", () => {
     const facts = {
-      ...deriveActionFormalitiesFacts({ departmentCode: "75", departmentName: "Paris", plannedObjective: "nettoyage" }),
+      ...verifiedParisFacts(),
       publicSpace: "public_domain" as const,
       manager: { kind: "paris_city" as const, label: "Ville de Paris" },
       hasInstallations: true,
@@ -124,11 +129,7 @@ describe("ActionFormalitiesQualificationView", () => {
 
   it("keeps optional details and persisted workflow statuses visible for each requirement kind", () => {
     const facts = {
-      ...deriveActionFormalitiesFacts({
-        departmentCode: "75",
-        departmentName: "Paris",
-        plannedObjective: "nettoyage",
-      }),
+      ...verifiedParisFacts(),
       publicSpace: "public_domain" as const,
       manager: { kind: "paris_city" as const, label: "Ville de Paris" },
       hasInstallations: true,

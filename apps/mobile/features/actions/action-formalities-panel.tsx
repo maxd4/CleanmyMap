@@ -4,7 +4,9 @@ import {
   loadMobileActionFormalities,
   loadMobileActionFormalitiesContacts,
   updateMobileActionFormality,
+  updateMobileActionFormalitiesFacts,
   type MobileActionFormalities,
+  type MobileActionFormalitiesFacts,
   type MobileActionFormalitiesContacts,
   type MobileFormalitiesContact,
 } from './mobile-actions-service'
@@ -37,6 +39,10 @@ const PROCEDURE_LABELS: Record<string, string> = {
   unknown: 'Règle à confirmer',
 }
 const LOAD_ERROR = 'Impossible de charger la qualification. Réessayez.'
+const MANAGER_LABELS: Record<MobileActionFormalitiesFacts['manager']['kind'], string> = {
+  paris_city: 'Ville de Paris', state: 'État', sncf: 'SNCF', haropa: 'HAROPA',
+  other_public: 'Autre gestionnaire public', private: 'Gestionnaire privé', unknown: 'À préciser',
+}
 
 function requirementLabel(status: string) {
   if (status === 'required') return 'Obligatoire selon la règle'
@@ -142,6 +148,8 @@ export function ActionFormalitiesPanel({ actionId, selectedNeeds = [] }: { actio
   const [loading, setLoading] = useState(false)
   const [searchingContacts, setSearchingContacts] = useState(false)
   const [busyTransition, setBusyTransition] = useState(false)
+  const [savingFacts, setSavingFacts] = useState(false)
+  const [failedFacts, setFailedFacts] = useState<MobileActionFormalitiesFacts | null>(null)
   const [expandedDetails, setExpandedDetails] = useState<Set<string>>(() => new Set())
   const [visibleContacts, setVisibleContacts] = useState(6)
 
@@ -149,6 +157,7 @@ export function ActionFormalitiesPanel({ actionId, selectedNeeds = [] }: { actio
     if (!actionId) return
     setLoading(true)
     setError(null)
+    setFailedFacts(null)
     try { setData(await loadMobileActionFormalities(actionId)) }
     catch { setError(LOAD_ERROR) }
     finally { setLoading(false) }
@@ -166,7 +175,7 @@ export function ActionFormalitiesPanel({ actionId, selectedNeeds = [] }: { actio
   const contactHeading = useMemo(() => selectedNeeds.map(item => item.label).join(' · '), [selectedNeeds])
 
   async function searchContacts() {
-    if (!actionId || !selectedNeeds.length || searchingContacts) return
+    if (!actionId || searchingContacts) return
     setSearchingContacts(true)
     setContacts(null)
     setContactError(null)
@@ -180,10 +189,44 @@ export function ActionFormalitiesPanel({ actionId, selectedNeeds = [] }: { actio
     if (!actionId || busyTransition) return
     setBusyTransition(true)
     setError(null)
+    setFailedFacts(null)
     try { setData(await updateMobileActionFormality(actionId, formalityId, kind)) }
     catch { setError('État non enregistré. Réessayez ; vérifiez ensuite la démarche affichée.') }
     finally { setBusyTransition(false) }
   }
+
+  async function updateFacts(facts: MobileActionFormalitiesFacts) {
+    if (!actionId || savingFacts) return
+    setSavingFacts(true)
+    setError(null)
+    setFailedFacts(null)
+    try { setData(await updateMobileActionFormalitiesFacts(actionId, facts)) }
+    catch { setFailedFacts(facts); setError('Informations non enregistrées. Réessayez ; les obligations affichées restent celles du dernier calcul réussi.') }
+    finally { setSavingFacts(false) }
+  }
+
+  function cycleFact(key: keyof Omit<MobileActionFormalitiesFacts, 'territory' | 'manager' | 'isCleanwalk'>) {
+    if (!data) return
+    const current = data.facts[key]
+    const next = current === 'unknown' ? true : current === true ? false : 'unknown'
+    void updateFacts({ ...data.facts, [key]: next })
+  }
+
+  function cyclePublicSpace() {
+    if (!data) return
+    const next = data.facts.publicSpace === 'unknown' ? 'public_domain' : data.facts.publicSpace === 'public_domain' ? 'private_domain' : 'unknown'
+    void updateFacts({ ...data.facts, publicSpace: next })
+  }
+
+  function cycleManager() {
+    if (!data) return
+    const kinds: MobileActionFormalitiesFacts['manager']['kind'][] = ['unknown', 'paris_city', 'state', 'sncf', 'haropa', 'other_public', 'private']
+    const currentIndex = kinds.indexOf(data.facts.manager.kind)
+    const kind = kinds[(currentIndex + 1) % kinds.length]!
+    void updateFacts({ ...data.facts, manager: { kind, label: null } })
+  }
+
+  const factStateLabel = (value: boolean | 'unknown') => value === true ? 'Oui' : value === false ? 'Non' : 'À préciser'
 
   const required = data?.qualification.formalities.filter(item => item.requirementStatus === 'required') ?? []
   const other = data?.qualification.formalities.filter(item => item.requirementStatus !== 'required') ?? []
@@ -198,7 +241,25 @@ export function ActionFormalitiesPanel({ actionId, selectedNeeds = [] }: { actio
 
     {loading && !data ? <View style={styles.state}><ActivityIndicator color="#34d399" accessibilityLabel="Chargement" /><Text accessibilityLiveRegion="polite" style={styles.body}>Chargement de la qualification officielle…</Text></View> : null}
     {!actionId ? <Text style={styles.attentionText}>Enregistrez le brouillon pour obtenir la qualification des formalités. Aucune absence d’obligation n’est déduite avant cette vérification.</Text> : null}
-    {error ? <View accessibilityRole="alert" style={styles.state}><Text style={styles.error}>{error}</Text><Pressable onPress={() => void reload()} accessibilityRole="button" style={styles.button}><Text style={styles.buttonText}>Réessayer</Text></Pressable></View> : null}
+    {error ? <View accessibilityRole="alert" style={styles.state}><Text style={styles.error}>{error}</Text><Pressable onPress={() => { if (failedFacts) void updateFacts(failedFacts); else void reload() }} accessibilityRole="button" style={styles.button}><Text style={styles.buttonText}>Réessayer</Text></Pressable></View> : null}
+
+    {data ? <View style={styles.section}>
+      <Text accessibilityRole="header" style={styles.sectionTitle}>Vérifier les faits de l’action</Text>
+      <Text style={styles.caption}>Ces réponses servent à recalculer les règles avec le serveur. Une localisation incertaine ne crée pas de règle locale.</Text>
+      <Pressable disabled={savingFacts} onPress={cyclePublicSpace} accessibilityRole="button" accessibilityLabel={`Type de lieu : ${data.facts.publicSpace === 'public_domain' ? 'domaine public' : data.facts.publicSpace === 'private_domain' ? 'lieu privé' : 'à préciser'}`} accessibilityState={{ disabled: savingFacts }} style={styles.factButton}><Text style={styles.buttonText}>Lieu : {data.facts.publicSpace === 'public_domain' ? 'domaine public' : data.facts.publicSpace === 'private_domain' ? 'lieu privé' : 'à préciser'}</Text></Pressable>
+      <Pressable disabled={savingFacts} onPress={cycleManager} accessibilityRole="button" accessibilityLabel={`Gestionnaire : ${data.facts.manager.label ?? MANAGER_LABELS[data.facts.manager.kind]}`} accessibilityState={{ disabled: savingFacts }} style={styles.factButton}><Text style={styles.buttonText}>Gestionnaire : {data.facts.manager.label ?? MANAGER_LABELS[data.facts.manager.kind]}</Text></Pressable>
+      {([
+        ['isPublicRoadwayActivity', 'Activité sur la voie publique'],
+        ['isCortegeOrGathering', 'Cortège ou rassemblement'],
+        ['isItinerant', 'Action itinérante'],
+        ['isClaiming', 'Revendication ou message revendicatif'],
+        ['hasInstallations', 'Installations prévues'],
+        ['requiresPhysicalOccupation', 'Occupation physique du lieu'],
+        ['localCustomaryUse', 'Usage local habituel'],
+        ['largeCrowdOrComplexInstallations', 'Foule importante ou installations complexes'],
+      ] as const).map(([key, label]) => <Pressable key={key} disabled={savingFacts} onPress={() => cycleFact(key)} accessibilityRole="button" accessibilityLabel={`${label} : ${factStateLabel(data.facts[key])}`} accessibilityState={{ disabled: savingFacts }} style={styles.factButton}><Text style={styles.buttonText}>{label} : {factStateLabel(data.facts[key])}</Text></Pressable>)}
+      {savingFacts ? <Text accessibilityLiveRegion="polite" style={styles.caption}>Enregistrement et recalcul des règles…</Text> : null}
+    </View> : null}
 
     {required.length ? <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.sectionTitle}>Obligations et démarches requises</Text>
@@ -216,7 +277,7 @@ export function ActionFormalitiesPanel({ actionId, selectedNeeds = [] }: { actio
       </View>)}
     </View> : null}
 
-    {selectedNeeds.length ? <View style={styles.section}>
+    <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.sectionTitle}>Services du territoire</Text>
       {!actionId ? <Text style={styles.caption}>Enregistrez l’action pour rechercher les services des communes concernées.</Text> : <Pressable onPress={() => void searchContacts()} disabled={searchingContacts} accessibilityRole="button" accessibilityState={{ disabled: searchingContacts }} style={[styles.button, searchingContacts && styles.disabled]}>
         <Text style={styles.buttonText}>{searchingContacts ? 'Recherche en cours…' : contacts ? 'Actualiser les contacts' : 'Rechercher les contacts'}</Text>
@@ -243,7 +304,7 @@ export function ActionFormalitiesPanel({ actionId, selectedNeeds = [] }: { actio
         </View> : null}
         <ExternalLink label="Annuaire officiel des services publics" url="https://lannuaire.service-public.gouv.fr/" onError={setLinkError} />
       </View> : null}
-    </View> : null}
+    </View>
     {linkError ? <Text accessibilityRole="alert" style={styles.error}>{linkError}</Text> : null}
     {data?.actionData ? <View style={styles.prefill}>
       <Text accessibilityRole="header" style={styles.sectionTitle}>Informations reprises de l’action</Text>
@@ -276,6 +337,7 @@ const styles = StyleSheet.create({
   neutral: { backgroundColor: '#164e3b' },
   link: { color: '#a7f3d0', fontSize: 14, lineHeight: 20, fontWeight: '700', textDecorationLine: 'underline' },
   button: { minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: '#4b8068', backgroundColor: '#164e3b' },
+  factButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: '#4b8068', backgroundColor: '#123328' },
   buttonText: { color: '#f1fff7', fontSize: 14, lineHeight: 20, fontWeight: '700', textAlign: 'center' },
   disabled: { opacity: 0.55 },
   transitionList: { gap: 8, paddingTop: 2 },

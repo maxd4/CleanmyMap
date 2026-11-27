@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   loadFormalities: vi.fn(),
   loadContacts: vi.fn(),
   updateFormality: vi.fn(),
+  updateFacts: vi.fn(),
   openURL: vi.fn(),
 }))
 
@@ -18,11 +19,18 @@ vi.mock('../features/actions/mobile-actions-service', () => ({
   loadMobileActionFormalities: mocks.loadFormalities,
   loadMobileActionFormalitiesContacts: mocks.loadContacts,
   updateMobileActionFormality: mocks.updateFormality,
+  updateMobileActionFormalitiesFacts: mocks.updateFacts,
 }))
 
 const qualificationResponse: MobileActionFormalities = {
   status: 'ok',
   actionId: 'action-1',
+  facts: {
+    territory: { countryCode: 'FR', jurisdictionEvidence: 'metropolitan_point', code: 'FR-75', label: 'Paris' },
+    publicSpace: 'public_domain', manager: { kind: 'paris_city', label: 'Ville de Paris' }, isCleanwalk: true,
+    isPublicRoadwayActivity: false, isCortegeOrGathering: false, isItinerant: false, isClaiming: false,
+    hasInstallations: false, requiresPhysicalOccupation: false, localCustomaryUse: false, largeCrowdOrComplexInstallations: false,
+  },
   qualification: { formalities: [
     {
       id: 'aot', requirementStatus: 'required', procedureKind: 'city_aot', competentAuthority: { label: 'Ville de test' }, recipient: 'Service des événements',
@@ -81,6 +89,7 @@ describe('ActionFormalitiesPanel', () => {
     mocks.loadFormalities.mockReset().mockResolvedValue(qualificationResponse)
     mocks.loadContacts.mockReset().mockResolvedValue(contactResponse)
     mocks.updateFormality.mockReset().mockResolvedValue(qualificationResponse)
+    mocks.updateFacts.mockReset().mockResolvedValue(qualificationResponse)
     mocks.openURL.mockReset().mockResolvedValue(undefined)
   })
 
@@ -101,7 +110,7 @@ describe('ActionFormalitiesPanel', () => {
     expect(textContent(renderer)).toContain('Domaine public municipal.')
   })
 
-  it('loads a partial contact search only after a need was selected and exposes official recovery links', async () => {
+  it('loads a partial contact search for selected needs and exposes official recovery links', async () => {
     let renderer!: TestRenderer.ReactTestRenderer
     await act(async () => { renderer = TestRenderer.create(<ActionFormalitiesPanel actionId="action-1" selectedNeeds={[{ id: 'pickup', label: 'Reprise des déchets' }]} />) })
     await act(async () => { callTestHandler(findButton(renderer, 'Rechercher les contacts'), 'onPress') })
@@ -113,6 +122,30 @@ describe('ActionFormalitiesPanel', () => {
     expect(content).toContain('SINOE Déchets')
     expect(content).toContain('confirmer la reprise')
     expect(content).toContain('Communes à compléter : 75056.')
+  })
+
+  it('keeps contact discovery available without optional needs and recalculates facts through the shared API', async () => {
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => { renderer = TestRenderer.create(<ActionFormalitiesPanel actionId="action-1" />) })
+    expect(textContent(renderer)).toContain('Obligations et démarches requises')
+    await act(async () => { callTestHandler(findButton(renderer, 'Rechercher les contacts'), 'onPress') })
+    expect(mocks.loadContacts).toHaveBeenCalledWith('action-1', [])
+    const roadway = renderer.root.findAll(node => typeof node.props.onPress === 'function').find(node => node.props.accessibilityLabel === 'Activité sur la voie publique : Non')
+    await act(async () => { callTestHandler(roadway, 'onPress') })
+    expect(mocks.updateFacts).toHaveBeenCalledWith('action-1', expect.objectContaining({ isPublicRoadwayActivity: 'unknown' }))
+    expect(textContent(renderer)).toContain('Vérifier les faits de l’action')
+  })
+
+  it('retries a failed fact update instead of only reloading the old qualification', async () => {
+    mocks.updateFacts.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(qualificationResponse)
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => { renderer = TestRenderer.create(<ActionFormalitiesPanel actionId="action-1" />) })
+    const roadway = renderer.root.findAll(node => typeof node.props.onPress === 'function').find(node => node.props.accessibilityLabel === 'Activité sur la voie publique : Non')
+    await act(async () => { callTestHandler(roadway, 'onPress') })
+    expect(textContent(renderer)).toContain('Informations non enregistrées')
+    await act(async () => { callTestHandler(findButton(renderer, 'Réessayer'), 'onPress') })
+    expect(mocks.updateFacts).toHaveBeenCalledTimes(2)
+    expect(mocks.loadFormalities).toHaveBeenCalledTimes(1)
   })
 
   it('shows a retry after a failed qualification load', async () => {

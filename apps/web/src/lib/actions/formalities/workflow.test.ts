@@ -13,7 +13,14 @@ import { buildReviewableFormalityEmailDraft } from "./email-draft";
 import type { ActionFormalitiesFacts } from "./qualification";
 
 const parisFacts = (overrides: Partial<ActionFormalitiesFacts> = {}): ActionFormalitiesFacts => ({
-  ...deriveActionFormalitiesFacts({ departmentCode: "75", departmentName: "Paris" }),
+  ...deriveActionFormalitiesFacts({
+    departmentCode: "75", departmentName: "Paris", resolvedPoint: true,
+    resolvedTerritory: {
+      commune: { code: "75056", name: "Paris" }, department: { code: "75", name: "Paris" },
+      region: { code: "11", name: "Île-de-France" }, epci: { code: "200054781", name: "Métropole du Grand Paris" },
+      specialTerritory: { code: "FR-PARIS", name: "Paris" }, source: "geo.api.gouv.fr",
+    },
+  }),
   publicSpace: "public_domain",
   manager: { kind: "paris_city", label: null },
   isPublicRoadwayActivity: false,
@@ -272,6 +279,21 @@ describe("formalities workflow", () => {
       now: "2026-09-17T10:03:00.000Z",
     });
     expect(moved.progress).toContainEqual(
+      expect.objectContaining({
+        formalityId: "paris-city-public-domain-aot",
+        validForQualification: false,
+        proof: expect.objectContaining({ kind: "user_declared" }),
+      }),
+    );
+
+    const rescheduled = buildFormalitiesWorkflowState({
+      facts,
+      qualification,
+      actionDependencies: { locationLabel: "Rue A", actionDate: "2026-09-21" },
+      previous: sent,
+      now: "2026-09-17T10:04:00.000Z",
+    });
+    expect(rescheduled.progress).toContainEqual(
       expect.objectContaining({
         formalityId: "paris-city-public-domain-aot",
         validForQualification: false,
