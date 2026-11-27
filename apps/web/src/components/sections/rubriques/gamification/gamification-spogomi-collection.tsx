@@ -108,7 +108,7 @@ export function GamificationSpogomiCollection({ locale }: Props) {
   const events = getSpogomiEvents(awards);
 
   if (isLoading) return <GamificationPanelLoading ariaLabel={fr ? "Chargement de la collection SPOGOMI" : "Loading SPOGOMI collection"} headingWidth="w-72" cardHeight="h-32" />;
-  if (error) return <section id="spogomi-collection" className="rounded-[2.25rem] border border-rose-200 bg-rose-50 p-6 text-sm text-rose-900"><h2 className="font-black">Collection SPOGOMI indisponible</h2><p className="mt-2">La collection privée n’a pas pu être chargée. Réessayez depuis votre espace Gamification.</p></section>;
+  if (error) return <section id="spogomi-collection" tabIndex={-1} className="rounded-[2.25rem] border border-rose-200 bg-rose-50 p-6 text-sm text-rose-900"><h2 className="font-black">Collection SPOGOMI indisponible</h2><p className="mt-2">La collection privée n’a pas pu être chargée. Réessayez depuis votre espace Gamification.</p></section>;
   if (!data) return null;
 
   return (

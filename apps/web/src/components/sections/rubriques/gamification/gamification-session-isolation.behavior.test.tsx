@@ -151,7 +151,7 @@ describe("GamificationSection session isolation", () => {
     });
   });
 
-  it("resets local receipt state on account switch/sign-out and ignores late user-A data", () => {
+  it("resets local receipt dialog on account switch/sign-out, loads user-B, and ignores late user-A data", () => {
     swrStore.set(JSON.stringify(["gamification-me", "user-A", null]), {
       data: makeMeResponse("user-A", "receipt-A"),
       isLoading: false,
@@ -162,17 +162,17 @@ describe("GamificationSection session isolation", () => {
       renderer = create(<GamificationSection />);
     });
 
-    // Open receipt-A in GamificationReconciliationHistory
+    // Unconditionally open receipt-A in GamificationReconciliationHistory and assert dialog is open
     const openBtn = renderer.root
       .findAllByType("button")
       .find((b) => String(b.props.children).includes("Détails") || String(b.props.children).includes("Voir"));
-    if (openBtn) {
-      act(() => {
-        (openBtn.props.onClick as () => void)();
-      });
-    }
+    expect(openBtn).toBeDefined();
+    act(() => {
+      (openBtn!.props.onClick as () => void)();
+    });
+    expect(renderer.root.findAllByProps({ role: "dialog" })).toHaveLength(1);
 
-    // Switch to user-B (still loading, and user-A late response arrives in swrStore)
+    // Switch to user-B (loading): dialog from user-A MUST be unmounted
     authState.userId = "user-B";
     swrStore.set(JSON.stringify(["gamification-me", "user-B", null]), {
       data: undefined,
@@ -181,10 +181,32 @@ describe("GamificationSection session isolation", () => {
     act(() => {
       renderer.update(<GamificationSection />);
     });
+    expect(renderer.root.findAllByProps({ role: "dialog" })).toHaveLength(0);
 
-    // Neither receipt-A nor user-A data may be present on user-B's mounted subtree
-    const serializedTree = JSON.stringify(renderer.toJSON());
-    expect(serializedTree).not.toContain("receipt-A");
+    // Load user-B data
+    swrStore.set(JSON.stringify(["gamification-me", "user-B", null]), {
+      data: makeMeResponse("user-B", "receipt-B"),
+      isLoading: false,
+    });
+    act(() => {
+      renderer.update(<GamificationSection />);
+    });
+    expect(renderer.root.findAllByProps({ role: "dialog" })).toHaveLength(0);
+    expect(JSON.stringify(renderer.toJSON())).toContain("1 reçu conservé");
+
+    // Simulate late user-A response arriving while user-B is active
+    const lateUserA = makeMeResponse("user-A", "receipt-A-late");
+    lateUserA.progression.xpTotal = 999;
+    swrStore.set(JSON.stringify(["gamification-me", "user-A", null]), {
+      data: lateUserA,
+      isLoading: false,
+    });
+    act(() => {
+      renderer.update(<GamificationSection />);
+    });
+    const treeAfterLateA = JSON.stringify(renderer.toJSON());
+    expect(treeAfterLateA).not.toContain("999");
+    expect(treeAfterLateA).not.toContain("receipt-A");
 
     // Sign out -> anonymous
     authState.isSignedIn = false;
@@ -192,7 +214,8 @@ describe("GamificationSection session isolation", () => {
     act(() => {
       renderer.update(<GamificationSection />);
     });
-    expect(JSON.stringify(renderer.toJSON())).not.toContain("receipt-A");
+    expect(renderer.root.findAllByProps({ role: "dialog" })).toHaveLength(0);
+    expect(JSON.stringify(renderer.toJSON())).toContain("0 reçus conservés");
 
     act(() => {
       renderer.unmount();
