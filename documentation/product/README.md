@@ -46,6 +46,7 @@ Repères transversaux à conserver dans toute la documentation produit :
 ### Utilisateurs et parcours
 
 - `parcours-utilisateurs.md` ;
+- [`persona-entreprise-rse.md`](./persona-entreprise-rse.md) : étude de marché et découverte du persona entreprise (`AUDIT / PLAN / PROPOSITION`) ;
 - `coherence-mobile-first.md` ;
 - `matrice-rubriques.md` ;
 - `visual-first-priorites.md` — références de schémas utiles (`PLAN / REFERENCE`).

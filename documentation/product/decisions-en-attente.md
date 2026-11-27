@@ -107,6 +107,8 @@ Que doit apporter concrètement ACTIVE_ROLE=entreprise
 à un représentant d’entreprise ou partenaire ?
 ```
 
+L'[étude du persona Entreprise et RSE](./persona-entreprise-rse.md) documente les usages, prix de marché et entretiens à mener. Elle ne tranche pas cet arbitrage et ne crée pas de permission ni de priorité de développement.
+
 Axes d’étude pour l’expérience utilisateur :
 
 - accueil orienté partenariat, mécénat et impact ;
