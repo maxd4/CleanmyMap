@@ -133,17 +133,26 @@ describe("GamificationTabs interactive & deferred deep-link behavior", () => {
       }
     }
 
-    const fakeDoc = {
+    const fakeDoc: {
+      body: Record<string, unknown>;
+      activeElement: unknown;
+      getElementById: (id: string) => unknown;
+    } = {
       body: {},
+      activeElement: null,
       getElementById: (id: string) => {
         if (id === "gamification-panel-badges") return {};
         if (id === "spogomi-collection" && targetMounted) {
-          return {
+          const targetNode = {
             id,
             scrollIntoView: scrollIntoViewSpy,
-            focus: focusSpy,
+            focus: (opts?: unknown) => {
+              focusSpy(opts);
+              fakeDoc.activeElement = targetNode;
+            },
             classList,
           };
+          return targetNode;
         }
         return null;
       },

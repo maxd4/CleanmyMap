@@ -14,7 +14,7 @@ export function TerrainSpecializationsPanel({
 }) {
   const fr = locale === "fr";
   return (
-    <section id="gamification-terrain-specializations" className="scroll-mt-6 rounded-[1.5rem] border border-[#ead8d2] bg-[#fffdfc] p-4 sm:p-5">
+    <section id="gamification-terrain-specializations" tabIndex={-1} className="scroll-mt-6 rounded-[1.5rem] border border-[#ead8d2] bg-[#fffdfc] p-4 sm:p-5">
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f5e7e2] text-[#b4362e]">
           <ShieldCheck size={18} aria-hidden="true" />

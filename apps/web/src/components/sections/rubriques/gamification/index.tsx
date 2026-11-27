@@ -107,7 +107,7 @@ export function GamificationSection() {
 
   return (
     <SectionShell id="gamification" hideHeader gradient="from-[#fff8f5] via-white to-transparent">
-      <div className="space-y-5 pb-8 pt-5 sm:space-y-6">
+      <div key={identityKey ?? "anonymous"} className="space-y-5 pb-8 pt-5 sm:space-y-6">
         <PageHeader title={fr ? "Progression & badges" : "Progress & badges"} subtitle={fr ? "Vos contributions. Vos paliers. Vos récompenses." : "Your contributions. Your milestones. Your rewards."} />
         <GamificationLevelProgressPanel {...panelProps} />
         <GamificationReconciliationNotice reconciliation={meData?.reconciliation} progression={progression} locale={locale} onAcknowledged={async () => { await mutateMe(); }} />

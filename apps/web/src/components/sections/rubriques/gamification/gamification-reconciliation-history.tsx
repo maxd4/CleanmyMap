@@ -180,7 +180,7 @@ export function GamificationReconciliationHistory({
   }
 
   return (
-    <section id="gamification-reconciliation-history" className="scroll-mt-8 rounded-[2.25rem] border border-[#ead8d2] bg-white p-5 shadow-[0_12px_40px_rgba(126,31,20,0.05)] sm:p-6">
+    <section id="gamification-reconciliation-history" tabIndex={-1} className="scroll-mt-8 rounded-[2.25rem] border border-[#ead8d2] bg-white p-5 shadow-[0_12px_40px_rgba(126,31,20,0.05)] sm:p-6">
       <details
         open={isOpen || hash === "#gamification-reconciliation-history" || Boolean(targetedEntry)}
         onToggle={(event) => setIsOpen(event.currentTarget.open)}

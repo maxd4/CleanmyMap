@@ -18,7 +18,7 @@ export function focusGamificationTarget(targetId: string): boolean {
   element.focus({ preventScroll: true });
   focusClasses.forEach((className) => element.classList.add(className));
   window.setTimeout(() => focusClasses.forEach((className) => element.classList.remove(className)), 1800);
-  return true;
+  return document.activeElement === element;
 }
 
 export function navigateToGamificationTarget(targetId: string): void {

@@ -536,10 +536,11 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
       await page.keyboard.press("Home");
       await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
 
-      // Deferred deep link to #spogomi-collection
+      // Deferred deep link to #spogomi-collection + programmatic focus verification
       await openProtectedRoute(page, "/sections/gamification#spogomi-collection");
       await expect(tabs.nth(4)).toHaveAttribute("aria-selected", "true");
       await expect(page.locator("#spogomi-collection")).toBeVisible();
+      await expect(page.locator("#spogomi-collection")).toBeFocused();
 
       // Display modes and responsive widths (390, 768, 1280, 1920)
       for (const mode of displayModes) {
