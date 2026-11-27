@@ -57,7 +57,7 @@ delete from private.external_action_sync_references where external_event_id like
 delete from private.external_action_sync_identities where identity_hash in ('${hashCollision}', '${hashOrgConflict}', '${hashLockOrder}', '${hashSuppressA}', '${hashSuppressB}', '${hashExpired}', '${hashDistinctA}', '${hashDistinctB}', '${hashLockExpire}', '${hashLockExpireComplete}', '${hashAppliedRace}', '${hashAppliedOrder}');
 delete from public.actions where id in ('${actionA}'::uuid, '${actionB}'::uuid, '00000000-0000-4000-8000-000000009011'::uuid, '00000000-0000-4000-8000-000000009012'::uuid, '${actionAppliedRace}'::uuid, '${actionAppliedOrder}'::uuid);
 delete from public.organizer_directory_entries where id in ('${orgA}', '${orgB}');
-delete from public.profiles where id = 'sync-conc-apply';
+delete from public.profiles where id in ('sync-conc-apply', 'sync-conc');
 commit;
 `;
 
@@ -87,23 +87,47 @@ values ('${actionA}'::uuid, 'sync-conc', current_date + 5, 'Lieu Conc A', 'pendi
 commit;
 `, "setup_insert");
 
-  currentPhase = "SETUP_APPLIED_SNAPSHOTS";
+  currentPhase = "SETUP_APPLIED_ACTIONS";
   await run(`
 begin;
 set local role postgres;
 insert into public.actions(id, created_by_clerk_id, action_date, location_label, status, action_phase, organizer_type, organizer_id, organizer_name)
 values ('${actionAppliedRace}'::uuid, 'sync-conc-apply', current_date + 10, 'Race Original', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A'),
        ('${actionAppliedOrder}'::uuid, 'sync-conc-apply', current_date + 11, 'Order Original', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A');
+commit;
+`, "applied_actions");
+
+  currentPhase = "SETUP_APPLIED_SUBSCRIPTION";
+  await run(`
+begin;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"external-sync-concurrency-setup"}', true);
 select set_config('request.jwt.claim.role', 'service_role', true);
 select public.upsert_external_action_sync_subscription('${orgA}', 'jagis_pour_la_nature', 'sync-conc-apply', '{}'::text[], 'struct-sync-conc', 'https://example.test/sync-conc', 'synthetic_fixture', true, 'auth-sync-conc', '2026-11-01', null, clock_timestamp());
+commit;
+`, "applied_subscription");
+
+  currentPhase = "SETUP_APPLIED_RACE_REFERENCE";
+  await run(`
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"external-sync-concurrency-setup"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 select * from public.reserve_external_action_sync_reference('${hashAppliedRace}', '${orgA}', 'sync-conc-apply', '80000000-0000-4000-8000-000000000001'::uuid, 'jagis_pour_la_nature', 'conc-event-apply-race', 'https://example.test/apply-race', 'r1', '{"revision":1}'::jsonb, '${"7".repeat(64)}');
 select public.complete_external_action_sync_identity('${hashAppliedRace}', '80000000-0000-4000-8000-000000000001'::uuid, '${actionAppliedRace}'::uuid);
+commit;
+`, "applied_race_reference");
+
+  currentPhase = "SETUP_APPLIED_ORDER_REFERENCE";
+  await run(`
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"external-sync-concurrency-setup"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 select * from public.reserve_external_action_sync_reference('${hashAppliedOrder}', '${orgA}', 'sync-conc-apply', '80000000-0000-4000-8000-000000000002'::uuid, 'jagis_pour_la_nature', 'conc-event-apply-order', 'https://example.test/apply-order', 'r1', '{"revision":1}'::jsonb, '${"8".repeat(64)}');
 select public.complete_external_action_sync_identity('${hashAppliedOrder}', '80000000-0000-4000-8000-000000000002'::uuid, '${actionAppliedOrder}'::uuid);
 commit;
-`, "applied_setup");
+`, "applied_order_reference");
 }
 
 async function testAppliedSnapshotConvergence() {

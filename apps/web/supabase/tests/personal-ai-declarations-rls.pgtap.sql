@@ -1,6 +1,6 @@
 begin;
 
-select plan(95);
+select plan(96);
 
 select has_table('public', 'personal_ai_declarations', 'private declarations table exists');
 select has_column('public', 'personal_ai_declarations', 'quick_scenario', 'optional chatbot scenario is stored on the existing private table');
@@ -246,6 +246,7 @@ select throws_ok($$
     'cost_amount', null, 'cost_currency', null
   )))
 $$, null, null, 'a half-known period is rejected by the table contract');
+select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-a' and source_identity_hash = repeat('8', 64)), 0, 'a half-known period does not persist');
 select throws_ok($$
   select * from pg_temp.personal_ai_save_test(
     null,

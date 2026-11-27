@@ -1,5 +1,5 @@
 begin;
-select plan(43);
+select plan(44);
 
 select ok(has_table_privilege('service_role', 'private.external_action_sync_subscriptions', 'INSERT'), 'service role can manage external sync subscriptions');
 select ok(not has_table_privilege('authenticated', 'private.external_action_sync_subscriptions', 'SELECT'), 'authenticated cannot read private external sync subscriptions');
@@ -12,6 +12,11 @@ select ok(not has_function_privilege('authenticated', 'public.submit_external_ac
 
 create temp table engine_state_results (key text primary key, value text);
 grant all on table engine_state_results to service_role;
+
+insert into public.profiles (id, display_name, handle)
+values ('user-org-a', 'Org A User', 'org-a-user')
+on conflict (id) do nothing;
+select ok(exists (select 1 from public.profiles where id = 'user-org-a'), 'external sync test owner fixture exists before the engine block');
 
 do $$
 declare
@@ -48,9 +53,6 @@ declare
   v_cross_org_err text := 'none';
   v_resolve_wrong_org text;
 begin
-  insert into public.profiles (id, display_name, handle)
-  values ('user-org-a', 'Org A User', 'org-a-user')
-  on conflict (id) do nothing;
   insert into public.actions (
     id, created_by_clerk_id, organizer_id, organizer_type, action_date,
     action_phase, status, published_at, location_label, moderation_visibility

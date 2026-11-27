@@ -5,6 +5,7 @@ const owner = "personal-ai-concurrency-proof";
 const barrierKey = 918273646701;
 const firstPeriod = { start: "2026-11-01T00:00:00Z", end: "2026-11-07T23:59:59Z" };
 const overlapPeriod = { start: "2026-11-06T00:00:00Z", end: "2026-11-12T23:59:59Z" };
+let currentPhase = "INIT";
 
 function query(sql, timeoutMs = 20_000) {
   return runLocalPsqlQuery(sql, { timeoutMs, errorLabel: "Personal AI write concurrency proof failed" });
@@ -84,12 +85,15 @@ async function concurrentPair(firstSql, secondSql) {
 }
 
 async function main() {
+  currentPhase = "SETUP_CLEANUP";
   await resolveLocalEphemeralDbUrl();
   await query(cleanup);
+  currentPhase = "SETUP_INITIAL_SCENARIO";
   const seeded = await query(serviceSession(saveSql(null, "CHATGPT", firstPeriod)));
   const id = seeded.stdout.match(/id\s*\|\s*([0-9a-f-]{36})/i)?.[1];
   assert.ok(id, "initial scenario must be persisted");
 
+  currentPhase = "CONCURRENT_EDIT_CREATE";
   const edit = serviceSession(`select pg_advisory_lock(${barrierKey});
     select pg_advisory_xact_lock(hashtextextended('${owner}', 0));
     select pg_sleep(0.6);
@@ -98,9 +102,11 @@ async function main() {
   const idempotentCreate = serviceSession(saveSql(null, "CHATGPT", firstPeriod));
   const pair = await concurrentPair(edit, idempotentCreate);
   assert.equal(pair.filter((result) => result.status === "fulfilled").length, 2, "concurrent edit and create must serialize without deadlock");
+  currentPhase = "VERIFY_SINGLE_SCENARIO";
   const stable = await query(`select count(*)::int as count from public.personal_ai_declarations where owner_clerk_id = '${owner}' and quick_scenario ->> 'chatbot' = 'CHATGPT';`);
   assert.match(stable.stdout, /count\s*\|\s*1/);
 
+  currentPhase = "CONCURRENT_OVERLAP";
   const winner = serviceSession(`select pg_advisory_lock(${barrierKey});
     select pg_advisory_xact_lock(hashtextextended('${owner}', 0));
     select pg_sleep(0.6);
@@ -115,6 +121,7 @@ async function main() {
   assert.equal(overlapResults.filter((result) => result.status === "fulfilled").length, 2, "overlap contender must report the expected SQL conflict without deadlock");
   assert.match(overlapResults.map((result) => result.value.stdout + result.value.stderr).join("\n"), /PERSONAL_AI_EXPECTED_OVERLAP=23P01/);
 
+  currentPhase = "VERIFY_FINAL_STATE";
   const final = await query(`select count(*)::int as count from public.personal_ai_declarations where owner_clerk_id = '${owner}' and status = 'ACTIVE';`);
   assert.match(final.stdout, /count\s*\|\s*2/);
   await query(cleanup);
@@ -123,6 +130,7 @@ async function main() {
 
 main().catch(async (error) => {
   try { await query(cleanup); } catch (cleanupError) { console.error(cleanupError); }
+  console.log(`PERSONAL_AI_PHASE=${currentPhase}_${error?.code === "ERR_ASSERTION" ? "ASSERT" : "SQL"}`);
   console.error(error);
   process.exitCode = 1;
 });
