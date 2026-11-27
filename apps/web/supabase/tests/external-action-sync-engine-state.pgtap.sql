@@ -48,7 +48,6 @@ declare
   v_cross_org_err text := 'none';
   v_resolve_wrong_org text;
 begin
-  set local role postgres;
   insert into public.profiles (id, display_name, handle)
   values ('user-org-a', 'Org A User', 'org-a-user')
   on conflict (id) do nothing;
@@ -60,7 +59,6 @@ begin
     'pre_action', 'pending', now(), 'Place A', 'visible'
   );
 
-  set local role service_role;
   perform set_config('request.jwt.claims', '{"role":"service_role","sub":"pgtap-engine-state"}', true);
   perform set_config('request.jwt.claim.role', 'service_role', true);
 
@@ -171,7 +169,6 @@ begin
 
   -- Reversing a cancelled tombstone is blocked
   begin
-    set local role postgres;
     update public.actions set status = 'approved' where id = v_action;
   exception when others then
     v_reversal_blocked := 'true';

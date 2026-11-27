@@ -70,6 +70,9 @@ set local role postgres;
 insert into public.profiles(id, display_name, handle)
 values ('sync-conc-apply', 'Sync Concurrency Apply', 'sync-concurrency-apply')
 on conflict (id) do nothing;
+insert into public.profiles(id, display_name, handle)
+values ('sync-conc', 'Sync Concurrency Owner', 'sync-concurrency-owner')
+on conflict (id) do nothing;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"external-sync-concurrency-setup"}', true);
 select set_config('request.jwt.claim.role', 'service_role', true);

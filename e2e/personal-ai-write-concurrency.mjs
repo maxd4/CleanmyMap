@@ -32,7 +32,6 @@ function declaration(chatbot, period) {
     tokens: { inputTotal: null, inputUncached: null, cacheRead: null, cacheWrite: null, outputVisible: null, outputReasoning: null, outputTotal: null, reasoningRelation: "UNKNOWN", logicalTotal: null },
     modality: { images: null, audioMinutes: null, videoSeconds: null },
     energy: { kwh: null, boundary: null, evidence: null, averageWatts: null, durationSeconds: null, idleWatts: null },
-    tokens: { inputTotal: null, outputTotal: null, total: null },
   });
 }
 
