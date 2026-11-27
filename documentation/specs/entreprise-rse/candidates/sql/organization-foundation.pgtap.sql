@@ -1,0 +1,27 @@
+-- CANDIDATE pgTAP structural tests, to integrate in apps/web/supabase/tests.
+begin;
+select plan(22);
+select has_table('public','organizations');
+select has_table('public','organization_memberships');
+select has_table('public','action_organizations');
+select has_table('public','organization_campaigns');
+select has_table('public','organization_sites');
+select has_table('public','organization_campaign_actions');
+select has_table('public','organization_audit');
+select ok((select bool_and(relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname in ('organizations','organization_memberships','organization_sites','action_organizations','organization_campaigns','organization_campaign_actions','organization_audit')), 'all seven tables have RLS');
+select ok(not has_table_privilege('anon','public.organizations','SELECT'),'anonymous cannot read organizations');
+select ok(not has_table_privilege('authenticated','public.organization_memberships','SELECT'),'browser cannot read memberships');
+select ok(not has_table_privilege('authenticated','public.action_organizations','SELECT'),'browser cannot read action links');
+select ok(not has_table_privilege('authenticated','public.organization_audit','SELECT'),'browser cannot read audit');
+select ok(not has_table_privilege('service_role','public.organization_memberships','UPDATE'),'service cannot mutate membership table directly');
+select ok(not has_function_privilege('authenticated','public.bootstrap_organization(text,text,text,uuid)','EXECUTE'),'browser cannot bootstrap');
+select ok(not has_function_privilege('authenticated','public.mutate_organization_membership(uuid,text,text,uuid,text,text,uuid,uuid)','EXECUTE'),'browser cannot change memberships');
+select ok(not has_function_privilege('anon','public.organization_report_action_ids(uuid,text,uuid,uuid,date,date,integer)','EXECUTE'),'anonymous cannot resolve report scope');
+select ok(not has_function_privilege('authenticated','public.organization_report_action_ids(uuid,text,uuid,uuid,date,date,integer)','EXECUTE'),'browser cannot resolve report scope');
+select ok(has_function_privilege('service_role','public.organization_report_action_ids(uuid,text,uuid,uuid,date,date,integer)','EXECUTE'),'server can resolve scope');
+select ok(not has_function_privilege('service_role','public.organization_actor_role(uuid,text)','EXECUTE'),'helper not externally callable');
+select ok(not has_function_privilege('service_role','public.organization_lock_enabled(uuid)','EXECUTE'),'lock helper not externally callable');
+select throws_ok($test$select public.organization_report_action_ids('00000000-0000-4000-8000-000000000001','unknown',null,null,'2026-01-01','2026-12-31',10)$test$,'42501','scope unavailable','unknown scope fails closed');
+select throws_ok($test$select public.bootstrap_organization('unknown','unknown','actor','00000000-0000-4000-8000-000000000001')$test$,'42501','verified mandate required','unknown partner cannot bootstrap');
+select * from finish();
+rollback;

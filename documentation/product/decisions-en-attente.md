@@ -154,3 +154,8 @@ Avant toute implémentation, la décision devra distinguer explicitement :
 La clôture de cet arbitrage ne devra ajouter aucun privilège implicite à
 `scientifique` ou `entreprise` et ne devra pas transformer un rôle ou un CTA en
 relation organisationnelle persistée.
+
+
+## Réception entreprise et RSE (27 novembre 2026)
+
+**Statut : PLAN / CANDIDATE.** Le développement du parcours entreprise a été autorisé. La cible retenue étend le portail existant avec des organisations vérifiées, établissements, adhésions, campagnes, rattachement explicite des actions et bilans privés, sans privilège associé au seul rôle actif. Les candidats et leur réception sont référencés dans le [manifeste entreprise](../specs/entreprise-rse/README_CODEX.md). L'étude persona reste la source des besoins ; aucun contrat CURRENT, besoin commercial prouvé ni déploiement ne découle de cette décision. Les challenges spécifiques, paiements, abonnements et intégrations ESG restent conditionnels.

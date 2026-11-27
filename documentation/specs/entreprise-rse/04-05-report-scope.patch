@@ -1,0 +1,120 @@
+diff --git a/apps/web/src/lib/organizations/report.ts b/apps/web/src/lib/organizations/report.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/organizations/report.ts
+@@ -0,0 +1,45 @@
++import "server-only";
++import { z } from "zod";
++import { getSupabaseServerClient } from "@/lib/supabase/server";
++import { fetchActionRows } from "@/lib/actions/persistence/queries";
++import { toActionContract } from "@/lib/actions/unified-source/contracts";
++import { toReportsExportRow } from "@/lib/reports/page-data-export";
++import { OrganizationServiceError } from "./service";
++import type { OrganizationReportScope } from "./contracts";
++
++const MAX_ACTIONS = 500;
++const idsSchema = z.array(z.object({ action_id: z.string().uuid() }));
++async function authorizedIds(actor: string, scope: OrganizationReportScope) {
++  const { data, error } = await getSupabaseServerClient(true).rpc("organization_report_action_ids", {
++    p_org: scope.organizationId, p_actor: actor, p_site: scope.siteId,
++    p_campaign: scope.campaignId, p_from: scope.from, p_to: scope.to, p_limit: MAX_ACTIONS + 1,
++  });
++  if (error) throw new OrganizationServiceError(error.code === "42501" ? 403 : 503);
++  const ids = idsSchema.parse(data).map(row => row.action_id);
++  if (ids.length > MAX_ACTIONS) throw new OrganizationServiceError(409);
++  if (new Set(ids).size !== ids.length) throw new OrganizationServiceError(503);
++  return ids;
++}
++
++export async function loadOrganizationReport(actor: string, scope: OrganizationReportScope, actionId?: string) {
++  const initial = await authorizedIds(actor, scope);
++  if (actionId && !initial.includes(actionId)) throw new OrganizationServiceError(403);
++  const ids = actionId ? [actionId] : initial;
++  const client = getSupabaseServerClient(true);
++  const rows = ids.length ? await fetchActionRows(client, {
++    actionIds: ids, limit: ids.length, status: "approved", includePrivateActions: true,
++  }) : [];
++  if (rows.length !== ids.length || new Set(rows.map(row => row.id)).size !== ids.length ||
++    rows.some(row => !ids.includes(row.id))) throw new OrganizationServiceError(409);
++  // Use the canonical projection; never export raw action, user, location, notes, or photo fields.
++  const projected = rows.map(row => toActionContract(row)).map(toReportsExportRow);
++  const result = projected.map(row => ({
++    date: row.Date, massKg: row.Masse_Kg_Declaree, impactMassKg: row.Masse_Kg_Impact,
++    massSource: row.Origine_Masse, butts: row.Megots, participations: row.Bénévoles,
++    durationMinutes: row.Durée_Min,
++  }));
++  const finalIds = await authorizedIds(actor, scope);
++  if (initial.length !== finalIds.length || initial.some(id => !finalIds.includes(id))) throw new OrganizationServiceError(409);
++  return result;
++}
++export type OrganizationReportRow = Awaited<ReturnType<typeof loadOrganizationReport>>[number];
+diff --git a/apps/web/src/lib/organizations/report-summary.ts b/apps/web/src/lib/organizations/report-summary.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/organizations/report-summary.ts
+@@ -0,0 +1,8 @@
++export type ReportMetric = { value: number | null; known: number; total: number };
++export function sumKnown(values: readonly (number | null | undefined)[]): ReportMetric {
++  const known = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0);
++  return { value: known.length ? known.reduce((a,b) => a+b,0) : null, known: known.length, total: values.length };
++}
++export function summarizeOrganizationReport(rows: readonly {massKg: number | null | undefined; butts: number | null | undefined; participations: number | null | undefined; durationMinutes: number | null | undefined}[]) {
++  return { actions: rows.length, massKg: sumKnown(rows.map(row => row.massKg)), butts: sumKnown(rows.map(row => row.butts)), participations: sumKnown(rows.map(row => row.participations)), durationMinutes: sumKnown(rows.map(row => row.durationMinutes)) };
++}
+diff --git a/apps/web/src/lib/organizations/report-summary.test.ts b/apps/web/src/lib/organizations/report-summary.test.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/organizations/report-summary.test.ts
+@@ -0,0 +1,14 @@
++import { describe, expect, it } from "vitest";
++import { sumKnown } from "./report-summary";
++describe("organization report coverage", () => {
++  it("distinguishes unknown from zero", () => {
++    expect(sumKnown([null, undefined])).toEqual({value:null,known:0,total:2});
++    expect(sumKnown([0,null])).toEqual({value:0,known:1,total:2});
++  });
++  it("sums only valid available observations", () => {
++    expect(sumKnown([2,3,null,NaN,-1])).toEqual({value:5,known:2,total:5});
++  });
++  it("does not invent metrics for an empty perimeter", () => {
++    expect(sumKnown([])).toEqual({value:null,known:0,total:0});
++  });
++});
+diff --git a/apps/web/src/app/api/reports/organization/route.ts b/apps/web/src/app/api/reports/organization/route.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/app/api/reports/organization/route.ts
+@@ -0,0 +1,33 @@
++import { NextResponse } from "next/server";
++import { z } from "zod";
++import { requireAuthenticatedAccess } from "@/lib/authz";
++import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
++import { organizationReportScopeSchema } from "@/lib/organizations/contracts";
++import { OrganizationServiceError } from "@/lib/organizations/service";
++import { loadOrganizationReport } from "@/lib/organizations/report";
++import { summarizeOrganizationReport } from "@/lib/organizations/report-summary";
++import { escapeCsvCell } from "@/lib/reports/csv";
++
++export const dynamic = "force-dynamic";
++export const runtime = "nodejs";
++const headers = { "Cache-Control": "private, no-store" };
++const schema = z.object({ scope: organizationReportScopeSchema, actionId: z.string().uuid().optional(), format: z.enum(["summary","csv"]) }).strict();
++function json(body: unknown,status=200) { return NextResponse.json(body,{status,headers}); }
++export async function POST(request: Request) {
++  const access = await requireAuthenticatedAccess();
++  if (!access.ok) return json({error:"Connexion requise."},401);
++  const rate = await enforceServerRateLimitForAuthenticatedUser(request,access.userId,{limit:10,window:60});
++  if (rate) { rate.headers.set("Cache-Control","private, no-store"); return rate; }
++  const parsed = schema.safeParse(await request.json().catch(() => null));
++  if (!parsed.success) return json({error:"Périmètre invalide."},400);
++  try {
++    const rows = await loadOrganizationReport(access.userId,parsed.data.scope,parsed.data.actionId);
++    if (parsed.data.format === "summary") return json(summarizeOrganizationReport(rows));
++    const columns = ["date","massKg","impactMassKg","massSource","butts","participations","durationMinutes"] as const;
++    const csv = [columns.join(","),...rows.map(row=>columns.map(key=>escapeCsvCell(String(row[key] ?? ""))).join(","))].join("\r\n");
++    return new Response(csv,{headers:{...headers,"Content-Type":"text/csv; charset=utf-8","Content-Disposition":"attachment; filename=cleanmymap-bilan-entreprise.csv"}});
++  } catch (error) {
++    const status = error instanceof OrganizationServiceError ? error.status : 503;
++    return json({error:status===403?"Périmètre non autorisé.":status===409?"Périmètre trop large ou modifié. Réduisez la période ou actualisez.":"Bilan indisponible."},status);
++  }
++}

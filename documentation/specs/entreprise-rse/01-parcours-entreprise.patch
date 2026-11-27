@@ -1,0 +1,315 @@
+diff --git a/apps/web/src/app/(app)/sponsor-portal/page.tsx b/apps/web/src/app/(app)/sponsor-portal/page.tsx
+--- a/apps/web/src/app/(app)/sponsor-portal/page.tsx
++++ b/apps/web/src/app/(app)/sponsor-portal/page.tsx
+@@ -14,100 +14,111 @@
+ import { SystemStateRetryButton } from "@/components/ui/system-state-retry-button";
+ import { PublishedDecisionScope, PublishedDecisionZones, PublishedDecisionMethods } from "@/components/pilotage/published-decision-panels";
+ import { DecisionPageNavigation } from "@/components/pilotage/decision-page-navigation";
+-
+-const SPONSOR_WINDOW_DAYS = 730;
+-// Justification: Portail protege par session Clerk et lecture serveur dynamique des donnees sponsor/decideur.
+-export const dynamic = "force-dynamic";
+-type SponsorOverview = Awaited<ReturnType<typeof loadPilotageOverview>>;
+-
+-function buildSponsorRoute(params?: { tab?: string | string[] }): string {
+-  const rawTab = Array.isArray(params?.tab) ? params.tab[0] : params?.tab;
+-  return rawTab ? `/sponsor-portal?tab=${encodeURIComponent(rawTab)}` : "/sponsor-portal";
+-}
+-
+-function SponsorMetrics({ overview, locale }: { overview: SponsorOverview; locale: "fr" | "en" }) {
+-  const isEn = locale === "en";
+-  const current = overview.comparison.current;
+-  const totalActions = current.approvedActions;
+-  const volunteersKnownActions = current.volunteersKnownActions;
+-  const mass = current.wasteKnownActions > 0 ? current.impactVolumeKg : null;
+-  const co2 = mass === null ? null : Math.round(mass * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg);
+-  const savings = mass === null ? null : computeImpactTerrain2026StreetCleaningSavings({ wasteKg: mass, durationMinutes: current.totalDurationMinutes });
+-  const format = (n: number) => n.toLocaleString(isEn ? "en-GB" : "fr-FR", { maximumFractionDigits: 2 });
+-  const participationsValue =
+-    totalActions === 0
+-      ? isEn
+-        ? "Unavailable (no actions)"
+-        : "Indisponible (aucune action)"
+-      : volunteersKnownActions === 0
+-        ? isEn
+-          ? "Not reported"
+-          : "Non renseignées"
+-        : format(current.mobilizationCount);
+-  const participationsDetail =
+-    totalActions === 0
+-      ? isEn
+-        ? "No completed public actions in the window."
+-        : "Aucune action publique terminée dans la période."
+-      : volunteersKnownActions === 0
+-        ? isEn
+-          ? `0/${totalActions} actions have reported participants.`
+-          : `0/${totalActions} actions avec effectif renseigné.`
+-        : volunteersKnownActions < totalActions
+-          ? isEn
+-            ? `Partial coverage (${volunteersKnownActions}/${totalActions} actions); declared sum, not unique people.`
+-            : `Couverture partielle (${volunteersKnownActions}/${totalActions} actions) ; somme déclarée, pas un nombre de personnes uniques.`
+-          : isEn
+-            ? `Declared sum (${volunteersKnownActions}/${totalActions} actions), not a count of unique people.`
+-            : `Somme déclarée (${volunteersKnownActions}/${totalActions} actions), pas un nombre de personnes uniques.`;
+-  const items = isEn
+-    ? [
+-        ["Estimated street cleaning value", savings ? `${format(savings.lowerBoundEuros)} to ${format(savings.upperBoundEuros)} €` : "Unavailable", "Methodological range, not an accounting saving."],
+-        ["Estimated CO₂ avoided", co2 === null ? "Unavailable" : `${format(co2)} kg`, "Proxy calculated from reported mass."],
+-        ["Declared participations", participationsValue, participationsDetail],
+-        ["Reported mass", mass === null ? "Not reported" : `${format(mass)} kg`, `${format(current.wasteCoverageRate)}% of actions reported.`],
+-      ]
+-    : [
+-        ["Valorisation de voirie estimée", savings ? `${format(savings.lowerBoundEuros)} à ${format(savings.upperBoundEuros)} €` : "Indisponible", "Fourchette méthodologique, pas une économie comptable."],
+-        ["CO₂ évité estimé", co2 === null ? "Indisponible" : `${format(co2)} kg`, "Proxy calculé sur la masse renseignée."],
+-        ["Participations déclarées", participationsValue, participationsDetail],
+-        ["Masse renseignée", mass === null ? "Non renseignée" : `${format(mass)} kg`, `${format(current.wasteCoverageRate)} % des actions renseignées.`],
+-      ];
+-  return <section aria-label={isEn ? "Impact summary" : "Bilan d'impact"} className="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">{items.map(([label,value,detail]) => <CmmCard key={label} className="space-y-2"><h2 className="text-sm font-semibold cmm-text-primary">{label}</h2><p className="text-2xl font-bold tabular-nums break-words cmm-text-primary">{value}</p><p className="text-sm cmm-text-primary">{detail}</p></CmmCard>)}</section>;
+-}
+-export default async function SponsorPortalPage({ searchParams }: { searchParams?: Promise<{ tab?: string | string[] }> } = {}) {
+-  const { userId, clerkReachable } = await getSafeAuthSession();
+-  const params = await searchParams;
+-  if (!userId) {
+-    return (
+-      <ClerkRequiredGate
+-        isAuthenticated={false}
+-        authUnavailable={!clerkReachable}
+-        mode="disabled"
+-        signInHref={buildSignInRedirectHref(buildSponsorRoute(params))}
+-      >
+-        <div />
+-      </ClerkRequiredGate>
+-    );
+-  }
+-  const locale = await getServerLocale();
+-  const isEn = locale === "en";
+-  const tabs = [
+-    { id: "summary", label: isEn ? "Impact summary" : "Bilan d'impact" },
+-    { id: "zones", label: isEn ? "Observed zones" : "Zones observées" },
+-    { id: "methods", label: isEn ? "Methods and reports" : "Méthodes et rapports" },
+-  ] as const;
+-  const tab = tabs.find(item => item.id === params?.tab)?.id ?? "summary";
+-  const accountCompletion = await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null);
+-  const overview = await loadPilotageOverview({ periodDays: SPONSOR_WINDOW_DAYS, limit: 5000, publishedCompletedOnly: true }).catch(() => null);
+-  const actionsUnavailable = !overview || Boolean(overview.dataAvailability?.sourceHealth?.failedSources.includes("actions"));
+-  return <AccountCompletionGate state={accountCompletion}><CmmPageLayout>
+-    <PageHeader title={isEn ? "Decision portal" : "Portail décideur"} subtitle={isEn ? "Consolidated impact of completed public actions." : "Impact consolidé des actions publiques terminées."} action={<CmmButton href="/reports" tone="primary">{isEn ? "Reports and exports" : "Rapports et exports"}</CmmButton>} />
+-    <DecisionPageNavigation route="/sponsor-portal" activeTab={tab} tabs={tabs} locale={locale} />
+-    {actionsUnavailable ? <CmmCard className="space-y-3"><p role="status" className="text-sm cmm-text-secondary">{isEn ? "Impact data temporarily unavailable." : "Données d’impact momentanément indisponibles."}</p><SystemStateRetryButton label={isEn ? "Retry" : "Réessayer"} /></CmmCard> : <PublishedDecisionScope overview={overview} locale={locale} />}
+-    {tab === "summary" && !actionsUnavailable && <SponsorMetrics overview={overview} locale={locale} />}
+-    {tab === "zones" && !actionsUnavailable && <PublishedDecisionZones zones={overview.zones.slice(0,3)} locale={locale} />}
+-    {tab === "methods" && <><CmmCard className="space-y-2"><h2 className="font-bold cmm-text-primary">{isEn ? "Valuation and emissions" : "Valorisation et émissions"}</h2><p className="text-sm cmm-text-secondary">{isEn ? "Valuation combines two estimates, by mass and by duration. It is neither an accounting saving nor a certification. CO₂ is a proxy." : "La valorisation croise deux estimations, par masse et par durée. Elle ne constitue ni une économie comptable ni une certification. Le CO₂ est un proxy."}</p></CmmCard><PublishedDecisionMethods methods={overview?.methods ?? []} locale={locale} /></>}
+-    <div className="flex flex-wrap gap-2"><CmmButton href="/pilotage" tone="secondary">{isEn ? "Steering" : "Pilotage"}</CmmButton><CmmButton href="/sections/elus" tone="secondary">{isEn ? "Governance" : "Gouvernance"}</CmmButton></div>
++import { EnterpriseOrganizationWorkspace } from "@/components/pilotage/enterprise-organization-workspace";
++import { EnterpriseActionLinks } from "@/components/pilotage/enterprise-action-links";
++import { getCurrentUserActiveRole } from "@/lib/authz";
++
++const SPONSOR_WINDOW_DAYS = 730;
++// Justification: Portail protege par session Clerk et lecture serveur dynamique des donnees sponsor/decideur.
++export const dynamic = "force-dynamic";
++type SponsorOverview = Awaited<ReturnType<typeof loadPilotageOverview>>;
++
++function buildSponsorRoute(params?: { tab?: string | string[] }): string {
++  const rawTab = Array.isArray(params?.tab) ? params.tab[0] : params?.tab;
++  return rawTab ? `/sponsor-portal?tab=${encodeURIComponent(rawTab)}` : "/sponsor-portal";
++}
++
++function SponsorMetrics({ overview, locale }: { overview: SponsorOverview; locale: "fr" | "en" }) {
++  const isEn = locale === "en";
++  const current = overview.comparison.current;
++  const totalActions = current.approvedActions;
++  const volunteersKnownActions = current.volunteersKnownActions;
++  const mass = current.wasteKnownActions > 0 ? current.impactVolumeKg : null;
++  const co2 = mass === null ? null : Math.round(mass * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg);
++  const savings = mass === null ? null : computeImpactTerrain2026StreetCleaningSavings({ wasteKg: mass, durationMinutes: current.totalDurationMinutes });
++  const format = (n: number) => n.toLocaleString(isEn ? "en-GB" : "fr-FR", { maximumFractionDigits: 2 });
++  const participationsValue =
++    totalActions === 0
++      ? isEn
++        ? "Unavailable (no actions)"
++        : "Indisponible (aucune action)"
++      : volunteersKnownActions === 0
++        ? isEn
++          ? "Not reported"
++          : "Non renseignées"
++        : format(current.mobilizationCount);
++  const participationsDetail =
++    totalActions === 0
++      ? isEn
++        ? "No completed public actions in the window."
++        : "Aucune action publique terminée dans la période."
++      : volunteersKnownActions === 0
++        ? isEn
++          ? `0/${totalActions} actions have reported participants.`
++          : `0/${totalActions} actions avec effectif renseigné.`
++        : volunteersKnownActions < totalActions
++          ? isEn
++            ? `Partial coverage (${volunteersKnownActions}/${totalActions} actions); declared sum, not unique people.`
++            : `Couverture partielle (${volunteersKnownActions}/${totalActions} actions) ; somme déclarée, pas un nombre de personnes uniques.`
++          : isEn
++            ? `Declared sum (${volunteersKnownActions}/${totalActions} actions), not a count of unique people.`
++            : `Somme déclarée (${volunteersKnownActions}/${totalActions} actions), pas un nombre de personnes uniques.`;
++  const items = isEn
++    ? [
++        ["Estimated street cleaning value", savings ? `${format(savings.lowerBoundEuros)} to ${format(savings.upperBoundEuros)} €` : "Unavailable", "Methodological range, not an accounting saving."],
++        ["Estimated CO₂ avoided", co2 === null ? "Unavailable" : `${format(co2)} kg`, "Proxy calculated from reported mass."],
++        ["Declared participations", participationsValue, participationsDetail],
++        ["Reported mass", mass === null ? "Not reported" : `${format(mass)} kg`, `${format(current.wasteCoverageRate)}% of actions reported.`],
++      ]
++    : [
++        ["Valorisation de voirie estimée", savings ? `${format(savings.lowerBoundEuros)} à ${format(savings.upperBoundEuros)} €` : "Indisponible", "Fourchette méthodologique, pas une économie comptable."],
++        ["CO₂ évité estimé", co2 === null ? "Indisponible" : `${format(co2)} kg`, "Proxy calculé sur la masse renseignée."],
++        ["Participations déclarées", participationsValue, participationsDetail],
++        ["Masse renseignée", mass === null ? "Non renseignée" : `${format(mass)} kg`, `${format(current.wasteCoverageRate)} % des actions renseignées.`],
++      ];
++  return <section aria-label={isEn ? "Impact summary" : "Bilan d'impact"} className="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">{items.map(([label,value,detail]) => <CmmCard key={label} className="space-y-2"><h2 className="text-sm font-semibold cmm-text-primary">{label}</h2><p className="text-2xl font-bold tabular-nums break-words cmm-text-primary">{value}</p><p className="text-sm cmm-text-primary">{detail}</p></CmmCard>)}</section>;
++}
++export default async function SponsorPortalPage({ searchParams }: { searchParams?: Promise<{ tab?: string | string[] }> } = {}) {
++  const { userId, clerkReachable } = await getSafeAuthSession();
++  const params = await searchParams;
++  if (!userId) {
++    return (
++      <ClerkRequiredGate
++        isAuthenticated={false}
++        authUnavailable={!clerkReachable}
++        mode="disabled"
++        signInHref={buildSignInRedirectHref(buildSponsorRoute(params))}
++      >
++        <div />
++      </ClerkRequiredGate>
++    );
++  }
++  const locale = await getServerLocale();
++  const isEn = locale === "en";
++  const isEnterprise = await getCurrentUserActiveRole().then((role) => role === "entreprise").catch(() => false);
++  const tabs = [
++    { id: "summary", label: isEn ? "Impact summary" : "Bilan d'impact" },
++    { id: "zones", label: isEn ? "Observed zones" : "Zones observées" },
++    { id: "methods", label: isEn ? "Methods and reports" : "Méthodes et rapports" },
++    ...(isEnterprise ? [
++      { id: "actions", label: isEn ? "Organize" : "Organiser" },
++      { id: "organization", label: isEn ? "My organization" : "Mon organisation" },
++      { id: "opportunities", label: isEn ? "Opportunities" : "Opportunités" },
++    ] as const : []),
++  ] as const;
++  const requestedTab = Array.isArray(params?.tab) ? params.tab[0] : params?.tab;
++  const tab = tabs.find(item => item.id === requestedTab)?.id ?? "summary";
++  const isResourceTab = tab === "actions" || tab === "opportunities" || tab === "organization";
++  const accountCompletion = await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null);
++  const overview = isResourceTab ? null : await loadPilotageOverview({ periodDays: SPONSOR_WINDOW_DAYS, limit: 5000, publishedCompletedOnly: true }).catch(() => null);
++  const actionsUnavailable = !overview || Boolean(overview.dataAvailability?.sourceHealth?.failedSources.includes("actions"));
++  return <AccountCompletionGate state={accountCompletion}><CmmPageLayout>
++    <PageHeader title={isEnterprise ? (isEn ? "Enterprise workspace" : "Espace entreprise") : (isEn ? "Decision portal" : "Portail décideur")} subtitle={isEn ? "Consolidated impact of completed public actions." : "Impact consolidé des actions publiques terminées."} action={<CmmButton href="/reports" tone="primary">{isEn ? "Reports and exports" : "Rapports et exports"}</CmmButton>} />
++    <DecisionPageNavigation route="/sponsor-portal" activeTab={tab} tabs={tabs} locale={locale} />
++    {tab === "organization" ? <EnterpriseOrganizationWorkspace /> : tab === "actions" || tab === "opportunities" ? <EnterpriseActionLinks locale={locale} view={tab} /> : actionsUnavailable ? <CmmCard className="space-y-3"><p role="status" className="text-sm cmm-text-secondary">{isEn ? "Impact data temporarily unavailable." : "Données d’impact momentanément indisponibles."}</p><SystemStateRetryButton label={isEn ? "Retry" : "Réessayer"} /></CmmCard> : <PublishedDecisionScope overview={overview} locale={locale} />}
++    {tab === "summary" && !actionsUnavailable && <SponsorMetrics overview={overview} locale={locale} />}
++    {tab === "zones" && !actionsUnavailable && <PublishedDecisionZones zones={overview.zones.slice(0,3)} locale={locale} />}
++    {tab === "methods" && <><CmmCard className="space-y-2"><h2 className="font-bold cmm-text-primary">{isEn ? "Valuation and emissions" : "Valorisation et émissions"}</h2><p className="text-sm cmm-text-secondary">{isEn ? "Valuation combines two estimates, by mass and by duration. It is neither an accounting saving nor a certification. CO₂ is a proxy." : "La valorisation croise deux estimations, par masse et par durée. Elle ne constitue ni une économie comptable ni une certification. Le CO₂ est un proxy."}</p></CmmCard><PublishedDecisionMethods methods={overview?.methods ?? []} locale={locale} /></>}
++    {!isEnterprise ? <div className="flex flex-wrap gap-2"><CmmButton href="/pilotage" tone="secondary">{isEn ? "Steering" : "Pilotage"}</CmmButton><CmmButton href="/sections/elus" tone="secondary">{isEn ? "Governance" : "Gouvernance"}</CmmButton></div> : null}
+   </CmmPageLayout></AccountCompletionGate>;
+ }
+diff --git a/apps/web/src/components/pilotage/decision-page-navigation.tsx b/apps/web/src/components/pilotage/decision-page-navigation.tsx
+--- a/apps/web/src/components/pilotage/decision-page-navigation.tsx
++++ b/apps/web/src/components/pilotage/decision-page-navigation.tsx
+@@ -2,5 +2,5 @@
+ import { tabStripClassName, tabItemClassName } from "@/components/ui/cmm-tab-strip.styles";
+ 
+ export function DecisionPageNavigation({ route, activeTab, tabs, locale = "fr" }: { route: string; activeTab: string; tabs: readonly { id: string; label: string }[]; locale?: "fr" | "en" }) {
+-  return <nav aria-label={locale === "en" ? "Decision views" : "Vues de décision"} className={tabStripClassName("family", "grid-cols-1 sm:grid-cols-3")}>{tabs.map((tab,index) => <Link key={tab.id} href={index === 0 ? route : `${route}?tab=${tab.id}`} prefetch={false} aria-current={activeTab === tab.id ? "page" : undefined} className={tabItemClassName("family",activeTab === tab.id)}>{tab.label}</Link>)}</nav>;
++  return <nav aria-label={locale === "en" ? "Decision views" : "Vues de décision"} className={tabStripClassName("family", tabs.length > 3 ? "grid-cols-1 sm:grid-cols-3 xl:grid-cols-5" : "grid-cols-1 sm:grid-cols-3")}>{tabs.map((tab,index) => <Link key={tab.id} href={index === 0 ? route : `${route}?tab=${tab.id}`} prefetch={false} aria-current={activeTab === tab.id ? "page" : undefined} className={tabItemClassName("family",activeTab === tab.id)}>{tab.label}</Link>)}</nav>;
+ }
+diff --git a/apps/web/src/lib/profiles-cta.ts b/apps/web/src/lib/profiles-cta.ts
+--- a/apps/web/src/lib/profiles-cta.ts
++++ b/apps/web/src/lib/profiles-cta.ts
+@@ -132,12 +132,12 @@
+     primaryCTA: {
+       href: SPONSOR_PORTAL_ROUTE,
+       label: {
+-        fr: "Accéder au portail partenaires",
+-        en: "Open the partner portal",
+-      },
+-      description: {
+-        fr: "Découvrir les engagements, partenariats et impacts publics",
+-        en: "Discover public commitments, partnerships and impact",
++        fr: "Ouvrir l’espace entreprise",
++        en: "Open the enterprise workspace",
++      },
++      description: {
++        fr: "Organiser des collectes, découvrir des partenaires et consulter les bilans",
++        en: "Organize cleanups, discover partners and review reports",
+       },
+     },
+     secondaryCTA: {
+diff --git a/apps/web/src/components/pilotage/enterprise-action-links.tsx b/apps/web/src/components/pilotage/enterprise-action-links.tsx
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/pilotage/enterprise-action-links.tsx
+@@ -0,0 +1,32 @@
++import { CmmCard } from "@/components/ui/cmm-card";
++import { CmmButton } from "@/components/ui/cmm-button";
++
++const LINKS = {
++  actions: [
++    ["/actions/new?tab=before", "Préparer une collecte", "Prepare a cleanup", "Lieu, matériel, sécurité et invitations.", "Location, equipment, safety and invitations."],
++    ["/sections/rejoindre-une-action", "Rejoindre une action", "Join a cleanup", "Trouver une action publique ou suivre ses inscriptions.", "Find public actions or follow your registrations."],
++    ["/actions/history", "Historique terrain", "Action history", "Retrouver les enregistrements accessibles.", "Review accessible action records."],
++    ["/reports", "Rapports et exports", "Reports and exports", "Générer les bilans admissibles.", "Generate eligible reports."],
++  ],
++  opportunities: [
++    ["/actions/map", "Explorer la carte", "Explore the map", "Observations et actions passées, pas une mesure exhaustive actuelle.", "Observations and past actions, not an exhaustive current measurement."],
++    ["/sections/annuaire", "Trouver des acteurs", "Find organizations", "Identifier les associations et partenaires locaux.", "Find local associations and partners."],
++    ["/partners/onboarding", "Présenter sa structure", "Introduce your organization", "Déposer une demande de partenariat.", "Submit a partnership request."],
++    ["/learn/bonnes-pratiques", "Préparer les collaborateurs", "Prepare colleagues", "Consignes et sensibilisation.", "Safety guidance and learning resources."],
++  ],
++} as const;
++
++export function EnterpriseActionLinks({ locale, view }: { locale: "fr" | "en"; view: keyof typeof LINKS }) {
++  const isEn = locale === "en";
++  return (
++    <section aria-label={isEn ? "Enterprise resources" : "Ressources entreprise"} className="grid gap-3 md:grid-cols-2">
++      {LINKS[view].map(([href, fr, en, hintFr, hintEn]) => (
++        <CmmCard key={href} className="space-y-3">
++          <h2 className="font-bold cmm-text-primary">{isEn ? en : fr}</h2>
++          <p className="text-sm cmm-text-secondary">{isEn ? hintEn : hintFr}</p>
++          <CmmButton href={href} tone="secondary">{isEn ? en : fr}</CmmButton>
++        </CmmCard>
++      ))}
++    </section>
++  );
++}
+diff --git a/apps/web/src/components/pilotage/enterprise-action-links.test.tsx b/apps/web/src/components/pilotage/enterprise-action-links.test.tsx
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/components/pilotage/enterprise-action-links.test.tsx
+@@ -0,0 +1,20 @@
++import type { ReactNode } from "react";
++import { describe, expect, it, vi } from "vitest";
++import { renderToStaticMarkup } from "react-dom/server";
++import { EnterpriseActionLinks } from "./enterprise-action-links";
++
++vi.mock("@/components/ui/cmm-card", () => ({ CmmCard: ({ children }: { children: ReactNode }) => <article>{children}</article> }));
++vi.mock("@/components/ui/cmm-button", () => ({ CmmButton: ({ href, children }: { href: string; children: ReactNode }) => <a href={href}>{children}</a> }));
++
++describe("enterprise action resources", () => {
++  it("links action creation, participation, history and reports", () => {
++    const html = renderToStaticMarkup(<EnterpriseActionLinks locale="fr" view="actions" />);
++    for (const path of ["/actions/new?tab=before", "/sections/rejoindre-une-action", "/actions/history", "/reports"]) expect(html).toContain(path);
++  });
++  it("links local opportunities without granting pilotage or admin", () => {
++    const html = renderToStaticMarkup(<EnterpriseActionLinks locale="en" view="opportunities" />);
++    for (const path of ["/actions/map", "/sections/annuaire", "/partners/onboarding", "/learn/bonnes-pratiques"]) expect(html).toContain(path);
++    expect(html).not.toContain("/partners/dashboard");
++    expect(html).not.toContain("/pilotage");
++  });
++});
+diff --git a/documentation/pages_site/routes/01-accueil-pilotage/sponsor-portal/sponsor-portal-README.md b/documentation/pages_site/routes/01-accueil-pilotage/sponsor-portal/sponsor-portal-README.md
+--- a/documentation/pages_site/routes/01-accueil-pilotage/sponsor-portal/sponsor-portal-README.md
++++ b/documentation/pages_site/routes/01-accueil-pilotage/sponsor-portal/sponsor-portal-README.md
+@@ -70,3 +70,7 @@
+ ## Contrat cible de la refonte
+ 
+ Trois vues : Synthèse, Zones et priorités, Méthodes et rapports. Corpus global strict des actions publiques terminées, fenêtre 730 jours, limite 5000 et couverture explicite. Aucun delta fixe, aucun certificat ou promesse ESG. Les estimations restent des proxies et l'export relève de /reports. Accessible depuis le bloc selon le rôle actif (entreprise, élu, IMU).
++
++## Parcours entreprise : ressources opérationnelles
++
++Le parcours actif entreprise ajoute Organiser et Opportunités, vers les formulaires, inscriptions, historique, rapports, carte, annuaire, onboarding partenaire et bonnes pratiques. Les vues publiques globales et les parcours élu/décideur restent inchangés. Les onglets de ressources ne chargent pas l'overview global. Aucun droit organisationnel n'est déduit du rôle ; les liens renvoient aux contrôles d'accès de chaque owner.

@@ -1,0 +1,244 @@
+diff --git a/apps/web/src/lib/organizations/contracts.ts b/apps/web/src/lib/organizations/contracts.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/organizations/contracts.ts
+@@ -0,0 +1,58 @@
++import { z } from "zod";
++
++const uuid = z.string().uuid();
++const role = z.enum(["owner", "manager", "site_manager", "member"]);
++const state = z.enum(["pending", "active", "declined", "revoked"]);
++const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
++  const parsed = new Date(value + "T00:00:00Z");
++  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
++}, "Invalid calendar date");
++const orgName = z.string().trim().min(1).max(120);
++const base = { organizationId: uuid, requestId: uuid };
++export const organizationCommandSchema = z.discriminatedUnion("operation", [
++  z.object({ ...base, operation: z.literal("invite"), targetId: z.string().trim().min(1).max(255), role: z.enum(["manager", "site_manager", "member"]), siteId: uuid.nullable() }).strict(),
++  z.object({ ...base, operation: z.literal("accept"), membershipId: uuid }).strict(),
++  z.object({ ...base, operation: z.literal("decline"), membershipId: uuid }).strict(),
++  z.object({ ...base, operation: z.literal("revoke"), membershipId: uuid }).strict(),
++  z.object({ ...base, operation: z.literal("promote_owner"), membershipId: uuid }).strict(),
++  z.object({ ...base, operation: z.literal("site"), siteId: uuid.nullable(), name: orgName, archive: z.boolean() }).strict(),
++  z.object({ ...base, operation: z.literal("link_action"), actionId: uuid, siteId: uuid.nullable() }).strict(),
++  z.object({ ...base, operation: z.literal("campaign"), campaignId: uuid.nullable(), title: orgName, startsOn: date, endsOn: date, targetActions: z.number().int().min(1).max(10000).nullable(), state: z.enum(["draft", "active", "completed", "archived"]) }).strict(),
++  z.object({ ...base, operation: z.literal("campaign_action"), campaignId: uuid, actionId: uuid, remove: z.boolean() }).strict(),
++]).superRefine((value, ctx) => {
++  if (value.operation === "invite" && (value.role === "site_manager") !== (value.siteId !== null)) {
++    ctx.addIssue({ code: "custom", message: "Site scope required only for a local manager" });
++  }
++  if (value.operation === "campaign" && value.startsOn > value.endsOn) {
++    ctx.addIssue({ code: "custom", message: "Invalid period" });
++  }
++  if (value.operation === "site" && value.archive && !value.siteId) {
++    ctx.addIssue({ code: "custom", message: "Cannot archive a new site" });
++  }
++});
++export type OrganizationCommand = z.infer<typeof organizationCommandSchema>;
++
++export const organizationMembershipSchema = z.object({
++  organization_id: uuid, organization_name: z.string(), membership_id: uuid,
++  member_role: role, state: z.enum(["pending", "active"]),
++});
++export const organizationMembershipListSchema = z.array(organizationMembershipSchema);
++export type OrganizationMembership = z.infer<typeof organizationMembershipSchema>;
++const action = z.object({ id: uuid, title: z.string(), action_date: z.string(), action_phase: z.string().nullable(), status: z.string() });
++export const organizationWorkspaceSchema = z.object({
++  id: uuid, name: z.string(), role, site_id: uuid.nullable(),
++  members: z.array(z.object({ id: uuid, member_role: role, state, site_id: uuid.nullable(), label: z.string(), is_self: z.boolean(), expires_at: z.string().nullable() })).max(101),
++  sites: z.array(z.object({ id: uuid, name: z.string(), archived_at: z.string().nullable() })).max(101),
++  campaigns: z.array(z.object({ id: uuid, title: z.string(), starts_on: date, ends_on: date, target_actions: z.number().int().nullable(), state: z.enum(["draft", "active", "completed", "archived"]), completed_actions: z.number().int().nonnegative() })).max(101),
++  actions: z.array(action.extend({ site_id: uuid.nullable(), can_manage: z.boolean() })).max(100),
++  actions_has_more: z.boolean(),
++  link_candidates: z.array(action).max(100),
++  candidates_has_more: z.boolean(),
++});
++export type OrganizationWorkspace = z.infer<typeof organizationWorkspaceSchema>;
++
++export const organizationReportScopeSchema = z.object({
++  organizationId: uuid, siteId: uuid.nullable(), campaignId: uuid.nullable(),
++  from: date, to: date,
++}).strict().refine((scope) => scope.from <= scope.to && (Date.parse(scope.to) - Date.parse(scope.from)) / 86400000 <= 3660, "Invalid period");
++export type OrganizationReportScope = z.infer<typeof organizationReportScopeSchema>;
+diff --git a/apps/web/src/lib/organizations/contracts.test.ts b/apps/web/src/lib/organizations/contracts.test.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/organizations/contracts.test.ts
+@@ -0,0 +1,24 @@
++import { describe, expect, it } from "vitest";
++import { organizationCommandSchema, organizationReportScopeSchema } from "./contracts";
++const organizationId = "00000000-0000-4000-8000-000000000001";
++const requestId = "00000000-0000-4000-8000-000000000002";
++const base = { organizationId, requestId };
++describe("organization command boundary", () => {
++  it("cannot supply the actor in client JSON", () => {
++    expect(organizationCommandSchema.safeParse({ ...base, operation: "invite", targetId: "user_test", role: "member", siteId: null, actor: "user_other" }).success).toBe(false);
++  });
++  it("does not invite an owner or a local manager without a site", () => {
++    for (const role of ["owner", "site_manager"]) expect(organizationCommandSchema.safeParse({ ...base, operation: "invite", targetId: "user_test", role, siteId: null }).success).toBe(false);
++  });
++  it("permits a targeted member invitation", () => {
++    expect(organizationCommandSchema.safeParse({ ...base, operation: "invite", targetId: "user_test", role: "member", siteId: null }).success).toBe(true);
++  });
++  it("rejects impossible dates and inverted periods", () => {
++    const scope = { organizationId, siteId: null, campaignId: null, from: "2026-02-30", to: "2026-03-05" };
++    expect(organizationReportScopeSchema.safeParse(scope).success).toBe(false);
++    expect(organizationReportScopeSchema.safeParse({ ...scope, from: "2026-03-07" }).success).toBe(false);
++  });
++  it("rejects a global fallback and arbitrary scope", () => {
++    expect(organizationReportScopeSchema.safeParse({ organizationId: null, from: "2026-01-01", to: "2026-12-31" }).success).toBe(false);
++  });
++});
+diff --git a/apps/web/src/lib/organizations/service.ts b/apps/web/src/lib/organizations/service.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/lib/organizations/service.ts
+@@ -0,0 +1,61 @@
++import "server-only";
++import { clerkClient } from "@clerk/nextjs/server";
++import { getSupabaseServerClient } from "@/lib/supabase/server";
++import { organizationMembershipListSchema, organizationWorkspaceSchema, type OrganizationCommand } from "./contracts";
++
++export class OrganizationServiceError extends Error {
++  constructor(public readonly status: number) { super("Organization operation unavailable"); }
++}
++function check(error: { code?: string } | null) {
++  if (!error) return;
++  if (error.code === "42501") throw new OrganizationServiceError(403);
++  if (error.code === "22023" || error.code === "23505" || error.code === "23514" || error.code === "23503") throw new OrganizationServiceError(409);
++  throw new OrganizationServiceError(503);
++}
++
++export async function listOrganizations(actor: string) {
++  const { data, error } = await getSupabaseServerClient(true).rpc("list_my_organizations", { p_actor: actor });
++  check(error);
++  return organizationMembershipListSchema.parse(data);
++}
++export async function readOrganization(actor: string, organizationId: string, offset: number) {
++  const { data, error } = await getSupabaseServerClient(true).rpc("read_organization_workspace", { p_org: organizationId, p_actor: actor, p_offset: offset });
++  check(error);
++  return organizationWorkspaceSchema.parse(data);
++}
++export async function mutateOrganization(actor: string, command: OrganizationCommand) {
++  const client = getSupabaseServerClient(true);
++  const common = { p_org: command.organizationId, p_actor: actor, p_request: command.requestId };
++  if (command.operation === "invite") {
++    // Confirm owner before a Clerk lookup to prevent account enumeration by outsiders.
++    const workspace = await readOrganization(actor, command.organizationId, 0);
++    if (workspace.role !== "owner") throw new OrganizationServiceError(403);
++    try { await (await clerkClient()).users.getUser(command.targetId); }
++    catch { throw new OrganizationServiceError(409); }
++    const { error } = await client.rpc("mutate_organization_membership", { ...common, p_operation: command.operation, p_membership: null, p_target: command.targetId, p_role: command.role, p_site: command.siteId });
++    check(error);
++    return;
++  }
++  if (command.operation === "accept" || command.operation === "decline" || command.operation === "revoke" || command.operation === "promote_owner") {
++    const { error } = await client.rpc("mutate_organization_membership", { ...common, p_operation: command.operation, p_membership: command.membershipId, p_target: null, p_role: null, p_site: null });
++    check(error);
++    return;
++  }
++  if (command.operation === "site") {
++    const { error } = await client.rpc("mutate_organization_site", { ...common, p_site: command.siteId, p_name: command.name, p_archive: command.archive });
++    check(error);
++    return;
++  }
++  if (command.operation === "link_action") {
++    const { error } = await client.rpc("link_organization_action", { ...common, p_action: command.actionId, p_site: command.siteId });
++    check(error);
++    return;
++  }
++  if (command.operation === "campaign") {
++    const { error } = await client.rpc("mutate_organization_campaign", { ...common, p_campaign: command.campaignId, p_title: command.title, p_start: command.startsOn, p_end: command.endsOn, p_target: command.targetActions, p_state: command.state });
++    check(error);
++    return;
++  }
++  const { error } = await client.rpc("link_organization_campaign_action", { ...common, p_campaign: command.campaignId, p_action: command.actionId, p_remove: command.remove });
++  check(error);
++}
+diff --git a/apps/web/src/app/api/organizations/route.ts b/apps/web/src/app/api/organizations/route.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/app/api/organizations/route.ts
+@@ -0,0 +1,41 @@
++import { NextResponse } from "next/server";
++import { z } from "zod";
++import { requireAuthenticatedAccess } from "@/lib/authz";
++import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
++import { organizationCommandSchema } from "@/lib/organizations/contracts";
++import { listOrganizations, readOrganization, mutateOrganization, OrganizationServiceError } from "@/lib/organizations/service";
++
++export const runtime = "nodejs";
++// Private organization projections are never eligible for a shared cache.
++export const dynamic = "force-dynamic";
++function json(body: unknown, status = 200) {
++  return NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
++}
++function unavailable(error: unknown) {
++  const status = error instanceof OrganizationServiceError ? error.status : 503;
++  return json({ error: status === 403 ? "Périmètre indisponible." : status === 409 ? "Demande invalide ou état modifié." : "Service temporairement indisponible." }, status);
++}
++const query = z.object({ organizationId: z.string().uuid().optional(), offset: z.coerce.number().int().min(0).max(10000).default(0) });
++export async function GET(request: Request) {
++  const access = await requireAuthenticatedAccess();
++  if (!access.ok) return json({ error: "Connexion requise." }, 401);
++  const rate = await enforceServerRateLimitForAuthenticatedUser(request, access.userId, { limit: 30, window: 60 });
++  if (rate) { rate.headers.set("Cache-Control", "private, no-store"); return rate; }
++  const params = query.safeParse(Object.fromEntries(new URL(request.url).searchParams));
++  if (!params.success) return json({ error: "Paramètres invalides." }, 400);
++  try {
++    return params.data.organizationId
++      ? json({ workspace: await readOrganization(access.userId, params.data.organizationId, params.data.offset) })
++      : json({ memberships: await listOrganizations(access.userId) });
++  } catch (error) { return unavailable(error); }
++}
++export async function POST(request: Request) {
++  const access = await requireAuthenticatedAccess();
++  if (!access.ok) return json({ error: "Connexion requise." }, 401);
++  const rate = await enforceServerRateLimitForAuthenticatedUser(request, access.userId, { limit: 10, window: 60 });
++  if (rate) { rate.headers.set("Cache-Control", "private, no-store"); return rate; }
++  const command = organizationCommandSchema.safeParse(await request.json().catch(() => null));
++  if (!command.success) return json({ error: "Paramètres invalides." }, 400);
++  try { await mutateOrganization(access.userId, command.data); return json({ ok: true }); }
++  catch (error) { return unavailable(error); }
++}
+diff --git a/apps/web/src/app/api/admin/organizations/bootstrap/route.ts b/apps/web/src/app/api/admin/organizations/bootstrap/route.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/web/src/app/api/admin/organizations/bootstrap/route.ts
+@@ -0,0 +1,35 @@
++import { NextResponse } from "next/server";
++import { clerkClient } from "@clerk/nextjs/server";
++import { z } from "zod";
++import { requireAdminAccess } from "@/lib/authz";
++import { getSupabaseServerClient } from "@/lib/supabase/server";
++import { resolveActionOrganizer } from "@/lib/actions/organizer-directory-registry";
++import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
++
++export const runtime = "nodejs";
++// Explicit administrator verification, separate from ordinary partner publication.
++const schema = z.object({ entryId: z.string().trim().min(1).max(255), organizerRef: z.string().trim().min(1).max(255), mandateVerified: z.literal(true), requestId: z.string().uuid() }).strict();
++function json(body: unknown, status = 200) { return NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } }); }
++export async function POST(request: Request) {
++  const access = await requireAdminAccess();
++  if (!access.ok) return json({ error: "Accès refusé." }, access.status);
++  const rate = await enforceServerRateLimitForAuthenticatedUser(request, access.userId, { limit: 5, window: 60 });
++  if (rate) { rate.headers.set("Cache-Control", "private, no-store"); return rate; }
++  const parsed = schema.safeParse(await request.json().catch(() => null));
++  if (!parsed.success) return json({ error: "Mandat vérifié et référence obligatoires." }, 400);
++  try {
++    const client = getSupabaseServerClient(true);
++    const organizer = await resolveActionOrganizer({ supabase: client, organizerType: "company", organizerId: parsed.data.organizerRef });
++    if (organizer.organizerId !== parsed.data.organizerRef) return json({ error: "Référence non vérifiée." }, 409);
++    const entry = await client.from("partner_annuaire_entries").select("source_request_id,publication_status").eq("id", parsed.data.entryId).maybeSingle();
++    if (entry.error) return json({ error: "Source indisponible." }, 503);
++    if (!entry.data || entry.data.publication_status !== "accepted") return json({ error: "Mandat non admissible." }, 409);
++    const source = await client.from("partner_onboarding_requests").select("submitted_by_user_id,status,organization_type").eq("id", entry.data.source_request_id).maybeSingle();
++    if (source.error) return json({ error: "Source indisponible." }, 503);
++    if (!source.data || source.data.status !== "accepted" || !["entreprise","commerce"].includes(source.data.organization_type)) return json({ error: "Mandat non admissible." }, 409);
++    await (await clerkClient()).users.getUser(source.data.submitted_by_user_id);
++    const { data, error } = await client.rpc("bootstrap_organization", { p_entry: parsed.data.entryId, p_ref: organizer.organizerId, p_actor: access.userId, p_request: parsed.data.requestId });
++    if (error) return json({ error: "Activation non aboutie." }, error.code === "42501" ? 403 : error.code === "23505" || error.code === "22023" ? 409 : 503);
++    return json({ organizationId: data });
++  } catch { return json({ error: "Activation non aboutie." }, 503); }
++}
