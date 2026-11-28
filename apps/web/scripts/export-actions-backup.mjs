@@ -1,5 +1,5 @@
 import { writeFile, readFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative as relativePath, resolve, sep } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -8,6 +8,7 @@ import {
   validateActionBackup,
 } from "./action-backup-contract.mjs";
 import { generatePublicActionFiches, mergePublicActionSnapshot } from "./action-public-fiches.mjs";
+import { validatePrivateBackupDestination } from "./private-backup-destination.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const PAGE_SIZE = 1000;
@@ -36,6 +37,8 @@ const ACTION_COLUMNS = [
   "cigarette_butts",
   "volunteers_count",
   "collectors_count",
+  "access_mode",
+  "data_provenance",
   "children_count",
   "adult_count",
   "retired_count",
@@ -207,8 +210,6 @@ async function main() {
     throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
-  const backup = await exportActionBackup(supabase);
   const args = process.argv.slice(2);
   const publicFichesOnly = args.includes("--public-fiches");
   const privateOutArg = args.find((arg) => arg.startsWith("--private-out="));
@@ -218,30 +219,29 @@ async function main() {
   if (!publicFichesOnly && !privateOutArg) {
     throw new Error("Explicit --private-out is required for technical action backups; repository artifacts are not a private destination");
   }
-  if (privateOutArg) {
-    const outDir = resolve(process.cwd(), privateOutArg.slice("--private-out=".length));
-    const repoRoot = resolve(REPO_ROOT);
-    const relative = relativePath(repoRoot, outDir);
-    if (!isAbsolute(privateOutArg.slice("--private-out=".length)) || relative === "" || relative === ".." || relative.startsWith(`..${sep}`)) {
-      throw new Error("Private backup destination must be an absolute directory outside the repository");
-    }
-    const markerPath = join(outDir, ".cmm-private-backup-destination");
-    const marker = await readFile(markerPath, "utf8").catch(() => "");
-    if (marker.trim() !== "CLEANMYMAP PRIVATE BACKUP DESTINATION") {
-      throw new Error("Private destination is unverified; provision and attest it before exporting sensitive data");
-    }
+  const outDir = privateOutArg
+    ? await validatePrivateBackupDestination(privateOutArg.slice("--private-out=".length), REPO_ROOT)
+    : null;
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
+  const backup = await exportActionBackup(supabase);
+  if (outDir) {
     const timestamp = new Date().toISOString().replace(/[:]/g, "-");
     const outPath = join(outDir, `actions-backup-v${backup.version}-${timestamp}.json`);
-    await writeFile(outPath, `${JSON.stringify(backup, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+    await writeFile(outPath, `${JSON.stringify(backup, null, 2)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
     console.log(`Backup written to verified private destination; format v${backup.version}; actions ${backup.counts.actions}`);
   }
   if (publicFichesOnly) {
     const fiches = generatePublicActionFiches(backup);
     const outputDir = join(REPO_ROOT, "documentation", "operations", "data-import", "reconciliation-actions", "fiches");
+    const rendered = [];
     for (const fiche of fiches) {
       const filePath = join(outputDir, fiche.file);
       const existing = await readFile(filePath, "utf8");
-      await writeFile(filePath, mergePublicActionSnapshot(existing, fiche.markdown), "utf8");
+      rendered.push({ filePath, original: existing, content: mergePublicActionSnapshot(existing, fiche.markdown) });
+    }
+    for (const { filePath, original, content } of rendered) {
+      if (await readFile(filePath, "utf8") !== original) throw new Error(`Public fiche changed during generation: ${filePath}`);
+      await writeFile(filePath, content, "utf8");
     }
     console.log(`Generated ${fiches.length} public action fiches from the same validated snapshot`);
   }

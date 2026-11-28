@@ -1,7 +1,9 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { mkdir, readFile, writeFile, access } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
+import { validatePrivateBackupDestination } from "./private-backup-destination.mjs";
+import { exportStorage } from "../../../scripts/ci/export-supabase-storage.mjs";
 
 const PAGE_SIZE = 1000;
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -39,7 +41,6 @@ const LOCAL_STORE_FILES = [
   "published_partner_annuaire_entries.json",
 ];
 
-const STORAGE_BUCKETS = ["action-photos", "chat-attachments"];
 
 function parseArgs() {
   const options = {
@@ -82,52 +83,13 @@ async function fetchAllRows(supabase, table, orderColumn) {
   return rows;
 }
 
-function isLikelyFolderEntry(entry) {
-  return entry && typeof entry.name === "string" && !entry.name.includes(".");
-}
-
-async function listBucketEntries(supabase, bucket, prefix = "") {
-  const { data, error } = await supabase.storage.from(bucket).list(prefix, {
-    limit: PAGE_SIZE,
-    sortBy: { column: "name", order: "asc" },
-  });
-  if (error) {
-    throw new Error(error.message);
-  }
-  return data ?? [];
-}
-
-async function exportBucket(supabase, bucket, bucketDir, prefix = "") {
-  const entries = await listBucketEntries(supabase, bucket, prefix);
-  for (const entry of entries) {
-    const currentPath = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (isLikelyFolderEntry(entry)) {
-      await exportBucket(supabase, bucket, bucketDir, currentPath);
-      continue;
-    }
-
-    const { data, error } = await supabase.storage.from(bucket).download(currentPath);
-    if (error) {
-      throw new Error(error.message);
-    }
-    if (!data) {
-      continue;
-    }
-
-    const targetPath = join(bucketDir, currentPath);
-    await mkdir(dirname(targetPath), { recursive: true });
-    const buffer = Buffer.from(await data.arrayBuffer());
-    await writeFile(targetPath, buffer);
-  }
-}
-
 async function exportLocalStore(fileName, outDir) {
   const sourcePath = join(process.cwd(), "data", "local-db", fileName);
   try {
     const raw = await readFile(sourcePath, "utf8");
     const targetPath = join(outDir, "local-db", fileName);
     await mkdir(dirname(targetPath), { recursive: true });
-    await writeFile(targetPath, raw, "utf8");
+    await writeFile(targetPath, raw, { encoding: "utf8", mode: 0o600, flag: "wx" });
   } catch {
     // Missing local store is fine: not every environment has the fallback files.
   }
@@ -139,21 +101,17 @@ async function main() {
   if (!supabaseUrl || !supabaseServiceRoleKey) {
     throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   }
-  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
   const { outDir } = parseArgs();
-  if (!outDir || !isAbsolute(outDir)) {
+  if (!outDir) {
     throw new Error("An explicit absolute --out directory on verified private storage is required");
   }
-  const baseDir = resolve(outDir);
-  const rel = relative(REPO_ROOT, baseDir);
-  if (rel === "" || rel === ".." || rel.startsWith(`..${sep}`)) {
-    throw new Error("Supabase archive destination must be outside the repository");
+  const baseDir = await validatePrivateBackupDestination(outDir, REPO_ROOT);
+  for (const path of [join(baseDir, "manifest.json"), join(baseDir, "tables")]) {
+    await access(path).then(() => { throw new Error("Supabase archive destination already contains archive data"); }).catch((error) => {
+      if (error?.code !== "ENOENT") throw error;
+    });
   }
-  const markerPath = join(baseDir, ".cmm-private-backup-destination");
-  const marker = await readFile(markerPath, "utf8").catch(() => "");
-  if (marker.trim() !== "CLEANMYMAP PRIVATE BACKUP DESTINATION") {
-    throw new Error("Private destination is unverified; provision and attest it before exporting sensitive data");
-  }
+  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
   await mkdir(baseDir, { recursive: true });
 
@@ -176,7 +134,7 @@ async function main() {
           null,
           2,
         )}\n`,
-        "utf8",
+        { encoding: "utf8", mode: 0o600, flag: "wx" },
       );
       manifest.tables.push({ table, role, count: rows.length, path: targetPath });
     } catch (error) {
@@ -194,20 +152,22 @@ async function main() {
     manifest.localStores.push(fileName);
   }
 
-  for (const bucket of STORAGE_BUCKETS) {
-    const bucketDir = join(baseDir, "storage", bucket);
-    try {
-      await exportBucket(supabase, bucket, bucketDir);
-      manifest.storageBuckets.push(bucket);
-    } catch (error) {
-      manifest.storageBuckets.push(`${bucket}: ${error instanceof Error ? error.message : String(error)}`);
-    }
+  try {
+    if (!process.env.SUPABASE_STORAGE_READ_KEY) throw new Error("SUPABASE_STORAGE_READ_KEY is required for exhaustive Storage export");
+    const storageResult = await exportStorage({
+      supabaseUrl,
+      storageReadKey: process.env.SUPABASE_STORAGE_READ_KEY,
+      outDir: join(baseDir, "storage"),
+    });
+    manifest.storage = { status: "PASS", ...storageResult };
+  } catch (error) {
+    manifest.storage = { status: "FAIL", error: error instanceof Error ? error.message : String(error) };
   }
 
   await writeFile(
     join(baseDir, "manifest.json"),
     `${JSON.stringify(manifest, null, 2)}\n`,
-    "utf8",
+    { encoding: "utf8", mode: 0o600, flag: "wx" },
   );
 
   console.log(`Archive written: ${baseDir}`);

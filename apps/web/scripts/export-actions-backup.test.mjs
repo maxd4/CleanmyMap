@@ -301,9 +301,39 @@ test("generates deterministic public fiches from the validated snapshot using a 
   assert.equal(first.length, 5);
   assert.match(first[0].markdown, /Masse hors mégots : Inconnu/);
   assert.match(first[1].markdown, /Masse hors mégots : 0 kg/);
+  assert.match(first[0].markdown, /Capture du snapshot : 2026-11-28T10:00:00.000Z/);
   assert.doesNotMatch(first.map((item) => item.markdown).join("\n"), /PRIVATE_SENTINEL|preparation_data/);
   const existing = "# Historique relu\nSource et hypothèses conservées.\n";
   const merged = mergePublicActionSnapshot(existing, first[0].markdown);
   assert.match(merged, /Source et hypothèses conservées/);
   assert.equal(mergePublicActionSnapshot(merged, first[0].markdown), merged);
+});
+
+test("refuses revoked, private, hidden, rejected, test and sentinel-bearing public action data", async () => {
+  const base = {
+    ...actionRow(), action_date: "2026-01-01", published_at: null,
+    access_mode: "public", moderation_visibility: "visible", data_provenance: "real",
+    cancelled_at: null, organizer_name: "Association publique", location_label: "Paris",
+  };
+  const { supabase } = makeSupabase({ rowsByTable: { actions: [{ ...base, id: "b1f71234-21e2-4954-8526-f45f238249ae", action_date: "2026-02-14" }] } });
+  const validBackup = await exportActionBackup(supabase, "2026-11-28T10:00:00Z");
+  for (const change of [
+    { status: "rejected" }, { status: "pending" }, { access_mode: "invite_link" },
+    { moderation_visibility: "hidden" }, { moderation_visibility: "private" },
+    { data_provenance: "test" }, { cancelled_at: "2026-01-03T00:00:00Z" },
+  ]) {
+    const candidate = structuredClone(validBackup);
+    Object.assign(candidate.tables.actions[0], change);
+    assert.throws(() => generatePublicActionFiches(candidate), /not eligible|test data/);
+  }
+  for (const field of ["organizer_name", "location_label"]) {
+    const candidate = structuredClone(validBackup);
+    candidate.tables.actions[0][field] = "PRIVATE_SENTINEL sophie@example.com";
+    assert.throws(() => generatePublicActionFiches(candidate), /not safe for public publication/);
+  }
+});
+
+test("rejects repeated snapshot markers instead of preserving an ambiguous merge", () => {
+  const markers = "<!-- ACTION_SNAPSHOT_START -->x<!-- ACTION_SNAPSHOT_END -->";
+  assert.throws(() => mergePublicActionSnapshot(`${markers}\n${markers}`, "replacement"), /malformed/);
 });
