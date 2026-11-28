@@ -9,6 +9,7 @@ import {
   captureWorktreeCandidate,
   commitCandidate,
   publishMain as publishMainImpl,
+  validatePushBypassAcknowledgement,
 } from "./publish-main.mjs";
 import { removePathWithRetry } from "./validation-evidence.mjs";
 
@@ -147,13 +148,18 @@ test("blocks before push when the active coverage proof is absent", async () => 
   assert.equal(pushCalls(fake).length, 0);
 });
 
-test("does not classify a push accepted with a GitHub ruleset bypass as published", async () => {
-  const fake = fakeGit({ pushResults: [{ status: 0, stdout: "remote: Bypassed rule violations for refs/heads/main", stderr: "" }] });
-  await assert.rejects(
-    publishMain({ runGitCommand: fake.runGitCommand, sleep: async () => {} }),
-    /PUSH_ACCEPTED_WITH_BYPASS.*not PUBLISHED/,
-  );
+test("accepts only the configured main update bypass and still verifies convergence", async () => {
+  const fake = fakeGit({ pushResults: [{ status: 0, stdout: "remote: Bypassed rule violations for refs/heads/main:\nremote: - Cannot update this protected ref.", stderr: "" }] });
+  const published = await publishMain({ runGitCommand: fake.runGitCommand, sleep: async () => {} });
+  assert.equal(published, "candidate");
   assert.equal(fake.state.remote, "candidate");
+});
+
+test("rejects bypass acknowledgements for another rule, another ref, or additional violations", () => {
+  assert.equal(validatePushBypassAcknowledgement("remote: Bypassed rule violations for refs/heads/main:\nremote: - Cannot update this protected ref."), true);
+  assert.throws(() => validatePushBypassAcknowledgement("remote: Bypassed rule violations for refs/heads/main:\nremote: - Cannot delete this branch."), /PUSH_BYPASS_UNEXPECTED_RULES/);
+  assert.throws(() => validatePushBypassAcknowledgement("remote: Bypassed rule violations for refs/heads/main:\nremote: - Cannot update this protected ref.\nremote: - Required status check failed."), /PUSH_BYPASS_UNEXPECTED_RULES/);
+  assert.throws(() => validatePushBypassAcknowledgement("remote: Bypassed rule violations for refs/heads/other:\nremote: - Cannot update this protected ref."), /PUSH_BYPASS_UNEXPECTED_REF/);
 });
 
 test("blocks a new local commit created between candidate capture and push", async () => {

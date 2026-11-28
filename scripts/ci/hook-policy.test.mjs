@@ -325,7 +325,8 @@ test("root AGENTS owns delivery rules and scoped guidance does not contradict it
   assert.match(testingGuide, /`PUBLISHED` exige un push conforme/);
   assert.doesNotMatch(scriptsAgents, /sans filtrage d['’]attribution/);
   assert.doesNotMatch(testingGuide, /tous les chemins tracked staged\/unstaged et untracked du snapshot initial/);
-  assert.match(rootAgents, /Bypassed rule violations/);
+  assert.match(rootAgents, /ruleset actif l'accorde explicitement/i);
+  assert.match(rootAgents, /hooks, contrôles obligatoires.*protections de sécurité/i);
   assert.match(rootAgents, /COMMIT_READY.*PUSH_READY.*PUBLISHED.*INTEGRATION_VALIDATED.*RELEASE_READY.*COMPLETED/s);
   assert.match(scriptsAgents, /WORKTREE_LIVE.*STAGED.*COMMITTED_SNAPSHOT.*PUSH_CANDIDATE/);
 });

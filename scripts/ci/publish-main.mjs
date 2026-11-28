@@ -315,6 +315,20 @@ function reconcileRemoteFastForward(runGitCommand, candidateSha, remoteSha) {
   return reconciledSha;
 }
 
+export function validatePushBypassAcknowledgement(output) {
+  const text = String(output ?? "");
+  const headers = [...text.matchAll(/^\s*remote:\s*Bypassed rule violations for ([^\s:]+):\s*$/gim)];
+  if (headers.length === 0) return false;
+  if (headers.length !== 1 || headers[0][1] !== "refs/heads/main") {
+    throw new Error("PUSH_BYPASS_UNEXPECTED_REF: bypass acknowledgement did not target exactly refs/heads/main.");
+  }
+  const violations = [...text.matchAll(/^\s*remote:\s*-\s*(.+?)\s*$/gim)].map((match) => match[1]);
+  if (violations.length !== 1 || violations[0] !== "Cannot update this protected ref.") {
+    throw new Error(`PUSH_BYPASS_UNEXPECTED_RULES: only the configured main update rule may be bypassed; received ${violations.join(" | ") || "no listed rule"}.`);
+  }
+  return true;
+}
+
 export async function publishMain({
   runGitCommand = runGit,
   sleep = waitMs,
@@ -382,9 +396,8 @@ export async function publishMain({
     }
     const push = runGitCommand(["push", "origin", `${candidateSha}:refs/heads/main`]);
     const pushOutput = `${push.stdout ?? ""}\n${push.stderr ?? ""}`;
-    if (/Bypassed rule violations/i.test(pushOutput)) {
-      throw new Error(`PUSH_ACCEPTED_WITH_BYPASS: GitHub accepted candidate ${candidateSha} while bypassing an active rule; this is not PUBLISHED.`);
-    }
+    const authorizedUpdateBypass = validatePushBypassAcknowledgement(pushOutput);
+    if (authorizedUpdateBypass) log("GitHub acknowledged the configured main update ruleset bypass; pre-push guards remain mandatory.");
     if (push.status === 0) {
       const verifyFetch = runGitCommand(["fetch", "origin", "main"]);
       if (verifyFetch.status !== 0) {

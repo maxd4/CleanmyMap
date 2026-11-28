@@ -48,8 +48,9 @@ diagnostics locaux.
 Les états `COMMIT_READY`, `PUSH_READY`, `PUBLISHED`, `INTEGRATION_VALIDATED`,
 `RELEASE_READY` et `COMPLETED` ont des préconditions distinctes définies en
 R03. Les scopes ci-dessus décrivent la provenance d'une preuve, pas l'état de
-livraison. `PUBLISHED` exige un push conforme (sans bypass), puis un fetch qui
-prouve la convergence de `HEAD` et `origin/main`; il ne signifie ni intégration
+livraison. `PUBLISHED` exige un push conforme; un bypass est recevable uniquement
+pour l'update explicitement autorisé par le ruleset à l'identité courante, puis
+un fetch qui prouve la convergence de `HEAD` et `origin/main`; il ne signifie ni intégration
 runtime, ni release, ni réception finale. Un statut `BLOCKED` contient le
 contrôle exécuté, son résultat, sa cause, le périmètre et l'action requise
 (R05). Une exigence impossible à mesurer est `NOT_RUN` ou `BLOCKED`, jamais

@@ -97,14 +97,16 @@ non-fast-forward. La protection classique de branche n'était pas configurée
 (endpoint `branches/main/protection` renvoyait 404). Aucun check obligatoire,
 approbation ou exigence de Pull Request n'a été observé dans le ruleset actif.
 
-Cette configuration ne fournit pas de voie directe conforme à la règle
-`update` pour un push ordinaire : l'acceptation observée précédemment avec
-`Bypassed rule violations` constitue un bypass, donc ne qualifie pas
-`PUBLISHED`. Aucun push de vérification ne doit être tenté. Ne pas changer le
-ruleset, utiliser le bypass, ni tenter un merge qui l'emploierait. La voie de
-publication doit être rétablie par l'administrateur GitHub selon une procédure
-conforme à R11 ; la configuration actuelle ne définit pas elle-même une voie
-Pull Request de remplacement.
+Le bypass de la règle `update` est une autorisation explicite du ruleset pour
+les acteurs désignés (`RepositoryRole` admin et l'intégration `1144995`). Au
+contrôle du 2026-11-28, `maxd4` est administrateur et l'API retourne
+`current_user_can_bypass: always`. Le message GitHub `Bypassed rule violations`
+est donc attendu lorsqu'il ne liste que l'interdiction d'update de cette
+protection. Cette autorisation ne s'étend pas aux hooks, aux contrôles de
+sécurité, ni aux règles indépendantes contre suppression et non-fast-forward,
+qui n'accordent aucun bypass. Un push de `main` est conforme lorsque ces gardes
+passent et que la convergence est ensuite vérifiée. Ne pas modifier les
+rulesets.
 
 Les règles actives observées interdisent également :
 
@@ -112,9 +114,7 @@ Les règles actives observées interdisent également :
 - les mises à jour non fast-forward et les force-push.
 
 Le publisher établit un SHA candidat immuable après le `fetch` et prépare le
-refspec `${candidateSha}:refs/heads/main`. Il ne peut toutefois pas publier
-tant que le ruleset `update` impose le bypass. Lorsqu'une voie conforme est
-disponible, le publisher relit `HEAD` et
+refspec `${candidateSha}:refs/heads/main`. Il relit `HEAD` et
 `refs/heads/main` avant le push et après sa vérification ; un nouveau commit
 local apparu entre ces étapes bloque la publication et impose une nouvelle
 réconciliation des fichiers, commits et validations. Il ne peut donc pas

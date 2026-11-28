@@ -43,7 +43,8 @@ livraison, y compris l'attribution, les validations, les états de livraison,
 les protections GitHub et les blocages. Ce document ne les redéfinit pas.
 ChatGPT applique ces règles à toute contribution directe, aux commits créés
 via l'API GitHub et aux artefacts candidats. Une capacité technique à écrire
-ou à bypasser un ruleset n'est pas une autorisation de le faire.
+ou à bypasser un ruleset ne suffit pas à autoriser l'opération : l'identité et
+la permission explicite doivent correspondre à la règle concernée selon R11.
 
 Les instructions scoped et skills précisent uniquement les opérations de leur
 domaine. Si un contrôle local n'est pas disponible, déclarer
