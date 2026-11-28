@@ -10,12 +10,13 @@ const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
 const orgName = z.string().trim().min(1).max(120);
 const base = { organizationId: uuid, requestId: uuid };
 export const organizationCommandSchema = z.discriminatedUnion("operation", [
-  z.object({ ...base, operation: z.literal("invite"), targetId: z.string().trim().min(1).max(255), role: z.enum(["manager", "site_manager", "member"]), siteId: uuid.nullable() }).strict(),
+  z.object({ ...base, operation: z.literal("invite"), targetEmail: z.string().trim().email().max(254).transform((value) => value.toLowerCase()), role: z.enum(["manager", "site_manager", "member"]), siteId: uuid.nullable() }).strict(),
   z.object({ ...base, operation: z.literal("accept"), membershipId: uuid }).strict(),
   z.object({ ...base, operation: z.literal("decline"), membershipId: uuid }).strict(),
   z.object({ ...base, operation: z.literal("revoke"), membershipId: uuid }).strict(),
   z.object({ ...base, operation: z.literal("promote_owner"), membershipId: uuid }).strict(),
   z.object({ ...base, operation: z.literal("transfer_owner"), membershipId: uuid }).strict(),
+  z.object({ ...base, operation: z.literal("leave") }).strict(),
   z.object({ ...base, operation: z.literal("site"), siteId: uuid.nullable(), name: orgName, archive: z.boolean() }).strict(),
   z.object({ ...base, operation: z.literal("link_action"), actionId: uuid, siteId: uuid.nullable() }).strict(),
   z.object({ ...base, operation: z.literal("campaign"), campaignId: uuid.nullable(), title: orgName, startsOn: date, endsOn: date, targetActions: z.number().int().min(1).max(10000).nullable(), state: z.enum(["draft", "active", "completed", "archived"]) }).strict(),

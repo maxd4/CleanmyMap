@@ -64,7 +64,27 @@ describe("POST /api/reports/organization", () => {
     }));
     const csv = await response.text();
     expect(response.headers.get("content-type")).toContain("text/csv");
-    expect(csv.split("\r\n")[0]).toBe("date,massKg,impactMassKg,massSource,butts,participations,durationMinutes");
+    expect(csv.split("\r\n")[0]).toBe("date,massKg,impactMassKg,massSource,butts,participations,durationMinutes,collectorsCount,collectorsCountProvenance,wasteCategories,wasteBreakdown,wasteMeasurementMethod");
     expect(csv).not.toContain("clerk-session-user");
+  });
+
+  it("preserves no-store on rate-limit and scope errors", async () => {
+    const { POST } = await import("./route");
+    mocks.rateLimit.mockResolvedValueOnce(new Response("limited", { status: 429 }));
+    const limited = await POST(new Request("https://example.test/api/reports/organization", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scope, format: "summary" }) }));
+    expect(limited.status).toBe(429);
+    expect(limited.headers.get("cache-control")).toBe("private, no-store");
+    mocks.loadOrganizationReport.mockRejectedValueOnce(new (await import("@/lib/organizations/service")).OrganizationServiceError(403));
+    const denied = await POST(new Request("https://example.test/api/reports/organization", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scope, format: "summary" }) }));
+    expect(denied.status).toBe(403);
+    expect(await denied.json()).toEqual({ error: "Périmètre non autorisé." });
+  });
+
+  it("maps unexpected projection failures without exposing their details", async () => {
+    mocks.loadOrganizationReport.mockRejectedValueOnce(new Error("private backend detail"));
+    const { POST } = await import("./route");
+    const response = await POST(new Request("https://example.test/api/reports/organization", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scope, format: "summary" }) }));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "Bilan indisponible." });
   });
 });

@@ -92,7 +92,7 @@ type ActionDataMetadata = {
   observedPollutionScore?: number | null;
   volunteersCount: number | null;
   collectorsCount?: number | null;
-  collectorsCountProvenance?: CollectorsCountProvenance;
+  collectorsCountProvenance?: CollectorsCountProvenance | null;
   collectionAttributionVersion?: "collectors-v1" | null;
   durationMinutes: number;
   manualDrawing: ActionDrawing | null;
@@ -140,7 +140,7 @@ export type BuildActionContractParams = {
   observedPollutionScore?: number | null;
   volunteersCount?: number | null;
   collectorsCount?: number | null;
-  collectorsCountProvenance?: CollectorsCountProvenance;
+  collectorsCountProvenance?: CollectorsCountProvenance | null;
   collectionAttributionVersion?: "collectors-v1" | null;
   durationMinutes?: number | null;
   eventStartTime?: string | null;

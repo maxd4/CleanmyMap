@@ -5,13 +5,19 @@ const requestId = "00000000-0000-4000-8000-000000000002";
 const base = { organizationId, requestId };
 describe("organization command boundary", () => {
   it("cannot supply the actor in client JSON", () => {
-    expect(organizationCommandSchema.safeParse({ ...base, operation: "invite", targetId: "user_test", role: "member", siteId: null, actor: "user_other" }).success).toBe(false);
+    expect(organizationCommandSchema.safeParse({ ...base, operation: "invite", targetEmail: "person@example.test", role: "member", siteId: null, actor: "user_other" }).success).toBe(false);
   });
   it("does not invite an owner or a local manager without a site", () => {
-    for (const role of ["owner", "site_manager"]) expect(organizationCommandSchema.safeParse({ ...base, operation: "invite", targetId: "user_test", role, siteId: null }).success).toBe(false);
+    for (const role of ["owner", "site_manager"]) expect(organizationCommandSchema.safeParse({ ...base, operation: "invite", targetEmail: "person@example.test", role, siteId: null }).success).toBe(false);
   });
-  it("permits a targeted member invitation", () => {
-    expect(organizationCommandSchema.safeParse({ ...base, operation: "invite", targetId: "user_test", role: "member", siteId: null }).success).toBe(true);
+
+  it("accepts a normalized email invitation and rejects browser supplied Clerk IDs", () => {
+    const parsed = organizationCommandSchema.safeParse({ ...base, operation: "invite", targetEmail: " Person@Example.Test ", role: "member", siteId: null });
+    expect(parsed.success && parsed.data.operation === "invite" ? parsed.data.targetEmail : null).toBe("person@example.test");
+    expect(organizationCommandSchema.safeParse({ ...base, operation: "invite", targetId: "user_raw_clerk_id", role: "member", siteId: null }).success).toBe(false);
+  });
+  it("permits an email-addressed member invitation", () => {
+    expect(organizationCommandSchema.safeParse({ ...base, operation: "invite", targetEmail: "person@example.test", role: "member", siteId: null }).success).toBe(true);
   });
   it("accepts a transfer only by naming a membership inside the organization", () => {
     expect(organizationCommandSchema.safeParse({ ...base, operation: "transfer_owner", membershipId: "00000000-0000-4000-8000-000000000003" }).success).toBe(true);

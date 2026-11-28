@@ -251,6 +251,8 @@ async function runPersistentE2E() {
       NEXT_PUBLIC_SUPABASE_ANON_KEY: local.ANON_KEY,
       SUPABASE_ANON_KEY: local.ANON_KEY,
       SUPABASE_SERVICE_ROLE_KEY: local.SERVICE_ROLE_KEY,
+      CMM_SUPABASE_TEST_ENVIRONMENT: "ephemeral",
+      CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: "I_UNDERSTAND_EPHEMERAL_ONLY",
       CMM_DISABLE_DEV_AUTH_BYPASS: "1",
     };
     const result = await runCommand(

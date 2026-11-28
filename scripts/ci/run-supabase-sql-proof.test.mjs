@@ -24,7 +24,7 @@ import {
 import { classifyDbResetFailure } from "./supabase-sql-proof-lifecycle.mjs";
 import { parseTerritorialRevisionNotice } from "../../e2e/territorial-legend-revision-concurrency.mjs";
 
-const PG_TAP_ASSERTION = /^\s*select\s+(?:ok|is|throws_ok|lives_ok|has_table|has_index|has_column|col_not_null|has_function_privilege|has_table_privilege)\s*\(/gim;
+const PG_TAP_ASSERTION = /^\s*select\s+(?:ok|is|isnt|throws_ok|lives_ok|has_table|has_index|has_column|col_not_null|has_function_privilege|has_table_privilege)\s*\(/gim;
 
 function assertPgTapPlanMatchesAssertions(sql, label) {
   const plans = [...sql.matchAll(/^\s*select\s+plan\s*\(([^)]*)\)\s*;\s*$/gim)];
@@ -110,6 +110,7 @@ test("inventory includes all current pgTAP, SQL contract and multi-session proof
     "e2e/action-media-route-reference-concurrency.mjs",
     "e2e/action-role-attestation-concurrency.mjs",
     "e2e/community-helper-skills-concurrency.mjs",
+    "e2e/enterprise-organization-concurrency.mjs",
     "e2e/external-action-sync-concurrency.mjs",
     "e2e/gamification-reconciliation-concurrency.mjs",
     "e2e/personal-ai-write-concurrency.mjs",
@@ -148,6 +149,11 @@ test("action attendance explicit reactivation pgTAP plan matches its assertion c
 test("action attendance retention pgTAP plan matches its assertion count", () => {
   const path = new URL("../../apps/web/supabase/tests/action-attendance-retention.pgtap.sql", import.meta.url);
   assertPgTapPlanMatchesAssertions(readFileSync(path, "utf8"), "action attendance retention");
+});
+
+test("enterprise organization pgTAP plan matches its assertion count", () => {
+  const path = new URL("../../apps/web/supabase/tests/enterprise-organization-foundation.pgtap.sql", import.meta.url);
+  assertPgTapPlanMatchesAssertions(readFileSync(path, "utf8"), "enterprise organization foundation");
 });
 
 test("attendance claims and route-reference pgTAP plans match their assertions", () => {

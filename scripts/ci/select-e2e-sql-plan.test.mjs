@@ -174,6 +174,12 @@ test("every active E2E spec on disk is classified and mixed commits never skip u
   assert.deepEqual(mixedPlan.playwright_projects.split(",").sort(), [...ALL_CI_E2E_PROJECTS].sort());
   assert.equal(mixedPlan.unmapped_e2e_files, "e2e/unmapped-new-scenario.spec.ts");
 
+  const organizationPlan = planE2eAndSql({
+    changedFiles: ["e2e/authenticated-enterprise-organization.spec.ts"],
+  });
+  assert.equal(organizationPlan.run_persistent_e2e, true);
+  assert.ok(organizationPlan.playwright_projects.split(",").includes("authenticated campaign"));
+
   const fullPlan = planE2eAndSql({ eventName: "workflow_dispatch", validationMode: "FULL" });
   for (const required of ["local public", "settings authenticated", "homepage chromium"]) {
     assert.ok(fullPlan.playwright_projects.split(",").includes(required), `FULL missing ${required}`);

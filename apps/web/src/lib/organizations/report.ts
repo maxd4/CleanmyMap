@@ -32,11 +32,17 @@ export async function loadOrganizationReport(actor: string, scope: OrganizationR
   if (rows.length !== ids.length || new Set(rows.map(row => row.id)).size !== ids.length ||
     rows.some(row => !ids.includes(row.id))) throw new OrganizationServiceError(409);
   // Use the canonical projection; never export raw action, user, location, notes, or photo fields.
-  const projected = rows.map(row => toActionContract(row)).map(toReportsExportRow);
-  const result = projected.map(row => ({
+  const contracts = rows.map(row => toActionContract(row));
+  const projected = contracts.map(toReportsExportRow);
+  const result = projected.map((row, index) => ({
     date: row.Date, massKg: row.Masse_Kg_Declaree, impactMassKg: row.Masse_Kg_Impact,
     massSource: row.Origine_Masse, butts: row.Megots, participations: row.Bénévoles,
     durationMinutes: row.Durée_Min,
+    collectorsCount: contracts[index]?.metadata.collectorsCount ?? null,
+    collectorsCountProvenance: contracts[index]?.metadata.collectorsCountProvenance ?? "historical_unknown",
+    wasteCategories: contracts[index]?.metadata.wasteCategories ?? null,
+    wasteBreakdown: contracts[index]?.metadata.wasteBreakdown ?? null,
+    wasteMeasurementMethod: contracts[index]?.metadata.wasteMeasurementMethod ?? null,
   }));
   const finalIds = await authorizedIds(actor, scope);
   if (initial.length !== finalIds.length || initial.some(id => !finalIds.includes(id))) throw new OrganizationServiceError(409);

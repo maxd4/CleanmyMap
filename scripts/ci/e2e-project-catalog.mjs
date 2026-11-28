@@ -40,7 +40,7 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
     name: "authenticated campaign",
     requiresAuth: true,
     specPatterns: [
-      /^e2e\/authenticated-(?:campaign|spogomi)\.(?:spec|test)\.ts$/,
+      /^e2e\/authenticated-(?:campaign|spogomi|enterprise-organization)\.(?:spec|test)\.ts$/,
     ],
     dependencyPrefixes: [
       "apps/web/src/lib/spogomi/",
@@ -49,6 +49,12 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
       "apps/web/src/components/spogomi/",
       "apps/web/src/app/(app)/spogomi/",
       "apps/web/src/app/(app)/dashboard/spogomi/",
+      "apps/web/src/app/(app)/dashboard/",
+      "apps/web/src/app/(app)/sponsor-portal/",
+      "apps/web/src/app/api/organizations/",
+      "apps/web/src/app/api/admin/organizations/",
+      "apps/web/src/lib/organizations/",
+      "apps/web/src/components/pilotage/enterprise-organization-workspace",
     ],
   },
   {

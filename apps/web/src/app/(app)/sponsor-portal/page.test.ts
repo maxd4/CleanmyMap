@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   loadAccountCompletionGateState: vi.fn(),
   loadPilotageOverview: vi.fn(),
   getServerLocale: vi.fn(),
+  getCurrentUserActiveRole: vi.fn(),
+  listOrganizations: vi.fn(),
 }));
 const events = vi.hoisted(() => [] as string[]);
 
@@ -73,6 +75,8 @@ vi.mock("@/lib/auth/account-completion-gate", () => ({
 vi.mock("@/lib/pilotage/overview", () => ({
   loadPilotageOverview: mocks.loadPilotageOverview,
 }));
+vi.mock("@/lib/authz", () => ({ getCurrentUserActiveRole: mocks.getCurrentUserActiveRole }));
+vi.mock("@/lib/organizations/service", () => ({ listOrganizations: mocks.listOrganizations }));
 
 vi.mock("@/components/ui/clerk-required-gate", () => ({
   ClerkRequiredGate: ({
@@ -107,7 +111,7 @@ vi.mock("@/components/ui/cmm-button", () => ({
 }));
 
 vi.mock("@/components/ui/page-header", () => ({
-  PageHeader: ({ title }: { title: React.ReactNode }) => React.createElement("h1", null, title),
+  PageHeader: ({ title, action }: { title: React.ReactNode; action?: React.ReactNode }) => React.createElement("header", null, React.createElement("h1", null, title), action),
 }));
 
 vi.mock("@/components/pilotage/pilotage-cluster-panels", () => ({
@@ -131,6 +135,8 @@ describe("/sponsor-portal access boundary", () => {
     vi.clearAllMocks();
     events.length = 0;
     mocks.getServerLocale.mockResolvedValue("fr");
+    mocks.getCurrentUserActiveRole.mockResolvedValue("benevole");
+    mocks.listOrganizations.mockResolvedValue([]);
     mocks.getSafeAuthSession.mockImplementation(async () => {
       events.push("auth");
       return { userId: "user-1", clerkReachable: true };
@@ -184,6 +190,18 @@ describe("/sponsor-portal access boundary", () => {
     expect(markup).toContain("66,7 % des actions renseignées.");
     expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({ periodDays: 730, limit: 5000, publishedCompletedOnly: true });
     expect(events).toEqual(["auth", "profile", "overview"]);
+  });
+
+  it("shows the organization workspace from a membership even when the active role is not enterprise", async () => {
+    mocks.getCurrentUserActiveRole.mockResolvedValueOnce("benevole");
+    mocks.listOrganizations.mockResolvedValueOnce([{
+      organization_id: "00000000-0000-4000-8000-000000000001", organization_name: "Entreprise Alpha",
+      membership_id: "00000000-0000-4000-8000-000000000002", member_role: "member", state: "active",
+    }]);
+    const markup = renderToStaticMarkup(await SponsorPortalPage({ searchParams: Promise.resolve({ tab: "organization" }) }));
+    expect(markup).toContain("Espace entreprise");
+    expect(markup).toContain("Mon organisation");
+    expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
   });
 
   it("keeps the authorized page renderable with partial metrics if pilotage is unavailable", async () => {

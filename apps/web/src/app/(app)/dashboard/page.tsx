@@ -23,6 +23,8 @@ import { DashboardAccountControls } from "@/components/dashboard/dashboard-accou
 import { DashboardAuthRequiredPreview } from "@/components/dashboard/dashboard-auth-required-preview";
 import { DashboardOverviewSkeleton } from "@/components/dashboard/dashboard-overview-skeleton";
 import { DashboardProfileSwitcher } from "@/components/dashboard/dashboard-profile-switcher";
+import { listOrganizations } from "@/lib/organizations/service";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 export const metadata: Metadata = {
   title: "Mon espace",
@@ -39,6 +41,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const { accountCompletion, displayMode, profile } = await loadDashboardPageData({ userId, clerkReachable });
   const identity = await getCurrentUserIdentity({ userId }).catch(() => null);
+  const hasOrganizationAccess = (await listOrganizations(userId).catch(() => [])).length > 0;
   const grantedRole = identity?.role ?? profile;
   const activeRole = identity?.activeRole ?? profile;
   const roleLabel = getProfileLabel(activeRole, locale);
@@ -52,7 +55,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <CmmPageLayout>
             <PageHeader family={resolvePageFamily(DASHBOARD_ROUTE)} title={t("title_v1")}
               subtitle={locale === "fr" ? "Vos actions, votre engagement et votre compte" : "Your actions, engagement and account"}
-              action={<span className="text-sm font-semibold cmm-text-secondary">{locale === "fr" ? "Rôle actif : " : "Active role: "}{roleLabel}</span>} />
+              action={<div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold cmm-text-secondary">{locale === "fr" ? "Rôle actif : " : "Active role: "}{roleLabel}</span>{hasOrganizationAccess?<CmmButton href="/sponsor-portal?tab=organization" tone="secondary">{locale === "fr"?"Espace entreprise":"Organization workspace"}</CmmButton>:null}</div>} />
             <DashboardPageTabs activeTab={activeTab} locale={locale} />
             <DashboardLegacyAnchor activeTab={activeTab} />
             {activeTab === "today" && <DashboardHomePanel profile={activeRole} locale={locale} />}

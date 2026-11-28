@@ -44,6 +44,7 @@ export const contractedApiRoutes = new Set([
   "personal-ai/declarations/[id]",
   "personal-ai/imports",
   "actions/[actionId]/accessibility-support",
+  "organizations",
 ]);
 
 export const apiRoot = dirname(fileURLToPath(import.meta.url));

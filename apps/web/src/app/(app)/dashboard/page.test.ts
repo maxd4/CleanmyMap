@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   loadUserLevelRankingSummary: vi.fn(),
   isAdminLikeProfile: vi.fn(),
   getTranslation: vi.fn(),
+  listOrganizations: vi.fn(),
 }));
 
 const completeAccountState = {
@@ -114,8 +115,8 @@ vi.mock("@/components/account/account-completion-gate", () => ({
 }));
 
 vi.mock("@/components/ui/page-header", () => ({
-  PageHeader: ({ title }: { title: React.ReactNode }) =>
-    React.createElement("h1", null, title),
+  PageHeader: ({ title, action }: { title: React.ReactNode; action?: React.ReactNode }) =>
+    React.createElement("header", null, React.createElement("h1", null, title), action),
 }));
 
 vi.mock("@/lib/auth/safe-session", () => ({
@@ -126,6 +127,7 @@ vi.mock("@/lib/authz", () => ({
   getCurrentUserRoleLabel: mocks.getCurrentUserRoleLabel,
   getCurrentUserIdentity: mocks.getCurrentUserIdentity,
 }));
+vi.mock("@/lib/organizations/service", () => ({ listOrganizations: mocks.listOrganizations }));
 
 vi.mock("@/lib/auth/account-completion-gate", () => ({
   loadAccountCompletionGateState: mocks.loadAccountCompletionGateState,
@@ -193,6 +195,7 @@ describe("/dashboard page contract", () => {
     mocks.getTranslation.mockReturnValue({ t: (key: string) => key });
     mocks.getCurrentUserRoleLabel.mockResolvedValue("benevole");
     mocks.getCurrentUserIdentity.mockResolvedValue(null);
+    mocks.listOrganizations.mockResolvedValue([]);
     mocks.loadAccountCompletionGateState.mockResolvedValue(completeAccountState);
     mocks.loadPilotageOverview.mockResolvedValue({
       summary: { kpis: [], recommendedAction: profileAction, alert: null },
@@ -244,6 +247,18 @@ describe("/dashboard page contract", () => {
     expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
     expect(mocks.fetchCachedReferralSummary).not.toHaveBeenCalled();
     expect(mocks.loadUserLevelRankingSummary).not.toHaveBeenCalled();
+  });
+
+  it("links an organization member to the workspace regardless of their active role", async () => {
+    mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
+    mocks.getCurrentUserIdentity.mockResolvedValue({ role: "benevole", activeRole: "benevole" });
+    mocks.listOrganizations.mockResolvedValueOnce([{
+      organization_id: "00000000-0000-4000-8000-000000000001", organization_name: "Entreprise Alpha",
+      membership_id: "00000000-0000-4000-8000-000000000002", member_role: "member", state: "active",
+    }]);
+    const markup = renderToStaticMarkup(await renderPage());
+    expect(markup).toContain('href="/sponsor-portal?tab=organization"');
+    expect(markup).toContain("Espace entreprise");
   });
 
   it("exposes the functional notifications destination section", async () => {

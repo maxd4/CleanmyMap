@@ -8,6 +8,7 @@ import { assertClerkDevelopmentEnvironment, isOwnedTemporaryUser, parseManagedUs
 const authDirectory = path.join(process.cwd(), "artifacts", "playwright", "clerk");
 const authFile = path.join(authDirectory, "user.json");
 const managedUserFile = path.join(authDirectory, "managed-user.json");
+const managedMemberFile = path.join(authDirectory, "enterprise-organization-member.json");
 
 function parseEnvAssignment(line: string): { key: string; value: string } | null {
   let candidate = line.trimStart();
@@ -37,19 +38,19 @@ teardown("delete automatically managed Clerk user", async () => {
   const secretKey = process.env.CLERK_SECRET_KEY;
   if (secretKey) {
     try {
-      const metadata = parseManagedUserMetadata(await readFile(managedUserFile, "utf8"));
-      if (metadata) {
-        assertClerkDevelopmentEnvironment();
-        const client = createClerkClient({ secretKey });
+      assertClerkDevelopmentEnvironment();
+      const client = createClerkClient({ secretKey });
+      for (const markerPath of [managedUserFile, managedMemberFile]) {
+        const metadata = parseManagedUserMetadata(await readFile(markerPath, "utf8").catch(() => ""));
+        if (!metadata) continue;
         const user = await client.users.getUser(metadata.userId).catch(() => null);
-        if (isOwnedTemporaryUser(metadata, user)) {
-          await client.users.deleteUser(metadata.userId);
-        }
+        if (isOwnedTemporaryUser(metadata, user)) await client.users.deleteUser(metadata.userId);
       }
     } catch {
       // Cleanup is best effort; the harness never deletes a configured user.
     }
   }
   await unlink(managedUserFile).catch(() => undefined);
+  await unlink(managedMemberFile).catch(() => undefined);
   await unlink(authFile).catch(() => undefined);
 });

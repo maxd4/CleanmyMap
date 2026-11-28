@@ -12,6 +12,26 @@ function check(error: { code?: string } | null) {
   if (error.code === "22023" || error.code === "23505" || error.code === "23514" || error.code === "23503") throw new OrganizationServiceError(409);
   throw new OrganizationServiceError(503);
 }
+type OrganizationTeamMemberRow = {
+  membership_id: string;
+  member_role: string;
+  state: string;
+  site_id: string | null;
+  is_self: boolean;
+  label: string;
+  expires_at: string | null;
+};
+function mapTeamMember(member: OrganizationTeamMemberRow) {
+  return {
+    id: member.membership_id,
+    member_role: member.member_role,
+    state: member.state,
+    site_id: member.site_id,
+    is_self: member.is_self,
+    label: member.label,
+    expires_at: member.expires_at,
+  };
+}
 
 export async function listOrganizations(actor: string) {
   const { data, error } = await getSupabaseServerClient(true).rpc("list_my_organizations", { p_actor: actor });
@@ -19,25 +39,61 @@ export async function listOrganizations(actor: string) {
   return organizationMembershipListSchema.parse(data);
 }
 export async function readOrganization(actor: string, organizationId: string, offset: number) {
-  const { data, error } = await getSupabaseServerClient(true).rpc("read_organization_workspace", { p_org: organizationId, p_actor: actor, p_offset: offset });
+  const client = getSupabaseServerClient(true);
+  const memberships = await listOrganizations(actor);
+  const membership = memberships.find((entry) => entry.organization_id === organizationId && entry.state === "active");
+  if (!membership) throw new OrganizationServiceError(403);
+  if (membership.member_role === "member") {
+    const { data: members, error } = await client.rpc("read_organization_team_members", { p_org: organizationId, p_actor: actor });
+    check(error);
+    return organizationWorkspaceSchema.parse({
+      id: organizationId,
+      name: membership.organization_name,
+      role: membership.member_role,
+      site_id: null,
+      members: (members ?? []).map(mapTeamMember),
+      sites: [],
+      campaigns: [],
+      actions: [],
+      actions_has_more: false,
+      link_candidates: [],
+      candidates_has_more: false,
+    });
+  }
+  const [{ data, error }, { data: members, error: membersError }] = await Promise.all([
+    client.rpc("read_organization_workspace", { p_org: organizationId, p_actor: actor, p_offset: offset }),
+    client.rpc("read_organization_team_members", { p_org: organizationId, p_actor: actor }),
+  ]);
   check(error);
-  return organizationWorkspaceSchema.parse(data);
+  check(membersError);
+  return organizationWorkspaceSchema.parse({ ...data, members: (members ?? []).map(mapTeamMember) });
 }
 export async function mutateOrganization(actor: string, command: OrganizationCommand) {
   const client = getSupabaseServerClient(true);
   const common = { p_org: command.organizationId, p_actor: actor, p_request: command.requestId };
   if (command.operation === "invite") {
-    // Confirm owner before a Clerk lookup to prevent account enumeration by outsiders.
+    // Confirm owner before a verified-email lookup; never accept Clerk IDs from the browser.
     const workspace = await readOrganization(actor, command.organizationId, 0);
     if (workspace.role !== "owner") throw new OrganizationServiceError(403);
-    try { await (await clerkClient()).users.getUser(command.targetId); }
-    catch { throw new OrganizationServiceError(409); }
-    const { error } = await client.rpc("mutate_organization_membership", { ...common, p_operation: command.operation, p_membership: null, p_target: command.targetId, p_role: command.role, p_site: command.siteId });
+    let targetId: string;
+    try {
+      const matches = await (await clerkClient()).users.getUserList({ emailAddress: [command.targetEmail], limit: 2 });
+      const exact = matches.data.filter((user) => user.emailAddresses.some((email) =>
+        email.emailAddress.trim().toLowerCase() === command.targetEmail && email.verification?.status === "verified"));
+      if (exact.length !== 1) throw new Error("Account unavailable");
+      targetId = exact[0].id;
+    } catch { throw new OrganizationServiceError(409); }
+    const { error } = await client.rpc("mutate_organization_membership", { ...common, p_operation: command.operation, p_membership: null, p_target: targetId, p_role: command.role, p_site: command.siteId });
     check(error);
     return;
   }
   if (command.operation === "accept" || command.operation === "decline" || command.operation === "revoke" || command.operation === "promote_owner" || command.operation === "transfer_owner") {
     const { error } = await client.rpc("mutate_organization_membership", { ...common, p_operation: command.operation, p_membership: command.membershipId, p_target: null, p_role: null, p_site: null });
+    check(error);
+    return;
+  }
+  if (command.operation === "leave") {
+    const { error } = await client.rpc("leave_organization", common);
     check(error);
     return;
   }

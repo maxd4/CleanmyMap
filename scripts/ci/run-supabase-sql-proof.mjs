@@ -59,6 +59,7 @@ const MULTISESSION_PROOFS = new Map([
   ["e2e/personal-ai-write-concurrency.mjs", /Personal AI owner lock ordering, concurrent scenario writes and overlap rejection passed\./],
   ["e2e/reports-postgres-concurrency.mjs", /EXECUTED_DB_CONTRACT: Reports quota and PDF artifact two-session concurrency contract passed\./],
   ["e2e/action-media-route-reference-concurrency.mjs", /EXECUTED_DB_CONTRACT: Route-reference quota serialization and tombstone compare-and-set prevent late finalization from reactivating a removed intent\./],
+  ["e2e/enterprise-organization-concurrency.mjs", /EXECUTED_DB_CONTRACT: Enterprise organization transfer and departure serialize across two PostgreSQL sessions without orphaning ownership\./],
   ["e2e/security-02-two-sessions.mjs", /SECURITY-02 two-session PostgreSQL contract passed\./],
   ["e2e/spogomi-concurrency.mjs", /EXECUTED_DB_CONTRACT: SPOGOMI composition, lock, GPX, certificate, consolidation and closure republication safety passed\./],
 ]);

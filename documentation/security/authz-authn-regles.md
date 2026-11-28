@@ -200,6 +200,20 @@ actuellement principalement un parcours d'analyse. Une association, une
 entreprise, une collectivité ou un territoire ne devient un scope autorisable
 qu'au travers de sa relation canonique persistée et vérifiée côté serveur.
 
+Pour l'espace entreprise, l'adhésion active/invitation Clerk persistée est le
+scope organisationnel; `ACTIVE_ROLE=entreprise` ne crée pas de droit. Le
+dashboard et le portail peuvent donc proposer l'accès à tout membre/invité,
+tandis que `/api/organizations` et `/api/reports/organization` revérifient la
+session, l'état de l'organisation et les permissions d'opération côté serveur.
+Les RPC restent `service_role` seulement et les projections de roster excluent
+les identifiants Clerk bruts.
+La revue des demandes de mandat est réservée à l'administration via
+`/admin/organizations`; `GET /api/admin/organizations/bootstrap` passe par une
+RPC de file `service_role` seulement et retire l'identifiant Clerk avant de
+répondre. Le `POST` exige une confirmation humaine explicite, une référence
+d'organisateur résolue dans l'annuaire et l'égalité avec l'identité légale
+acceptée avant de créer l'organisation et son propriétaire initial.
+
 Pour les actions, cette distinction est obligatoire :
 
 ```txt

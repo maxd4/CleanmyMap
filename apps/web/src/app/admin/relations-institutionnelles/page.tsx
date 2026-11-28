@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireAdminAccess } from "@/lib/authz";
 import { PageHeader } from "@/components/ui/page-header";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { InstitutionalRelationsAdminClient } from "./institutional-relations-admin-client";
 
 // force-dynamic: private admin institutional relations CRM (no-store, auth-gated)
@@ -21,7 +22,7 @@ export default async function InstitutionalRelationsAdminPage() {
 
   return (
     <div className="cmm-page-width py-8">
-      <PageHeader title="Relations institutionnelles" />
+      <PageHeader title="Relations institutionnelles" action={<CmmButton href="/admin/organizations">Mandats des organisations</CmmButton>} />
       <InstitutionalRelationsAdminClient />
     </div>
   );
