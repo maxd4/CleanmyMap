@@ -45,7 +45,7 @@ describe("documentation roadmap governance", () => {
 
   it("does not block an internal technical reference to a versioned plan", () => {
     const view = createView({
-      "documentation/features/fixture.mdx": "See plans/internal-roadmap.md\n",
+      "documentation/plans/ateliers_DU.md": "See documentation/plans/rapport_impact/impact_IA.md\n",
       [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
     });
 
@@ -54,30 +54,54 @@ describe("documentation roadmap governance", () => {
     assert.deepEqual(violations, []);
   });
 
-  it("rejects a real internal-path exposure in a public CURRENT page", () => {
+  it("uses the public registry to reject an internal path on a public CURRENT page", () => {
     const view = createView({
-      "documentation/pages_site/routes/fixture.md": "> Statut documentaire : CURRENT\n> Audience : public\nConsulter AGENTS.md avant toute modification.\n",
+      "documentation/plans/ateliers_DU.md": "> Statut documentaire : CURRENT\nConsulter AGENTS.md avant toute modification.\n",
       [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
     });
 
     const violations = validateDocumentationGovernance(view);
 
     assert.ok(violations.some((violation) =>
-      violation.file === "documentation/pages_site/routes/fixture.md" && violation.severity === "BLOCKING",
+      violation.file === "documentation/plans/ateliers_DU.md" && violation.severity === "BLOCKING",
     ));
   });
 
-  it("does not treat an internal link as a public exposure without a public destination", () => {
+  it("does not infer actual site exposure from a public header alone", () => {
     const view = createView({
-      "documentation/development/fixture.md": "> Statut documentaire : CURRENT\n> Audience : interne\nVoir [plan](../plans/security-plan.md).\n",
+      "documentation/development/fixture.md": "> Statut documentaire : CURRENT\n> Audience : public\nConsulter AGENTS.md avant toute modification.\n",
       [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
     });
     assert.deepEqual(validateDocumentationGovernance(view), []);
   });
 
+  it("blocks a link from a public document to an unlisted internal plan", () => {
+    const view = createView({
+      "documentation/legal/charte-benevole.md": "> Statut documentaire : CURRENT\nVoir documentation/plans/private-review-plan.md.\n",
+      [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
+    });
+    const findings = validateDocumentationGovernance(view);
+    assert.ok(findings.some((finding) =>
+      finding.file === "documentation/legal/charte-benevole.md"
+      && finding.pattern === "internal-reference-in-public-destination"
+      && /unlisted plan reference/.test(finding.snippet),
+    ));
+  });
+
+  it("keeps a listed public document under governance even without a public header", () => {
+    const view = createView({
+      "documentation/legal/charte-benevole.md": "> Statut documentaire : CURRENT\nConsulter AGENTS.md avant toute modification.\n",
+      [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
+    });
+    const findings = validateDocumentationGovernance(view);
+    assert.ok(findings.some((finding) =>
+      finding.file === "documentation/legal/charte-benevole.md" && finding.severity === "BLOCKING",
+    ));
+  });
+
   it("keeps historical-public internal references visible as warnings", () => {
     const view = createView({
-      "documentation/pages_site/routes/fixture.md": "> Statut documentaire : HISTORY\n> Audience : public\nVoir plans/ancien-plan.md.\n",
+      "documentation/plans/ateliers_DU.md": "> Statut documentaire : HISTORY\nVoir plans/ancien-plan.md.\n",
       [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
     });
     const findings = validateDocumentationGovernance(view);

@@ -186,23 +186,33 @@ const SECRET_PATTERNS = [
 
 const HASH_DIGEST_SENSITIVE_WORDS = /password|token|secret|credential/i;
 const HASH_DIGEST_AUTH_CONTEXT = /(?:^|[^a-z0-9_\/])auth(?:entication|orization)?(?:$|[^a-z0-9_\/])|(?:^|[^a-z0-9_\/])auth[A-Z][a-z0-9_]*/i;
-const GIT_BLOB_SHA_JSON_LINE = /"(?:apps|documentation|scripts|e2e|packages|maintenance)\/[^"]+"\s*:\s*"[a-f0-9]{40}"/i;
-const GIT_COMMIT_SHA_DOC_LINE = /(?:référence(?: factuelle(?: lue)?)?|sha|commit|revision|révision|base)\s*:?\s*`?[a-f0-9]{40}`?/i;
+const GIT_BLOB_SHA_JSON_ENTRY = /"(?:apps|documentation|scripts|e2e|packages|maintenance)\/[^"]+"\s*:\s*"([a-f0-9]{40})"/gi;
+const GIT_COMMIT_SHA_DOC_ENTRY = /(?:référence(?: factuelle(?: lue)?)?|sha|commit|revision|révision|base)\s*:?\s*`?([a-f0-9]{40})`?/gi;
 
-function hasHashDigestSecretContext(line, raw) {
-  const hashIndex = Math.max(0, line.indexOf(raw ?? ""));
+function isGitReferenceOccurrence(line, raw, hashIndex) {
+  for (const pattern of [GIT_BLOB_SHA_JSON_ENTRY, GIT_COMMIT_SHA_DOC_ENTRY]) {
+    pattern.lastIndex = 0;
+    for (const match of line.matchAll(pattern)) {
+      const referencedSha = match[1];
+      const shaIndex = match.index + match[0].lastIndexOf(referencedSha);
+      if (shaIndex === hashIndex && referencedSha === raw) return true;
+    }
+  }
+  return false;
+}
+
+function hasHashDigestSecretContext(line, raw, occurrenceIndex = line.indexOf(raw ?? "")) {
+  const hashIndex = Math.max(0, occurrenceIndex);
+  if (isGitReferenceOccurrence(line, raw, hashIndex)) return false;
   const nearby = line.slice(Math.max(0, hashIndex - 64), hashIndex + (raw?.length ?? 0) + 64);
   if (HASH_DIGEST_SENSITIVE_WORDS.test(nearby)) {
     return true;
   }
-  if (GIT_BLOB_SHA_JSON_LINE.test(line) || GIT_COMMIT_SHA_DOC_LINE.test(line)) {
-    return false;
-  }
   return HASH_DIGEST_AUTH_CONTEXT.test(nearby) || /\b(?:digest|checksum|empreinte)\b/i.test(nearby);
 }
 
-function matchesContext(context, line, raw) {
-  return typeof context === "function" ? context(line, raw) : context.test(line);
+function matchesContext(context, line, raw, occurrenceIndex) {
+  return typeof context === "function" ? context(line, raw, occurrenceIndex) : context.test(line);
 }
 
 function parseArgs(argv) {
@@ -561,7 +571,7 @@ function scanLine(file, line, lineNumber) {
     pattern.regex.lastIndex = 0;
     for (const match of line.matchAll(pattern.regex)) {
       const raw = match[0];
-      if (pattern.context && !matchesContext(pattern.context, line, raw)) continue;
+      if (pattern.context && !matchesContext(pattern.context, line, raw, match.index)) continue;
       if (pattern.validator && !pattern.validator(raw, line)) {
         continue;
       }

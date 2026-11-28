@@ -43,6 +43,14 @@ function runNode(scriptPath, args = [], envOverrides = {}) {
   });
 }
 
+function assertAcceptedSecretAuditStatus(output) {
+  assert.match(
+    output,
+    /\[secret-audit\] (?:OK: [^\r\n]*no probable secret found\.|PASS_WITH_WARNINGS: \d+ documented ambiguous finding\(s\) require review\.)/i,
+  );
+  assert.doesNotMatch(output, /\[secret-audit\] FAIL:/i);
+}
+
 function runGit(args, env) {
   const result = spawnSync("git", args, { cwd: ROOT, env, encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
@@ -254,7 +262,7 @@ describe("generated artifact guard boundaries", { concurrency: 1 }, () => {
     const output = `${result.stdout}\n${result.stderr}`;
     assert.equal(result.status, 0, output);
     assert.doesNotMatch(output, /ENOBUFS/);
-    assert.match(output, /no probable secret found/i);
+    assertAcceptedSecretAuditStatus(output);
   });
 
   it("uses only the staged candidate for quick checks", () => {
@@ -680,6 +688,6 @@ describe("generated artifact guard boundaries", { concurrency: 1 }, () => {
     const output = `${result.stdout}\n${result.stderr}`;
     assert.equal(result.status, 0, output);
     assert.doesNotMatch(output, /__codex-dirty-secret\.ts/);
-    assert.match(output, /no probable secret found/i);
+    assertAcceptedSecretAuditStatus(output);
   });
 });

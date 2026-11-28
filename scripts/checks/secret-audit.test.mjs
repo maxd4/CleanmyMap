@@ -217,6 +217,34 @@ test("a Git SHA cited as a French documentary reference is recognized", () => {
   assert.match(result.stdout, /no probable secret found/);
 });
 
+test("a Git reference exemption does not suppress a sensitive digest on the same line", () => {
+  const gitSha = "f528abe403800460874b0976a730f9688671a3a5";
+  const passwordDigest = "c".repeat(40);
+  const result = runAudit({
+    candidateContent:
+      `Référence factuelle \`${gitSha}\` ; passwordHash=${passwordDigest}\n`,
+    foreignContent: "no secret here\n",
+  });
+
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /Hash digest/);
+  assert.doesNotMatch(result.stderr, new RegExp(passwordDigest));
+});
+
+test("a Git blob SHA exemption does not suppress a sensitive digest in the same JSON line", () => {
+  const gitSha = "f528abe403800460874b0976a730f9688671a3a5";
+  const passwordDigest = "c".repeat(40);
+  const result = runAudit({
+    candidateContent:
+      `{"apps/web/src/file.ts":"${gitSha}","passwordHash":"${passwordDigest}"}\n`,
+    foreignContent: "no secret here\n",
+  });
+
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /Hash digest/);
+  assert.doesNotMatch(result.stderr, new RegExp(passwordDigest));
+});
+
 test("an ambiguous documentary checksum is visible as a non-blocking warning", () => {
   const digest = "d".repeat(40);
   const result = runAudit({

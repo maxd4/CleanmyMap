@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import process from "node:process";
 import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
 import { resolveCandidateShaFromRef, writeQualityEvidence } from "./quality-evidence.mjs";
+import { PUBLIC_DOCUMENTATION } from "../../apps/web/src/lib/documentation/public-documentation-registry.ts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const EVIDENCE_ROOT = "artifacts/security-evidence";
@@ -12,13 +13,18 @@ const internalOnlyReferences = [
   /\bproject_context\.md\b/i,
   /\bsessions?[\\/]/i,
   /\brapport_IA[\\/]/i,
-  /\bplans?[\\/]/i,
   /\boperations[\\/]agent-memory-governance\.md\b/i,
   /\boperations[\\/]session-standard-runbook\.md\b/i,
   /backups[\\/]actions-backup-2026-04-24T07-54-44\.951Z\.json/i,
   /maintenance[\\/]python[\\/]data[\\/]cleanmymap\.db/i,
 ];
 const dependencyAdvisoryGovernancePath = "documentation/security/dependency-advisory-governance.md";
+const publicDocumentationPaths = new Set(
+  PUBLIC_DOCUMENTATION
+    .filter((entry) => entry.docsPath || entry.apiRoutes?.length)
+    .map((entry) => path.posix.normalize(entry.canonicalPath)),
+);
+const internalPlanFileReference = /(?:^|[^\w_-])((?:documentation[\\/])?plans?[\\/][\w./\\-]+\.mdx?)(?=$|[^\w_-])/gi;
 const requiredDependencyAdvisoryGovernanceMarkers = [
   "GHSA-w3rx-r6r6-pgpr", "CVE-2025-71330", "GHSA-5p2g-fcmc-qvqq", "CVE-2025-71329",
   "GHSA-528h-pc64-c93x", "CVE-2026-71429", "image-size@2.0.3", "apps/mobile/vendor/image-size",
@@ -31,14 +37,19 @@ const requiredDependencyAdvisoryGovernanceMarkers = [
 function documentMetadata(content) {
   const header = content.split(/\r?\n/).slice(0, 40).join("\n");
   const status = header.match(/(?:statut documentaire|document status|type)\s*:?[^\n]{0,80}\b(CURRENT|PLAN|AUDIT|HISTORY|SNAPSHOT|ADR|GENERATED)\b/i)?.[1]?.toUpperCase() ?? "UNSPECIFIED";
-  const audience = header.match(/(?:audience|destination|publication)\s*:?\s*([^\n]+)/i)?.[1]?.trim().toLowerCase() ?? "";
-  return { status, audience };
+  return { status };
 }
 
-function isPublicDestination(filePath, content) {
-  const { audience } = documentMetadata(content);
-  return /\b(public|site|website|web public|publication publique)\b/i.test(audience)
-    || filePath.startsWith("documentation/legal/");
+function isPublicDestination(filePath) {
+  const documentationPath = filePath.replace(/^documentation\//, "");
+  return publicDocumentationPaths.has(path.posix.normalize(documentationPath));
+}
+
+function isPublicPlanReference(rawReference) {
+  const normalized = rawReference
+    .replace(/^documentation[\\/]/i, "")
+    .replaceAll("\\", "/");
+  return publicDocumentationPaths.has(path.posix.normalize(normalized));
 }
 
 function lineSnippets(content, pattern) {
@@ -97,14 +108,27 @@ export function validateDocumentationGovernance(view) {
   for (const filePath of view.listFiles("documentation")) {
     if (!scanExtensions.has(path.posix.extname(filePath).toLowerCase())) continue;
     const content = view.readText(filePath);
-    if (!isPublicDestination(filePath, content)) continue;
+    if (!isPublicDestination(filePath)) continue;
     const { status } = documentMetadata(content);
     const severity = ["PLAN", "AUDIT", "HISTORY", "SNAPSHOT"].includes(status) ? "WARNING" : "BLOCKING";
     for (const pattern of internalOnlyReferences) {
       for (const match of lineSnippets(content, pattern)) {
-        findings.push({ file: filePath, line: match.line, pattern: "internal-reference-in-public-destination", severity, snippet: `${match.snippet} (document status: ${status}; audience: public)` });
+        findings.push({ file: filePath, line: match.line, pattern: "internal-reference-in-public-destination", severity, snippet: `${match.snippet} (document status: ${status}; listed in PUBLIC_DOCUMENTATION)` });
       }
     }
+    content.split(/\r?\n/).forEach((line, index) => {
+      internalPlanFileReference.lastIndex = 0;
+      for (const match of line.matchAll(internalPlanFileReference)) {
+        if (isPublicPlanReference(match[1])) continue;
+        findings.push({
+          file: filePath,
+          line: index + 1,
+          pattern: "internal-reference-in-public-destination",
+          severity,
+          snippet: `${line.trim()} (document status: ${status}; listed in PUBLIC_DOCUMENTATION; unlisted plan reference)`,
+        });
+      }
+    });
   }
   for (const issue of validateDependencyAdvisoryGovernance(view)) findings.push({
     file: dependencyAdvisoryGovernancePath, line: 1, pattern: "canonical-security-governance", severity: "BLOCKING", snippet: issue,
