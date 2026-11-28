@@ -23,6 +23,7 @@ import {
 } from "./action-observed-geometry";
 import {
   getVolunteerTotalAndKnownCategoryValidationMessage,
+  getCollectorsCountValidationMessage,
   getVolunteerForecastValidationMessage,
   resolvePersistedVolunteerParticipation,
 } from "./volunteer-participation";
@@ -280,8 +281,9 @@ function validateParticipantUpdate(params: {
   if (compositionMessage) throw new ActionUpdateValidationError("volunteerParticipation", compositionMessage);
   const total = isFinalization ? body.volunteersCount ?? null : body.volunteersCount ?? current.volunteers_count;
   const collectorsCount = body.collectorsCount !== undefined ? body.collectorsCount : current.collectors_count ?? null;
-  if (collectorsCount != null && total != null && collectorsCount > total) {
-    throw new ActionUpdateValidationError("collectorsCount", "Les personnes ayant ramassé ne peuvent pas dépasser les personnes présentes.");
+  const collectorsCountMessage = getCollectorsCountValidationMessage({ collectorsCount, volunteersCount: total });
+  if (collectorsCountMessage) {
+    throw new ActionUpdateValidationError("collectorsCount", collectorsCountMessage);
   }
   const collectorsCountProvenance = body.collectorsCount === null
     ? null
@@ -289,7 +291,7 @@ function validateParticipantUpdate(params: {
   if (collectorsCountProvenance && collectorsCount === null) {
     throw new ActionUpdateValidationError("collectorsCountProvenance", "Une provenance ne peut pas être conservée sans nombre de ramasseurs.");
   }
-  if (collectorsCountProvenance === "participant_total_default" && collectorsCount !== total) {
+  if ((collectorsCountProvenance === "participant_total_default" || collectorsCountProvenance === "historical_default_accepted") && collectorsCount !== total) {
     throw new ActionUpdateValidationError("collectorsCountProvenance", "La valeur préremplie doit correspondre au total présent.");
   }
 }

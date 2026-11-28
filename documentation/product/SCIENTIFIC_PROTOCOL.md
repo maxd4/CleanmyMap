@@ -600,6 +600,17 @@ signifie que l'information manque. Pour un compte à présence confirmée,
 `action_participants.collection_status` distingue `collected`, `not_collected`
 et `NULL` (inconnu).
 
+Au bilan, `volunteers_count` est saisi comme un entier de 1 à 500. Les nombres
+d'enfants et de retraités sont facultatifs et restent `NULL` lorsqu'ils sont
+inconnus ; leur somme ne peut dépasser le total. `adult_count` est dérivé
+uniquement lorsque ces deux catégories sont connues. Une seule catégorie connue
+est conservée telle quelle, sans adulte calculé ni unité opérationnelle
+imputée. Le défaut de `collectors_count` égal au total est identifié comme une
+hypothèse proposée et suivie jusqu'à modification ; une saisie confirmée et
+l'acceptation explicite d'un défaut historique ont des provenances distinctes.
+La simple réouverture d'une action historique conserve ses valeurs et ses
+`NULL`, sans réappliquer ce défaut.
+
 La référence globale `action-collection-reference-averages-v2` divise les
 mesures collectives admissibles par `collectors_count` connu et strictement
 positif. Le formulaire applique ce ratio au décompte des collecteurs déclaré

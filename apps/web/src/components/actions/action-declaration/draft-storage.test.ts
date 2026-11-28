@@ -92,6 +92,9 @@ describe("action declaration draft storage", () => {
         partners: [{ organizerType: "local_authority", name: "Ville Exemple", role: "material" }],
       },
       wasteKg: "12",
+      volunteersCount: "15",
+      collectorsCount: "0",
+      collectorsCountProvenance: "user_confirmed",
     };
 
     expect(saveDraft(draft, savedAt)).toBe(savedAt);
@@ -113,6 +116,9 @@ describe("action declaration draft storage", () => {
     ]);
     expect(snapshot?.form).not.toHaveProperty("preparationState");
     expect(snapshot?.form.wasteKg).toBe("12");
+    expect(snapshot?.form.volunteersCount).toBe("15");
+    expect(snapshot?.form.collectorsCount).toBe("0");
+    expect(snapshot?.form.collectorsCountProvenance).toBe("user_confirmed");
   });
 
   it("keeps the creation request id when a draft is resumed", () => {

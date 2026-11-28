@@ -123,6 +123,11 @@ export function buildCreateActionPayloadMeasurementFields(
   declarationMode: DeclarationMode,
 ): Partial<CreateActionPayload> {
   const { enteredMegotsKg, enteredButtsCount, enteredVolumeLiters, cigaretteButtsCondition } = parts;
+  const participantTotal = toOptionalNumber(form.volunteersCount);
+  const shouldProposeCollectorDefault = declarationMode === "complete" &&
+    form.collectorsCountProvenance === null &&
+    form.collectorsCount.trim() === "" &&
+    participantTotal !== undefined && Number.isInteger(participantTotal) && participantTotal >= 1 && participantTotal <= 500;
   const derivedVolunteersCount =
     declarationMode === "complete"
       ? toOptionalNumber(form.volunteersCount)
@@ -138,8 +143,12 @@ export function buildCreateActionPayloadMeasurementFields(
     cigaretteButts: enteredButtsCount,
     cigaretteButtsCount: enteredButtsCount,
     volunteerParticipation: parts.volunteerParticipationInput as CreateActionPayload["volunteerParticipation"],
-    collectorsCount: form.collectorsCount.trim() === "" ? null : toOptionalNumber(form.collectorsCount) ?? null,
-    collectorsCountProvenance: form.collectorsCountProvenance === "participant_total_default" || form.collectorsCountProvenance === "user_confirmed"
+    collectorsCount: shouldProposeCollectorDefault
+      ? participantTotal
+      : form.collectorsCount.trim() === "" ? null : toOptionalNumber(form.collectorsCount) ?? null,
+    collectorsCountProvenance: shouldProposeCollectorDefault
+      ? "participant_total_default"
+      : form.collectorsCountProvenance === "participant_total_default" || form.collectorsCountProvenance === "user_confirmed" || form.collectorsCountProvenance === "historical_default_accepted"
       ? form.collectorsCountProvenance
       : undefined,
     ...(derivedVolunteersCount === null || derivedVolunteersCount === undefined

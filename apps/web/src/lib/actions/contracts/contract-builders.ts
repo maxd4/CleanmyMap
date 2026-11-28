@@ -76,7 +76,7 @@ export type ActionContractCreatePayload = {
     cigaretteButts?: number | null;
     volunteersCount?: number;
     collectorsCount?: number | null;
-    collectorsCountProvenance?: "participant_total_default" | "user_confirmed";
+    collectorsCountProvenance?: "participant_total_default" | "user_confirmed" | "historical_default_accepted";
     collectionAttributionVersion?: "collectors-v1" | null;
     durationMinutes?: number;
     notes?: string;

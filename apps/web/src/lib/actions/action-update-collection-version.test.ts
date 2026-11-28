@@ -24,6 +24,16 @@ describe("collection attribution version persistence", () => {
       .toBe("participant_total_default");
   });
 
+  it("persists explicit acceptance of a historical total default", () => {
+    const created = buildPersistedNotes({
+      notes: "Bilan historique accepté",
+      collectorsCount: 12,
+      collectorsCountProvenance: "historical_default_accepted",
+    });
+    expect(extractActionMetadataFromNotes(created).collectorsCountProvenance)
+      .toBe("historical_default_accepted");
+  });
+
   it("clears collector provenance when the collector count is explicitly cleared", () => {
     const existing = extractActionMetadataFromNotes(buildPersistedNotes({
       notes: "Bilan",

@@ -8,11 +8,12 @@ import { createInitialFormState } from "../payload";
 import type { FormState } from "../model";
 import { ActionParticipantSection } from "./action-step-identity.participants";
 
-function ControlledParticipantFields({ hasAttemptedSubmit = false, initialCollectorsCount = "", initialCollectorsProvenance = null }: { hasAttemptedSubmit?: boolean; initialCollectorsCount?: string; initialCollectorsProvenance?: FormState["collectorsCountProvenance"] }) {
+function ControlledParticipantFields({ hasAttemptedSubmit = false, initialCollectorsCount = "", initialCollectorsProvenance = null, initialVolunteersCount = "" }: { hasAttemptedSubmit?: boolean; initialCollectorsCount?: string; initialCollectorsProvenance?: FormState["collectorsCountProvenance"]; initialVolunteersCount?: string }) {
   const [form, setForm] = useState(() => ({
     ...createInitialFormState("Alice", "action"),
     collectorsCount: initialCollectorsCount,
     collectorsCountProvenance: initialCollectorsProvenance,
+    volunteersCount: initialVolunteersCount,
   }));
   const updateField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((previous) => ({ ...previous, [key]: value }));
@@ -69,7 +70,7 @@ function setControlValue(element: HTMLInputElement, value: string): void {
   element.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
-function renderParticipantFields(options: { hasAttemptedSubmit?: boolean; initialCollectorsCount?: string; initialCollectorsProvenance?: FormState["collectorsCountProvenance"] } = {}): { container: HTMLDivElement; root: Root } {
+function renderParticipantFields(options: { hasAttemptedSubmit?: boolean; initialCollectorsCount?: string; initialCollectorsProvenance?: FormState["collectorsCountProvenance"]; initialVolunteersCount?: string } = {}): { container: HTMLDivElement; root: Root } {
   const container = document.createElement("div");
   const root = createRoot(container);
   act(() => {
@@ -104,6 +105,24 @@ describe("final participant composition fields", () => {
     expect(markup).toContain("Les catégories sont facultatives");
   });
 
+  it("keeps preparation composition behavior unchanged", () => {
+    const form = createInitialFormState("Alice", "action");
+    form.volunteersCount = "15";
+    form.childrenCount = "1";
+    form.retiredCount = "1";
+    const markup = renderToStaticMarkup(
+      <ActionParticipantSection
+        form={form}
+        updateField={() => undefined}
+        userId="user-1"
+        variant="compact"
+        isActionMode
+      />,
+    );
+    expect(markup).toContain("13 adulte");
+    expect(markup).toContain("13 adultes calculés automatiquement");
+  });
+
   it("does not show the composition error before interaction or submit", () => {
     const { container, root } = renderParticipantFields();
 
@@ -120,16 +139,48 @@ describe("final participant composition fields", () => {
 
     act(() => setControlValue(total, "3"));
     expect(collectors.value).toBe("3");
-    expect(container.textContent).toContain("par hypothèse");
+    expect(container.textContent).toContain("Proposition à vérifier");
 
-    act(() => setControlValue(collectors, "0"));
     act(() => setControlValue(total, "4"));
+    expect(collectors.value).toBe("4");
+    act(() => setControlValue(collectors, "0"));
+    expect(container.textContent).toContain("Valeur confirmée");
+    act(() => setControlValue(total, "5"));
     expect(collectors.value).toBe("0");
 
     act(() => (Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.includes("Rétablir")) as HTMLButtonElement).click());
-    expect(collectors.value).toBe("4");
-    expect(container.textContent).toContain("par hypothèse");
+    expect(collectors.value).toBe("5");
+    expect(container.textContent).toContain("Proposition à vérifier");
 
+    root.unmount();
+  });
+
+  it("prefills an already entered total on entering the final composition step", () => {
+    const { container, root } = renderParticipantFields({ initialVolunteersCount: "15" });
+    expect((container.querySelector("#action-collectors-count") as HTMLInputElement).value).toBe("15");
+    expect(container.textContent).toContain("Proposition à vérifier");
+    root.unmount();
+  });
+
+  it("keeps a cleared collector count unknown instead of refilling it or turning it into zero", () => {
+    const { container, root } = renderParticipantFields();
+    const total = container.querySelector("#action-volunteers-count") as HTMLInputElement;
+    const collectors = container.querySelector("#action-collectors-count") as HTMLInputElement;
+    act(() => setControlValue(total, "15"));
+    act(() => setControlValue(collectors, ""));
+    expect(collectors.value).toBe("");
+    act(() => setControlValue(total, "16"));
+    expect(collectors.value).toBe("");
+    root.unmount();
+  });
+
+  it("requires explicit acceptance before applying the historical total default", () => {
+    const { container, root } = renderParticipantFields({ initialVolunteersCount: "15", initialCollectorsProvenance: "historical_unknown" });
+    const collectors = container.querySelector("#action-collectors-count") as HTMLInputElement;
+    expect(collectors.value).toBe("");
+    act(() => (Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.includes("Utiliser le total")) as HTMLButtonElement).click());
+    expect(collectors.value).toBe("15");
+    expect(container.textContent).toContain("Total historique accepté");
     root.unmount();
   });
 
@@ -143,7 +194,7 @@ describe("final participant composition fields", () => {
 
     act(() => setControlValue(total, "5"));
     expect(collectors.value).toBe("2");
-    expect(container.textContent).toContain("Utiliser le total comme valeur proposée");
+    expect(container.textContent).toContain("Utiliser le total présent");
 
     root.unmount();
   });
@@ -163,6 +214,7 @@ describe("final participant composition fields", () => {
     });
     expect(container.querySelector('[role="alert"]')?.textContent).toContain("ne peut pas dépasser");
     expect(total.getAttribute("aria-invalid")).toBe("true");
+    expect(container.textContent).toContain("Adultes : non calculés");
 
     root.unmount();
   });
@@ -216,6 +268,20 @@ describe("final participant composition fields", () => {
     expect(container.querySelector('[role="alert"]')).not.toBeNull();
     expect(container.querySelector("#action-volunteers-count")?.getAttribute("aria-invalid")).toBe("true");
 
+    root.unmount();
+  });
+
+  it("does not carry a proposed collector default into a different action", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => root.render(<ParticipantLifecycleHarness />));
+    const total = container.querySelector("#action-volunteers-count") as HTMLInputElement;
+    const collectors = container.querySelector("#action-collectors-count") as HTMLInputElement;
+    act(() => setControlValue(total, "15"));
+    expect(collectors.value).toBe("15");
+    act(() => (container.querySelector('[data-testid="new-declaration"]') as HTMLButtonElement).click());
+    expect((container.querySelector("#action-volunteers-count") as HTMLInputElement).value).toBe("");
+    expect((container.querySelector("#action-collectors-count") as HTMLInputElement).value).toBe("");
     root.unmount();
   });
 });

@@ -4,7 +4,7 @@ import {
   type ActionContractCreatePayload,
 } from "@/lib/actions/data-contract";
 import type { CreateActionPayload } from "@/lib/actions/types";
-import { getVolunteerForecastValidationMessage } from "@/lib/actions/volunteer-participation";
+import { getCollectorsCountValidationMessage, getVolunteerForecastValidationMessage } from "@/lib/actions/volunteer-participation";
 import { getTimeContractValidationIssues, isValidClockTime } from "@/lib/actions/time-contract";
 import { isActionDateInFuture, resolveActionTemporalInstants } from "@/lib/actions/temporal";
 import { isValidIanaTimeZone } from "@/lib/time/civil-date";
@@ -243,7 +243,7 @@ const createActionLegacyBaseSchema = z.object({
   volunteerParticipation: volunteerParticipationSchema,
   volunteersCount: z.number().int().min(0).max(500).default(1),
   collectorsCount: z.number().int().min(0).max(500).nullable().optional(),
-  collectorsCountProvenance: z.enum(["participant_total_default", "user_confirmed"]).optional(),
+  collectorsCountProvenance: z.enum(["participant_total_default", "user_confirmed", "historical_default_accepted"]).optional(),
   durationMinutes: z.number().int().min(0).max(24 * 60).default(0),
   notes: z.string().max(1000).optional(),
   manualDrawing: manualDrawingSchema.optional(),
@@ -264,10 +264,11 @@ const createActionLegacySchema = createActionLegacyBaseSchema
     addGpxImportIssue(value, ctx);
     addPreActionVolunteerForecastIssue(value, ctx);
     addWasteCharacterizationCoherenceIssue(value, ctx);
-    if (value.collectorsCount != null && value.collectorsCount > value.volunteersCount) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCount"], message: "Les personnes ayant ramassé ne peuvent pas dépasser les personnes présentes." });
+    const collectorsCountMessage = getCollectorsCountValidationMessage({ collectorsCount: value.collectorsCount, volunteersCount: value.volunteersCount });
+    if (collectorsCountMessage) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCount"], message: collectorsCountMessage });
     }
-    if (value.collectorsCountProvenance === "participant_total_default" && value.collectorsCount !== value.volunteersCount) {
+    if ((value.collectorsCountProvenance === "participant_total_default" || value.collectorsCountProvenance === "historical_default_accepted") && value.collectorsCount !== value.volunteersCount) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCountProvenance"], message: "Une valeur préremplie doit correspondre au total déclaré." });
     }
   });
@@ -297,7 +298,7 @@ const createActionContractSchema = z.object({
     volunteerParticipation: volunteerParticipationSchema,
     volunteersCount: z.number().int().min(0).max(500).optional(),
     collectorsCount: z.number().int().min(0).max(500).nullable().optional(),
-    collectorsCountProvenance: z.enum(["participant_total_default", "user_confirmed"]).optional(),
+    collectorsCountProvenance: z.enum(["participant_total_default", "user_confirmed", "historical_default_accepted"]).optional(),
     durationMinutes: z.number().int().min(0).max(24 * 60).optional(),
     notes: z.string().max(1000).optional(),
     routeStyle: z.enum(["direct", "souple"]).optional(),
@@ -396,10 +397,11 @@ export const updateActionSchema = createActionLegacyBaseSchema
     addCompletedActionFutureDateIssue(value, ctx);
     addTemporalContractIssue(value, ctx);
     addPreActionVolunteerForecastIssue(value, ctx);
-    if (value.collectorsCount != null && value.volunteersCount != null && value.collectorsCount > value.volunteersCount) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCount"], message: "Les personnes ayant ramassé ne peuvent pas dépasser les personnes présentes." });
+    const collectorsCountMessage = getCollectorsCountValidationMessage({ collectorsCount: value.collectorsCount, volunteersCount: value.volunteersCount });
+    if (collectorsCountMessage) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCount"], message: collectorsCountMessage });
     }
-    if (value.collectorsCountProvenance === "participant_total_default" && value.collectorsCount !== undefined && value.collectorsCount !== null && value.volunteersCount !== undefined && value.collectorsCount !== value.volunteersCount) {
+    if ((value.collectorsCountProvenance === "participant_total_default" || value.collectorsCountProvenance === "historical_default_accepted") && value.collectorsCount !== undefined && value.collectorsCount !== null && value.volunteersCount !== undefined && value.collectorsCount !== value.volunteersCount) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCountProvenance"], message: "Une valeur préremplie doit correspondre au total déclaré." });
     }
   });

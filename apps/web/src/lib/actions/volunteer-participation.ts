@@ -2,7 +2,7 @@ export const EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION =
   "effective-volunteer-units-v1" as const;
 
 export type VolunteerDerivedProvenance = "derived" | "historical_unknown" | null;
-export type CollectorsCountProvenance = "participant_total_default" | "user_confirmed" | "historical_unknown" | null;
+export type CollectorsCountProvenance = "participant_total_default" | "user_confirmed" | "historical_default_accepted" | "historical_unknown" | null;
 export type VolunteerRecalculationStatus =
   | "recalculable"
   | "not_recalculable"
@@ -91,6 +91,21 @@ export function getFinalVolunteerCompositionValidationMessage(
   const retiredCount = parseVolunteerCategoryInput(input.retiredCount);
   if ((childrenCount ?? 0) + (retiredCount ?? 0) > total) {
     return "Le nombre d’enfants et de retraités ne peut pas dépasser le total des participants.";
+  }
+  return null;
+}
+
+export function getCollectorsCountValidationMessage(input: {
+  collectorsCount: number | null | undefined;
+  volunteersCount: number | null | undefined;
+}): string | null {
+  const collectorsCount = input.collectorsCount;
+  if (collectorsCount === null || collectorsCount === undefined) return null;
+  if (!Number.isInteger(collectorsCount) || collectorsCount < 0 || collectorsCount > 500) {
+    return "Le nombre de ramasseurs doit être un entier compris entre 0 et 500.";
+  }
+  if (isValidVolunteerTotal(input.volunteersCount) && collectorsCount > input.volunteersCount) {
+    return `Le nombre de personnes ayant ramassé ne peut pas dépasser le total présent (${input.volunteersCount}).`;
   }
   return null;
 }

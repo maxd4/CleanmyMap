@@ -386,6 +386,16 @@ describe("createActionSchema counts and participation", () => {
       collectorsCount: 1,
       collectorsCountProvenance: "user_confirmed",
     }).success).toBe(true);
+    expect(createActionSchema.safeParse({
+      ...basePayload,
+      collectorsCount: basePayload.volunteersCount,
+      collectorsCountProvenance: "historical_default_accepted",
+    }).success).toBe(true);
+    expect(createActionSchema.safeParse({
+      ...basePayload,
+      collectorsCount: 1,
+      collectorsCountProvenance: "historical_default_accepted",
+    }).success).toBe(false);
     expect(updateActionSchema.safeParse({
       volunteersCount: 2,
       collectorsCount: 1,

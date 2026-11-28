@@ -3,6 +3,7 @@ import { ActionParticipantPicker } from "../../action-participant-picker";
 import {
   deriveAdultCountFromTotal,
   deriveVolunteerParticipationFromTotal,
+  getCollectorsCountValidationMessage,
   getFinalVolunteerCompositionValidationMessage,
   getVolunteerTotalAndKnownCategoryValidationMessage,
   normalizeVolunteerParticipation,
@@ -128,15 +129,26 @@ function FinalParticipantCountInputs({
     retiredCount: form.retiredCount,
     childrenCount: form.childrenCount,
   };
+  const currentCompositionMessage = getFinalVolunteerCompositionValidationMessage(compositionInput);
   const compositionMessage = hasAttemptedSubmit || (isCurrentForm && interactionState.hasInteracted)
-    ? getFinalVolunteerCompositionValidationMessage(compositionInput)
+    ? currentCompositionMessage
     : null;
   const volunteersCount = form.volunteersCount.trim() === "" ? null : Number(form.volunteersCount);
-  const adultCount = deriveAdultCountFromTotal({
+  const hasValidTotal = volunteersCount !== null && Number.isInteger(volunteersCount) && volunteersCount >= 1 && volunteersCount <= 500;
+  const followsParticipantTotal = form.collectorsCountProvenance === "participant_total_default" || (
+    form.collectorsCountProvenance === null && form.collectorsCount.trim() === "" && hasValidTotal
+  );
+  const displayedCollectorsCount = followsParticipantTotal ? String(volunteersCount) : form.collectorsCount;
+  const collectorsValue = displayedCollectorsCount.trim() === "" ? null : Number(displayedCollectorsCount);
+  const collectorMessage = getCollectorsCountValidationMessage({
+    collectorsCount: collectorsValue,
+    volunteersCount: hasValidTotal ? volunteersCount : null,
+  });
+  const adultCount = currentCompositionMessage === null ? deriveAdultCountFromTotal({
     volunteersCount,
     childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount),
     retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
-  });
+  }) : null;
   const fields = [
     ["action-retired-count", "Retraités", "retiredCount"],
     ["action-children-count", "Enfants", "childrenCount"],
@@ -174,6 +186,8 @@ function FinalParticipantCountInputs({
                 updateField("collectorsCount", "");
                 updateField("collectorsCountProvenance", null);
               }
+            } else if (form.collectorsCountProvenance === "historical_default_accepted") {
+              updateField("collectorsCountProvenance", "user_confirmed");
             }
           }}
         />
@@ -223,16 +237,23 @@ function FinalParticipantCountInputs({
           step="1"
           inputMode="numeric"
           placeholder="À renseigner si connu"
-          aria-describedby="action-collectors-count-help"
+          aria-invalid={Boolean(collectorMessage)}
+          aria-describedby={collectorMessage ? "action-collectors-count-error" : "action-collectors-count-help"}
           className={compactInputCls}
-          value={form.collectorsCount}
+          value={displayedCollectorsCount}
           onChange={(event) => {
             updateField("collectorsCount", event.target.value);
-            updateField("collectorsCountProvenance", "user_confirmed");
+            updateField("collectorsCountProvenance", event.target.value.trim() === "" ? "historical_unknown" : "user_confirmed");
           }}
         />
-        {form.collectorsCountProvenance === "participant_total_default" ? (
-          <span className="block text-xs text-emerald-900/70" role="status">Valeur préremplie par hypothèse, égale au total présent : vérifiez-la si certaines personnes n’ont pas ramassé.</span>
+        {followsParticipantTotal ? (
+          <span className="block text-xs text-emerald-900/70" role="status">Proposition à vérifier : tous les présents ont ramassé.</span>
+        ) : null}
+        {form.collectorsCountProvenance === "historical_default_accepted" ? (
+          <span className="block text-xs text-emerald-900/70" role="status">Total historique accepté comme nombre de ramasseurs.</span>
+        ) : null}
+        {form.collectorsCountProvenance === "user_confirmed" ? (
+          <span className="block text-xs text-emerald-900/70" role="status">Valeur confirmée.</span>
         ) : null}
         {form.collectorsCountProvenance === "user_confirmed" || form.collectorsCountProvenance === "historical_unknown" ? (
           <button
@@ -240,16 +261,16 @@ function FinalParticipantCountInputs({
             className="min-h-11 text-sm font-semibold text-emerald-800 underline underline-offset-2"
             onClick={() => {
               updateField("collectorsCount", volunteersCount === null ? "" : String(volunteersCount));
-              updateField("collectorsCountProvenance", volunteersCount === null ? null : "participant_total_default");
+              updateField("collectorsCountProvenance", volunteersCount === null ? null : form.collectorsCountProvenance === "historical_unknown" ? "historical_default_accepted" : "participant_total_default");
             }}
             disabled={volunteersCount === null}
-          >{form.collectorsCountProvenance === "historical_unknown" ? "Utiliser le total comme valeur proposée" : "Rétablir le total prérempli"}</button>
+          >{form.collectorsCountProvenance === "historical_unknown" ? "Utiliser le total présent" : "Rétablir le total prérempli"}</button>
         ) : null}
         <span id="action-collectors-count-help" className="block text-xs text-emerald-900/60">
           Comptez les personnes qui ont ramassé, quel que soit leur âge ou besoin d’accompagnement. Laissez vide si inconnu. Exemple : 20 personnes présentes, 12 ramasseurs.
         </span>
-        {form.collectorsCount.trim() !== "" && volunteersCount !== null && Number(form.collectorsCount) > volunteersCount ? (
-          <span className="block text-xs font-medium text-rose-700" role="alert">Le nombre de personnes ayant ramassé ne peut pas dépasser le total présent ({volunteersCount}).</span>
+        {collectorMessage ? (
+          <span id="action-collectors-count-error" className="block text-xs font-medium text-rose-700" role="alert">{collectorMessage}</span>
         ) : null}
       </label>
       <ParticipantContextControl

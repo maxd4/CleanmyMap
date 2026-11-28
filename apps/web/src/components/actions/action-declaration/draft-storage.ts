@@ -114,6 +114,7 @@ const FORM_STATE_KEYS = [
   "cigaretteButtsLots",
   "volunteersCount",
   "collectorsCount",
+  "collectorsCountProvenance",
   "childrenCount",
   "adultCount",
   "retiredCount",

@@ -336,15 +336,19 @@ l'organisateur demeurent distinctes.
 Le formulaire de bilan reprend le contrat de saisie du total utilisé en
 préparation : le nombre total de personnes présentes est requis, tandis que la
 répartition enfants/retraités est facultative et les adultes ne sont calculés
-que si ces deux catégories sont connues. Une composition partielle connue est
-conservée sans compléter les inconnues. Le nombre de personnes ayant réellement
-ramassé est prérempli, par hypothèse visible, avec le total présent ; il suit ce
-total tant qu'il n'est pas modifié manuellement. Le zéro saisi manuellement est
-conservé, et l'action peut rétablir explicitement le préremplissage. L'origine
-du décompte est stockée dans les métadonnées d'action ; les actions historiques
-sans provenance restent inconnues et ne sont pas préremplies à leur ouverture.
-Le nombre de ramasseurs ne peut dépasser l'effectif présent. Les valeurs sont
-persistées sous le contrat d'actions décrit dans
+que si ces deux catégories sont connues. N est un entier de 1 à 500 ; E et R
+restent inconnus si les champs sont vides, et leur somme ne peut dépasser N. Une
+composition partielle connue est conservée sans adulte, contexte scolaire ni
+unités opérationnelles inférés. Le nombre de personnes ayant réellement ramassé
+est prérempli par hypothèse visible avec N et suit N tant que l'utilisateur ne
+le modifie pas. Les valeurs manuelles, y compris zéro, sont conservées et le
+défaut peut être rétabli explicitement. Le contrat enregistre séparément le
+défaut proposé, la valeur confirmée et l'acceptation d'un défaut historique.
+Les actions historiques sans provenance gardent leur valeur, y compris `NULL`,
+à la simple ouverture. Le nombre de ramasseurs doit être entier et ne peut
+dépasser N. Le parcours Mobile utilise les contrats serveur partagés sans
+réimplémenter ce calcul dans Expo. Les valeurs sont persistées sous le contrat
+d'actions décrit dans
 [`methodologie-carte-actions.md`](../../../../product/methodologie-carte-actions.md).
 
 ### Préparation d'un accueil accessible

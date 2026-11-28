@@ -7,6 +7,7 @@ import {
   getVolunteerActionCompositionValidationMessage,
   getVolunteerTotalAndKnownCategoryValidationMessage,
   getFinalVolunteerCompositionValidationMessage,
+  getCollectorsCountValidationMessage,
   getVolunteerParticipationDisclosureDetail,
   normalizeActionVolunteerParticipationFromTotal,
   normalizeVolunteerParticipation,
@@ -28,6 +29,8 @@ describe("volunteer participation contract", () => {
   it.each([
     ["missing total", { volunteersCount: "", retiredCount: "", childrenCount: "" }, "Renseignez un nombre total de participants entier compris entre 1 et 500."],
     ["fractional category", { volunteersCount: "12", retiredCount: "0", childrenCount: "1.5" }, "Les nombres d’enfants et de retraités doivent être des entiers compris entre 0 et 500."],
+    ["category over range", { volunteersCount: "500", retiredCount: "0", childrenCount: "501" }, "Les nombres d’enfants et de retraités doivent être des entiers compris entre 0 et 500."],
+    ["fractional total", { volunteersCount: "15.5", retiredCount: "0", childrenCount: "1" }, "Renseignez un nombre total de participants entier compris entre 1 et 500."],
     ["category exceeds total", { volunteersCount: "12", retiredCount: "1", childrenCount: "12" }, "Le nombre d’enfants et de retraités ne peut pas dépasser le total des participants."],
     ["unknown composition is accepted", { volunteersCount: "15", retiredCount: "", childrenCount: "" }, null],
   ] as const)("validates final category sources: %s", (_label, input, expected) => {
@@ -59,6 +62,21 @@ describe("volunteer participation contract", () => {
       participantsCount: total,
       effectiveVolunteerUnits: units,
     });
+  });
+
+  it("derives 13 adults from total 15 with one child and one retired person", () => {
+    expect(deriveAdultCountFromTotal({ volunteersCount: 15, childrenCount: 1, retiredCount: 1 })).toBe(13);
+    expect(deriveAdultCountFromTotal({ volunteersCount: 15, childrenCount: 1, retiredCount: null })).toBeNull();
+  });
+
+  it.each([
+    [{ collectorsCount: 0, volunteersCount: 15 }, null],
+    [{ collectorsCount: null, volunteersCount: 15 }, null],
+    [{ collectorsCount: 16, volunteersCount: 15 }, "Le nombre de personnes ayant ramassé ne peut pas dépasser le total présent (15)."],
+    [{ collectorsCount: 1.5, volunteersCount: 15 }, "Le nombre de ramasseurs doit être un entier compris entre 0 et 500."],
+    [{ collectorsCount: 501, volunteersCount: 500 }, "Le nombre de ramasseurs doit être un entier compris entre 0 et 500."],
+  ] as const)("validates collector counts without coercion: %s", (input, expected) => {
+    expect(getCollectorsCountValidationMessage(input)).toBe(expected);
   });
 
   it("does not hide an impossible composition behind an adjusted value", () => {

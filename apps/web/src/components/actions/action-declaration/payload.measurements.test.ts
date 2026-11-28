@@ -33,6 +33,8 @@ describe("action declaration payload mesures", () => {
     });
 
     expect(payload.volunteersCount).toBe(15);
+    expect(payload.collectorsCount).toBe(15);
+    expect(payload.collectorsCountProvenance).toBe("participant_total_default");
     expect(payload.volunteerParticipation).toMatchObject({
       childrenCount: 1,
       retiredCount: 1,
@@ -55,6 +57,24 @@ describe("action declaration payload mesures", () => {
       retiredCount: 1,
       adultCount: null,
     });
+
+    form.childrenCount = "1";
+    form.retiredCount = "";
+    const partialComposition = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+    expect(partialComposition.volunteerParticipation).toMatchObject({
+      childrenCount: 1,
+      retiredCount: null,
+      adultCount: null,
+    });
+    expect(partialComposition.volunteerParticipation).not.toHaveProperty("effectiveVolunteerUnits");
   });
 
   it("keeps blank post-action measurements unknown and explicit zero measured", () => {

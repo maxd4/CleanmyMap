@@ -5,6 +5,7 @@ import { hasCigaretteButtsMeasurement } from "@/lib/waste/cigarette-butts";
 import { compareWasteCharacterizationToTotal } from "@/lib/waste/measurement";
 import {
   deriveAdultCountFromTotal,
+  getCollectorsCountValidationMessage,
   getVolunteerTotalAndKnownCategoryValidationMessage,
   hasCompleteVolunteerCategoryData,
   normalizeVolunteerParticipation,
@@ -170,8 +171,12 @@ export function getVolunteerActionValidationIssues(
       message: compositionMessage,
     });
   }
-  if (payload.collectorsCount != null && payload.volunteersCount != null && payload.collectorsCount > payload.volunteersCount) {
-    issues.push({ field: "collectorsCount", message: "Les personnes ayant ramassé ne peuvent pas dépasser les personnes présentes." });
+  const collectorsCountMessage = getCollectorsCountValidationMessage({
+    collectorsCount: payload.collectorsCount,
+    volunteersCount: payload.volunteersCount,
+  });
+  if (collectorsCountMessage) {
+    issues.push({ field: "collectorsCount", message: collectorsCountMessage });
   }
   const measurements = getVolunteerMeasurementFlags(payload);
 

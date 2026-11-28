@@ -82,7 +82,7 @@ describe("getVolunteerActionValidationIssues", () => {
     expect(issues).toEqual([]);
   });
 
-  it("requires children and retirees for a complete action composition", () => {
+  it("accepts an unknown final composition", () => {
     const issues = getVolunteerActionValidationIssues({
       recordType: "action",
       submissionMode: "complete",
@@ -96,12 +96,23 @@ describe("getVolunteerActionValidationIssues", () => {
       },
     });
 
-    expect(issues).toEqual([
-      {
-        field: "volunteerParticipation",
-        message: "Renseignez les nombres entiers d’enfants et de retraités présents.",
+    expect(issues).toEqual([]);
+  });
+
+  it("accepts one known final category without deriving adults", () => {
+    const issues = getVolunteerActionValidationIssues({
+      recordType: "action",
+      submissionMode: "complete",
+      wasteKg: 1,
+      cigaretteButts: 0,
+      volunteersCount: 15,
+      volunteerParticipation: {
+        childrenCount: 1,
+        adultCount: null,
+        retiredCount: null,
       },
-    ]);
+    });
+    expect(issues).toEqual([]);
   });
 
   it("rejects a composition whose children and retirees exceed the explicit total", () => {

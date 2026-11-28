@@ -790,6 +790,16 @@ progression ludique. Les contributions historiques sans version
 `collectors-v1` gardent leur projection antérieure.
 Pour les nouvelles saisies, le total présent préremplit le décompte des
 ramasseurs par hypothèse visible et le suit jusqu'à une modification manuelle.
-La provenance (`participant_total_default` ou `user_confirmed`) est conservée
-dans `[cmm-meta]`; les lignes historiques sans provenance restent
-`historical_unknown` et ne reçoivent pas cette hypothèse à leur ouverture.
+La provenance est conservée dans `[cmm-meta]` :
+`participant_total_default` identifie le défaut proposé, `user_confirmed` une
+valeur saisie ou modifiée par l'utilisateur, et
+`historical_default_accepted` l'acceptation explicite du total comme défaut
+historique. Ces deux provenances de défaut exigent que le décompte corresponde
+au total présent. Les lignes historiques sans provenance restent
+`historical_unknown` et ne reçoivent pas cette hypothèse à leur ouverture ; un
+`NULL` historique reste `NULL` à la simple lecture. Les saisies du bilan
+conservent `NULL` pour les catégories inconnues ; une catégorie partielle reste
+typée sans adulte ni unités opérationnelles dérivés. Voir aussi
+[`SCIENTIFIC_PROTOCOL.md`](../product/SCIENTIFIC_PROTOCOL.md) pour le contrat
+de calcul et [`methodologie-carte-actions.md`](../product/methodologie-carte-actions.md)
+pour son interprétation produit.

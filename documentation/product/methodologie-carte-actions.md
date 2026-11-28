@@ -1303,11 +1303,23 @@ Le bilan final conserve `volunteers_count` comme effectif total physiquement
 présent, avec la composition par âge lorsqu'elle est connue. Le champ distinct
 `collectors_count` décrit les personnes ayant effectivement ramassé ; `NULL`
 signifie que ce décompte n'a pas été renseigné. Pour une nouvelle saisie, le
-total des présents est prérempli à titre d'hypothèse visible et suivi jusqu'à
-une modification manuelle. La provenance est conservée dans `[cmm-meta]` ; une
-action historique sans provenance reste inconnue lors de sa réouverture. Le
-formulaire peut laisser le décompte inconnu, sinon il ne peut dépasser
-l'effectif présent.
+total des présents propose le même nombre de ramasseurs à titre d'hypothèse
+visible et le suit jusqu'à une modification manuelle. Une valeur explicitement
+saisie, y compris zéro, est conservée indépendamment des changements du total ;
+le défaut peut être rétabli explicitement. Le contrat canonique conserve une
+provenance distincte pour le défaut proposé, la valeur confirmée et
+l'acceptation d'un défaut historique. Une action historique sans provenance
+reste inconnue à sa réouverture : ni le décompte historique ni un `NULL` ne sont
+remplacés à l'ouverture. Le formulaire peut laisser le décompte inconnu, sinon
+il doit être entier, compris entre zéro et le total présent.
+
+Le bilan saisit l'effectif présent `N` (entier de 1 à 500), puis les catégories
+connues `E` (enfants) et `R` (retraités), chacune facultative et sans conversion
+de champ vide en zéro. `E + R > N` est refusé. Les adultes `A = N - E - R` ne
+sont calculés que lorsque `E` et `R` sont tous deux connus ; une catégorie
+partiellement connue reste enregistrée sans répartition complétée, contexte
+scolaire inféré ni unités opérationnelles dérivées. Le mode préparation garde
+son contrat distinct de composition prévisionnelle complète.
 
 Pour les actions déclarées avec cette attribution, la répartition conservatrice
 du reliquat d'impact collectif porte uniquement sur les comptes confirmés dont
