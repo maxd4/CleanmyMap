@@ -526,6 +526,8 @@ export type ActionDrawing = {
 };
 
 export type CreateActionPayload = {
+  /** Enterprise link request carried only to the atomic create RPC. */
+  organizationLink?: { organizationId: string; siteId: string | null };
   actorName?: string;
   associationName?: string;
   organizerType?: OrganizerType | null;

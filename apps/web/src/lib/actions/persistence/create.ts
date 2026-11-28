@@ -98,6 +98,18 @@ export class ActionCreationPersistenceError extends Error {
   }
 }
 
+export function organizationLinkRequestId(actorId: string, organizationId: string, clientRequestId: string): string {
+  const hex = createHash("sha256")
+    .update(JSON.stringify(["organization-action-link-v1", actorId, organizationId, clientRequestId]))
+    .digest("hex")
+    .slice(0, 32)
+    .split("");
+  hex[12] = "5";
+  hex[16] = ((parseInt(hex[16] ?? "0", 16) & 0x3) | 0x8).toString(16);
+  const value = hex.join("");
+  return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
+}
+
 function buildCreationFingerprint(params: {
   action: Record<string, unknown>;
   organizers: ResolvedActionOrganizer[];
@@ -139,6 +151,7 @@ export async function persistActionWithRelations(
     organizerRequirement?: "required" | "optional";
     manualParticipants: ResolvedActionParticipant[];
     clientRequestId?: string;
+    organizationLink?: { organizationId: string; siteId: string | null; requestId: string };
   },
 ): Promise<ActionCreationResult> {
   const registrations = buildInitialActionRegistrationRows({
@@ -147,12 +160,29 @@ export async function persistActionWithRelations(
     organizers: params.organizers,
     manualParticipants: params.manualParticipants,
   });
+  if (params.organizationLink) {
+    const capability: unknown = await supabase.rpc("organization_action_creation_enabled");
+    const capabilityResult = parseActionSupabaseResult(capability);
+    if (capabilityResult.error || capabilityResult.data !== true) {
+      throw new ActionCreationPersistenceError(
+        "Le rattachement entreprise atomique n’est pas encore disponible; aucune action n’a été créée.",
+        capabilityResult.error,
+      );
+    }
+  }
   const action = {
     ...params.baseInsert,
     client_request_id: params.clientRequestId ?? null,
     // This value is assigned at the authenticated server boundary. It is not
     // accepted from the browser payload and the SQL wrapper enforces it again.
     data_provenance: "real" as const,
+    ...(params.organizationLink ? {
+      _enterprise_organization_link: {
+        organization_id: params.organizationLink.organizationId,
+        site_id: params.organizationLink.siteId,
+        request_id: params.organizationLink.requestId,
+      },
+    } : {}),
   };
   const fingerprint = params.clientRequestId
     ? buildCreationFingerprint({
@@ -376,6 +406,9 @@ export async function createAction(
   supabase: SupabaseClient,
   params: CreateActionParams,
 ): Promise<ActionCreationResult> {
+  if (params.payload.organizationLink && (!params.clientRequestId || params.payload.recordType === "clean_place" || params.payload.recordType === "spot")) {
+    throw new ActionCreationPersistenceError("Le rattachement entreprise exige une création d’action idempotente.");
+  }
   params.payload = await resolveCanonicalCreateActionPayload({
     supabase,
     payload: params.payload,
@@ -392,6 +425,12 @@ export async function createAction(
     organizerRequirement: params.organizerRequirement,
     manualParticipants: params.manualParticipants ?? [],
     clientRequestId: params.clientRequestId,
+    organizationLink: context.payload.organizationLink && params.clientRequestId
+      ? {
+          ...context.payload.organizationLink,
+          requestId: organizationLinkRequestId(params.userId, context.payload.organizationLink.organizationId, params.clientRequestId),
+        }
+      : undefined,
   });
 
   if (created.replayed) return created;

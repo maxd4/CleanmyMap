@@ -29,7 +29,7 @@ const base = {
 describe("organization collection panel", () => {
   it("renders the shared collection and lets members page without showing preparation controls", () => {
     const onPage = vi.fn();
-    const html = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={base} locale="fr" busy={false} offset={100} onPage={onPage} />);
+    const html = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={base} siteId={null} locale="fr" busy={false} offset={100} onPage={onPage} />);
     expect(html).toContain("Collecte Alpha");
     expect(html).toContain("2026-04-03");
     expect(html).not.toContain("Préparer une collecte");
@@ -38,15 +38,22 @@ describe("organization collection panel", () => {
 
   it("offers preparation only to managers and renders the empty state", () => {
     const owner = { ...base, role: "owner" as const, actions: [], actions_has_more: false };
-    const html = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={owner} locale="en" busy={false} offset={0} onPage={() => undefined} />);
+    const html = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={owner} siteId="site-selected" locale="en" busy={false} offset={0} onPage={() => undefined} />);
     expect(html).toContain("Prepare a collection");
+    expect(html).toContain("organizationId=00000000-0000-4000-8000-000000000001&amp;siteId=site-selected");
     expect(html).toContain("No collections on this page.");
     expect(html).toContain("disabled");
   });
 
   it("states when the additive database projection is not deployed yet", () => {
-    const html = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={{ ...base, collections_available: false, actions: [] }} locale="fr" busy={false} offset={0} onPage={() => undefined} />);
+    const html = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={{ ...base, collections_available: false, actions: [] }} siteId={null} locale="fr" busy={false} offset={0} onPage={() => undefined} />);
     expect(html).toContain("temporairement indisponibles");
     expect(html).not.toContain("Aucune collecte sur cette page.");
+  });
+
+  it("keeps site managers scoped to their assigned site", () => {
+    const html = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={{ ...base, role: "site_manager", site_id: "site-assigned" }} siteId="site-other" locale="fr" busy={false} offset={0} onPage={() => undefined} />);
+    expect(html).toContain("siteId=site-assigned");
+    expect(html).not.toContain("siteId=site-other");
   });
 });

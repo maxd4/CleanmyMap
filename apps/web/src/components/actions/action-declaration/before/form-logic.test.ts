@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createInitialFormState } from "../payload";
 import { buildBeforeActionPayload, validateBeforeActionForm } from "./form-logic";
 
@@ -140,6 +140,22 @@ describe("pre-action temporal validation", () => {
 });
 
 describe("pre-action identity payload", () => {
+  it("carries a valid organization handoff but never inherits it during duplication", () => {
+    const organizationId = "00000000-0000-4000-8000-000000000001";
+    const siteId = "00000000-0000-4000-8000-000000000002";
+    try {
+      vi.stubGlobal("window", { location: { search: `?organizationId=${organizationId}&siteId=${siteId}` } });
+      expect(buildBeforeActionPayload({ form: buildValidPreActionForm(), userMetadata: { userId: "creator" } }).organizationLink)
+        .toEqual({ organizationId, siteId });
+
+      vi.stubGlobal("window", { location: { search: `?organizationId=${organizationId}&duplicateFrom=source-action` } });
+      expect(buildBeforeActionPayload({ form: buildValidPreActionForm(), userMetadata: { userId: "creator" } }).organizationLink)
+        .toBeUndefined();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("defaults to public and persists the private invitation choice", () => {
     const form = buildValidPreActionForm();
     expect(form.accessMode).toBe("public");

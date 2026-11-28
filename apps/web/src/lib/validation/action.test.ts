@@ -62,6 +62,15 @@ describe("createActionSchema core declarations", () => {
     expect(parsed.participantAccounts).toEqual(["user-1", "user-2", "user-1"]);
   });
 
+  it("retains only a well-formed organization link as server-validated create context", () => {
+    const link = {
+      organizationId: "00000000-0000-4000-8000-000000000001",
+      siteId: "00000000-0000-4000-8000-000000000002",
+    };
+    expect(createActionSchema.parse({ ...basePayload, organizationLink: link }).organizationLink).toEqual(link);
+    expect(createActionSchema.safeParse({ ...basePayload, organizationLink: { ...link, siteId: "site-forged" } }).success).toBe(false);
+  });
+
   it("rejects the removed creator role on new action writes", () => {
     expect(
       createActionSchema.safeParse({

@@ -118,6 +118,20 @@ function validateVolunteerForecastForm(form: FormState): BeforeValidationIssue[]
   return issues;
 }
 
+function resolveOrganizationLinkFromLocation(): CreateActionPayload["organizationLink"] {
+  if (typeof window === "undefined") return undefined;
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("actionId") || params.has("duplicateFrom")) return undefined;
+  const organizationId = params.get("organizationId") ?? "";
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuid.test(organizationId)) return undefined;
+  const requestedSiteId = params.get("siteId");
+  return {
+    organizationId,
+    siteId: requestedSiteId && uuid.test(requestedSiteId) ? requestedSiteId : null,
+  };
+}
+
 export function buildBeforeActionPayload({
   form,
   linkedEventId,
@@ -139,8 +153,10 @@ export function buildBeforeActionPayload({
     visionEstimate: null as ActionVisionEstimate | null,
     userMetadata,
   });
+  const organizationLink = resolveOrganizationLinkFromLocation();
   return {
     ...payload,
+    ...(organizationLink ? { organizationLink } : {}),
     actorName:
       userMetadata.displayName?.trim() ||
       userMetadata.handle?.trim() ||

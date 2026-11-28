@@ -36,6 +36,10 @@ const actionPhaseSchema = z.enum([
   "post_action_complete",
 ]);
 const actionContextSchema = z.enum(["citizen", "company", "school"]);
+const organizationLinkSchema = z.object({
+  organizationId: z.string().uuid(),
+  siteId: z.string().uuid().nullable(),
+}).strict();
 
 function addButtsConditionIssue(value: unknown, ctx: z.RefinementCtx) {
   if (!value || typeof value !== "object") return;
@@ -220,6 +224,7 @@ function addWasteCharacterizationCoherenceIssue(
 }
 
 const createActionLegacyBaseSchema = z.object({
+  organizationLink: organizationLinkSchema.optional(),
   ...commonActionIdentitySchemaFields,
   recordType: z.enum(["action", "clean_place", "spot"]).optional(),
   placeType: z.string().max(80).optional(),
@@ -274,6 +279,7 @@ const createActionLegacySchema = createActionLegacyBaseSchema
   });
 
 const createActionContractSchema = z.object({
+  organizationLink: organizationLinkSchema.optional(),
   type: z.enum(["action", "clean_place", "spot"]),
   source: z.string().min(1).max(80),
   location: z.object({
@@ -367,10 +373,10 @@ export const createActionSchema = z
   .union([createActionLegacySchema, createActionContractSchema])
   .superRefine(addButtsConditionIssue)
   .transform(
-    (value): CreateActionPayload =>
-      normalizeCreatePayload(
-        value as CreateActionPayload | ActionContractCreatePayload,
-      ),
+    (value): CreateActionPayload => ({
+      ...normalizeCreatePayload(value as CreateActionPayload | ActionContractCreatePayload),
+      ...("organizationLink" in value && value.organizationLink ? { organizationLink: value.organizationLink } : {}),
+    }),
   );
 
 export const updateActionSchema = createActionLegacyBaseSchema

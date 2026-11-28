@@ -82,6 +82,36 @@ describe("createAction behavioral persistence orchestration", () => {
     expect(recordRepollutionPredictionEvaluationForActionMock).not.toHaveBeenCalled();
   });
 
+  it("sends organization creation context through the canonical atomic RPC", async () => {
+    const fixture = harness({ action_id: "action-enterprise", replayed: false });
+    fixture.rpc.mockResolvedValueOnce({ data: true, error: null });
+    await createAction(fixture.client, {
+      userId: "user-1",
+      payload: payload({ recordType: "action", organizationLink: { organizationId: "org-1", siteId: "site-1" } }),
+      organizers: [],
+      status: "pending",
+      clientRequestId: "request-enterprise",
+    });
+    expect(fixture.rpc).toHaveBeenCalledTimes(2);
+    expect(fixture.rpc).toHaveBeenNthCalledWith(1, "organization_action_creation_enabled");
+    expect(fixture.rpc).toHaveBeenNthCalledWith(2, "create_action_with_relations", expect.any(Object));
+    expect(fixture.rpc).toHaveBeenCalledWith("create_action_with_relations", expect.objectContaining({
+      p_action: expect.objectContaining({
+        _enterprise_organization_link: expect.objectContaining({ organization_id: "org-1", site_id: "site-1" }),
+      }),
+    }));
+  });
+
+  it("rejects an enterprise link without an idempotency key before persistence", async () => {
+    const fixture = harness({ action_id: "unused", replayed: false });
+    await expect(createAction(fixture.client, {
+      userId: "user-1",
+      payload: payload({ organizationLink: { organizationId: "org-1", siteId: null } }),
+      organizers: [],
+    })).rejects.toThrow("création d’action idempotente");
+    expect(fixture.rpc).not.toHaveBeenCalled();
+  });
+
   it("passes the count of resolved spontaneous organizers into canonical provenance", async () => {
     const fixture = harness({ action_id: "action-spontaneous", replayed: false });
     const organizers = [{ userId: "organizer-1", displayName: "Compte réel", handle: "compte-reel", isPrimary: true, sourceToken: "organizer-1" }];

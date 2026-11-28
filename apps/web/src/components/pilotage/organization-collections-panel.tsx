@@ -4,12 +4,14 @@ import type { OrganizationWorkspace } from "@/lib/organizations/contracts";
 
 export function OrganizationCollectionsPanel({
   workspace,
+  siteId,
   locale,
   busy,
   offset,
   onPage,
 }: {
   workspace: OrganizationWorkspace;
+  siteId: string | null;
   locale: "fr" | "en";
   busy: boolean;
   offset: number;
@@ -22,12 +24,14 @@ export function OrganizationCollectionsPanel({
   const pending = en ? "Shared collection details are temporarily unavailable while the workspace updates." : "Les collectes partagées sont temporairement indisponibles pendant la mise à jour de l’espace.";
   const previous = en ? "Previous" : "Précédent";
   const next = en ? "Next" : "Suivant";
+  const creationSiteId = workspace.role === "site_manager" ? workspace.site_id : siteId;
+  const createHref = `/actions/new?tab=before&organizationId=${encodeURIComponent(workspace.id)}${creationSiteId ? `&siteId=${encodeURIComponent(creationSiteId)}` : ""}`;
 
   return (
     <CmmCard className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-bold">{title}</h2>
-        {canManage ? <CmmButton href="/actions/new?tab=before">{en ? "Prepare a collection" : "Préparer une collecte"}</CmmButton> : null}
+        {canManage ? <CmmButton href={createHref}>{en ? "Prepare a collection" : "Préparer une collecte"}</CmmButton> : null}
       </div>
       {workspace.collections_available === false ? <p role="status">{pending}</p> : workspace.actions.length ? (
         <ul className="divide-y divide-border">

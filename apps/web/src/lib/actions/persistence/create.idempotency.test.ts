@@ -5,6 +5,7 @@ vi.mock("server-only", () => ({}));
 
 import {
   ActionCreationPersistenceError,
+  organizationLinkRequestId,
   persistActionWithRelations,
 } from "./create";
 
@@ -23,6 +24,49 @@ function createSupabase(rpcResult: unknown) {
 }
 
 describe("action creation idempotency", () => {
+  it("derives a stable UUID audit identity scoped to actor, organization and retry key", () => {
+    const first = organizationLinkRequestId("actor-1", "org-1", "retry-1");
+    expect(first).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(organizationLinkRequestId("actor-1", "org-1", "retry-1")).toBe(first);
+    expect(organizationLinkRequestId("actor-1", "org-2", "retry-1")).not.toBe(first);
+  });
+
+  it("includes enterprise association context in the same canonical create RPC", async () => {
+    const harness = createSupabase({ data: [{ action_id: "action-linked", replayed: false }], error: null });
+    harness.rpc.mockResolvedValueOnce({ data: true, error: null });
+    await persistActionWithRelations(harness.client, {
+      userId: "clerk-user-1",
+      baseInsert: { action_date: "2026-10-20", location_label: "Parc test" },
+      organizers: [organizer],
+      manualParticipants: [],
+      clientRequestId: "action-create-retry-key-1",
+      organizationLink: { organizationId: "org-1", siteId: "site-1", requestId: "00000000-0000-5000-8000-000000000001" },
+    });
+    expect(harness.rpc).toHaveBeenCalledWith("create_action_with_relations", expect.objectContaining({
+      p_action: expect.objectContaining({
+        _enterprise_organization_link: {
+          organization_id: "org-1",
+          site_id: "site-1",
+          request_id: "00000000-0000-5000-8000-000000000001",
+        },
+      }),
+    }));
+    expect(harness.from).not.toHaveBeenCalled();
+  });
+
+  it("fails closed before action creation when the atomic-link migration is unavailable", async () => {
+    const harness = createSupabase({ data: true, error: null });
+    harness.rpc.mockResolvedValueOnce({ data: null, error: { code: "PGRST202", message: "function organization_action_creation_enabled not found" } });
+    await expect(persistActionWithRelations(harness.client, {
+      userId: "clerk-user-1",
+      baseInsert: { action_date: "2026-10-20", location_label: "Parc test" },
+      organizers: [organizer],
+      manualParticipants: [],
+      clientRequestId: "action-create-retry-key-1",
+      organizationLink: { organizationId: "org-1", siteId: null, requestId: "00000000-0000-5000-8000-000000000001" },
+    })).rejects.toThrow("aucune action n’a été créée");
+    expect(harness.rpc).toHaveBeenCalledTimes(1);
+  });
   it("delegates the action and required relations to one atomic server operation", async () => {
     const harness = createSupabase({
       data: [{ action_id: "action-created-once", replayed: false }],
