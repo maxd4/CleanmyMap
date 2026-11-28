@@ -22,7 +22,7 @@ import {
   isManualDrawingReplacementBlocked,
 } from "./action-observed-geometry";
 import {
-  getVolunteerActionCompositionValidationMessage,
+  getVolunteerTotalAndKnownCategoryValidationMessage,
   getVolunteerForecastValidationMessage,
   resolvePersistedVolunteerParticipation,
 } from "./volunteer-participation";
@@ -245,8 +245,11 @@ function validateActionUpdateInput(params: {
   if (body.collectorsCount !== undefined && nextActionPhase !== "post_action_complete") {
     throw new ActionUpdateValidationError("collectorsCount", "Le nombre de personnes ayant ramassé ne peut être renseigné qu’au bilan final.");
   }
+  if (body.collectorsCountProvenance !== undefined && nextActionPhase !== "post_action_complete") {
+    throw new ActionUpdateValidationError("collectorsCountProvenance", "La provenance du nombre de ramasseurs ne peut être renseignée qu’au bilan final.");
+  }
   const isFinalization = isNewFinalization(current, nextActionPhase);
-  const isParticipantSubmission = nextActionPhase === "post_action_complete" && (body.volunteersCount !== undefined || body.volunteerParticipation !== undefined || body.collectorsCount !== undefined);
+  const isParticipantSubmission = nextActionPhase === "post_action_complete" && (body.volunteersCount !== undefined || body.volunteerParticipation !== undefined || body.collectorsCount !== undefined || body.collectorsCountProvenance !== undefined);
   if (isFinalization || isParticipantSubmission) validateParticipantUpdate({ current, body, currentMetadata, isFinalization });
   const temporalMessage = getTimeContractValidationMessage({
     actionDurationMinutes: body.durationMinutes !== undefined ? body.durationMinutes : current.duration_minutes,
@@ -269,7 +272,7 @@ function validateParticipantUpdate(params: {
     : body.volunteerParticipation !== undefined
       ? body.volunteerParticipation
       : resolvePersistedVolunteerParticipation({ childrenCount: current.children_count, adultCount: current.adult_count, retiredCount: current.retired_count, volunteersCount: current.volunteers_count, legacyParticipation: currentMetadata.volunteerParticipation });
-  const compositionMessage = getVolunteerActionCompositionValidationMessage({
+  const compositionMessage = getVolunteerTotalAndKnownCategoryValidationMessage({
     volunteersCount: isFinalization ? body.volunteersCount ?? null : body.volunteersCount ?? current.volunteers_count,
     childrenCount: participation?.childrenCount ?? null,
     retiredCount: participation?.retiredCount ?? null,
@@ -279,6 +282,10 @@ function validateParticipantUpdate(params: {
   const collectorsCount = body.collectorsCount !== undefined ? body.collectorsCount : current.collectors_count ?? null;
   if (collectorsCount != null && total != null && collectorsCount > total) {
     throw new ActionUpdateValidationError("collectorsCount", "Les personnes ayant ramassé ne peuvent pas dépasser les personnes présentes.");
+  }
+  const collectorsCountProvenance = body.collectorsCountProvenance ?? currentMetadata.collectorsCountProvenance;
+  if (collectorsCountProvenance === "participant_total_default" && collectorsCount !== total) {
+    throw new ActionUpdateValidationError("collectorsCountProvenance", "La valeur préremplie doit correspondre au total présent.");
   }
 }
 

@@ -116,6 +116,8 @@ function buildRouteFields(
 function buildParticipationFields(action: ActionEditorRecord): Partial<FormState> {
   return {
     volunteersCount: toFormNumber(action.volunteersCount),
+    collectorsCount: action.collectorsCount == null ? "" : String(action.collectorsCount),
+    collectorsCountProvenance: action.collectorsCountProvenance ?? "historical_unknown",
     childrenCount:
       action.volunteerParticipation?.childrenCount == null
         ? ""

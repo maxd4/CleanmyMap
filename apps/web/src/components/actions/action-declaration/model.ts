@@ -120,6 +120,7 @@ export type FormState = {
   cigaretteButtsLots: CigaretteButtsLotDraft[] | null;
  volunteersCount: string;
  collectorsCount: string;
+ collectorsCountProvenance: import("@/lib/actions/volunteer-participation").CollectorsCountProvenance;
  childrenCount: string;
  adultCount: string;
  retiredCount: string;
@@ -242,6 +243,7 @@ export const initialState: FormState = {
   ...EMPTY_ACTION_MEASUREMENT_FIELDS,
  volunteersCount:"",
  collectorsCount:"",
+ collectorsCountProvenance: null,
  childrenCount:"",
  adultCount:"",
  retiredCount:"",
@@ -334,6 +336,7 @@ export type ValidationIssue = {
  |"wasteMegotsCondition"
  |"volunteersCount"
  |"collectorsCount"
+ |"collectorsCountProvenance"
  |"volunteerParticipation"
  |"durationMinutes"
  |"eventStartTime"

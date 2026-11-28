@@ -40,6 +40,16 @@ describe("action context classification", () => {
     });
   });
 
+  it("does not auto-classify from a total when the child count is unknown", () => {
+    const composition = { volunteersCount: 15, childrenCount: null, retiredCount: 0 };
+    expect(hasStrictSchoolChildrenMajority(composition)).toBeNull();
+    expect(resolveActionContext({ composition })).toMatchObject({
+      context: null,
+      source: null,
+      isVerifiedFinalComposition: false,
+    });
+  });
+
   it("lets an explicit context win without requiring a child majority", () => {
     expect(resolveActionContext({
       composition: valid(15, 1),

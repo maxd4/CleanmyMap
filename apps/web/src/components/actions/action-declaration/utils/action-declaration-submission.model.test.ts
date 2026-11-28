@@ -241,7 +241,7 @@ describe("action declaration submission model", () => {
     expect(issues).toEqual(expect.arrayContaining([expect.objectContaining({ field })]));
   });
 
-  it("requires all three categories for a post-action declaration", () => {
+  it("requires the participant total and permits an unknown age composition", () => {
     const form = createInitialFormState("Alex", "action");
     form.organizerType = "spontaneous";
     form.organizerAccounts = "user-organizer";
@@ -274,14 +274,14 @@ describe("action declaration submission model", () => {
     expect(issues).toEqual([
       {
         field: "volunteerParticipation",
-        message: "Renseignez les nombres entiers d’adultes, de retraités et d’enfants présents.",
+        message: "Renseignez un nombre total de participants entier compris entre 1 et 500.",
       },
     ]);
 
     form.volunteersCount = "12";
-    form.adultCount = "12";
-    form.childrenCount = "0";
-    form.retiredCount = "0";
+    form.adultCount = "";
+    form.childrenCount = "";
+    form.retiredCount = "";
     expect(getActionDeclarationSubmissionIssues({
       form,
       payload: buildCreateActionPayload({
@@ -319,12 +319,7 @@ describe("action declaration submission model", () => {
       hasServerRouteInput: false,
       isCleanPlaceMode: false,
       manualDrawingSource: null,
-    })).toEqual([
-      {
-        field: "volunteerParticipation",
-        message: "Renseignez les nombres entiers d’adultes, de retraités et d’enfants présents.",
-      },
-    ]);
+    })).toEqual([]);
   });
 
   it.each([

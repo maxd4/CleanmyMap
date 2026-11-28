@@ -5,7 +5,7 @@ import { hasCigaretteButtsMeasurement } from "@/lib/waste/cigarette-butts";
 import { compareWasteCharacterizationToTotal } from "@/lib/waste/measurement";
 import {
   deriveAdultCountFromTotal,
-  getVolunteerActionCompositionValidationMessage,
+  getVolunteerTotalAndKnownCategoryValidationMessage,
   hasCompleteVolunteerCategoryData,
   normalizeVolunteerParticipation,
   type VolunteerParticipationInput,
@@ -159,9 +159,7 @@ export function getVolunteerActionValidationIssues(
   const hasCompleteCategoryData = participation
     ? hasCompleteVolunteerCategoryData(participation)
     : false;
-  const compositionMessage = !hasCompleteCategoryData && payload.volunteersCount === undefined
-    ? "Renseignez les nombres entiers d’adultes, de retraités et d’enfants présents."
-    : getVolunteerActionCompositionValidationMessage({
+  const compositionMessage = getVolunteerTotalAndKnownCategoryValidationMessage({
         volunteersCount: payload.volunteersCount,
         childrenCount: participation?.childrenCount ?? null,
         retiredCount: participation?.retiredCount ?? null,

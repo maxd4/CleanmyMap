@@ -370,6 +370,29 @@ describe("createActionSchema counts and participation", () => {
     expect(updateActionSchema.safeParse({ collectorsCount: 501 }).success).toBe(false);
   });
 
+  it("requires a participant-derived collector default to equal the total", () => {
+    expect(createActionSchema.safeParse({
+      ...basePayload,
+      collectorsCount: basePayload.volunteersCount,
+      collectorsCountProvenance: "participant_total_default",
+    }).success).toBe(true);
+    expect(createActionSchema.safeParse({
+      ...basePayload,
+      collectorsCount: 1,
+      collectorsCountProvenance: "participant_total_default",
+    }).success).toBe(false);
+    expect(createActionSchema.safeParse({
+      ...basePayload,
+      collectorsCount: 1,
+      collectorsCountProvenance: "user_confirmed",
+    }).success).toBe(true);
+    expect(updateActionSchema.safeParse({
+      volunteersCount: 2,
+      collectorsCount: 1,
+      collectorsCountProvenance: "participant_total_default",
+    }).success).toBe(false);
+  });
+
   it("requires a coherent volunteer forecast split for quick pre-actions", () => {
     const incoherent = createActionSchema.safeParse({
       ...basePayload,

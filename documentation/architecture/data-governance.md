@@ -788,3 +788,8 @@ individuel associé à une présence confirmée est porté par
 = inconnu). Ces faits ne remplacent pas la présence confirmée ni la source de
 progression ludique. Les contributions historiques sans version
 `collectors-v1` gardent leur projection antérieure.
+Pour les nouvelles saisies, le total présent préremplit le décompte des
+ramasseurs par hypothèse visible et le suit jusqu'à une modification manuelle.
+La provenance (`participant_total_default` ou `user_confirmed`) est conservée
+dans `[cmm-meta]`; les lignes historiques sans provenance restent
+`historical_unknown` et ne reçoivent pas cette hypothèse à leur ouverture.

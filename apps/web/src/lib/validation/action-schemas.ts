@@ -243,6 +243,7 @@ const createActionLegacyBaseSchema = z.object({
   volunteerParticipation: volunteerParticipationSchema,
   volunteersCount: z.number().int().min(0).max(500).default(1),
   collectorsCount: z.number().int().min(0).max(500).nullable().optional(),
+  collectorsCountProvenance: z.enum(["participant_total_default", "user_confirmed"]).optional(),
   durationMinutes: z.number().int().min(0).max(24 * 60).default(0),
   notes: z.string().max(1000).optional(),
   manualDrawing: manualDrawingSchema.optional(),
@@ -265,6 +266,9 @@ const createActionLegacySchema = createActionLegacyBaseSchema
     addWasteCharacterizationCoherenceIssue(value, ctx);
     if (value.collectorsCount != null && value.collectorsCount > value.volunteersCount) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCount"], message: "Les personnes ayant ramassé ne peuvent pas dépasser les personnes présentes." });
+    }
+    if (value.collectorsCountProvenance === "participant_total_default" && value.collectorsCount !== value.volunteersCount) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCountProvenance"], message: "Une valeur préremplie doit correspondre au total déclaré." });
     }
   });
 
@@ -293,6 +297,7 @@ const createActionContractSchema = z.object({
     volunteerParticipation: volunteerParticipationSchema,
     volunteersCount: z.number().int().min(0).max(500).optional(),
     collectorsCount: z.number().int().min(0).max(500).nullable().optional(),
+    collectorsCountProvenance: z.enum(["participant_total_default", "user_confirmed"]).optional(),
     durationMinutes: z.number().int().min(0).max(24 * 60).optional(),
     notes: z.string().max(1000).optional(),
     routeStyle: z.enum(["direct", "souple"]).optional(),
@@ -393,5 +398,8 @@ export const updateActionSchema = createActionLegacyBaseSchema
     addPreActionVolunteerForecastIssue(value, ctx);
     if (value.collectorsCount != null && value.volunteersCount != null && value.collectorsCount > value.volunteersCount) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCount"], message: "Les personnes ayant ramassé ne peuvent pas dépasser les personnes présentes." });
+    }
+    if (value.collectorsCountProvenance === "participant_total_default" && value.collectorsCount !== undefined && value.collectorsCount !== null && value.volunteersCount !== undefined && value.collectorsCount !== value.volunteersCount) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCountProvenance"], message: "Une valeur préremplie doit correspondre au total déclaré." });
     }
   });

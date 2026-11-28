@@ -1,7 +1,7 @@
 import type { CreateActionPayload } from "../../../lib/actions/types";
 import type { ActionMegotsCondition } from "../../../lib/actions/types";
 import {
-  buildVolunteerParticipationFromForm as buildVolunteerParticipationFromCategories,
+  deriveVolunteerParticipationFromTotal,
   normalizeVolunteerParticipation,
   type VolunteerParticipationInput,
 } from "../../../lib/actions/volunteer-participation";
@@ -61,10 +61,10 @@ export function buildVolunteerParticipationFromForm(
 export function buildActionVolunteerParticipationFromForm(
   form: FormState,
 ): VolunteerParticipationInput {
-  return buildVolunteerParticipationFromCategories({
-    childrenCount: form.childrenCount,
-    adultCount: form.adultCount,
-    retiredCount: form.retiredCount,
+  return deriveVolunteerParticipationFromTotal({
+    volunteersCount: toOptionalNumber(form.volunteersCount) ?? null,
+    childrenCount: toOptionalNumber(form.childrenCount) ?? null,
+    retiredCount: toOptionalNumber(form.retiredCount) ?? null,
   });
 }
 
@@ -125,7 +125,7 @@ export function buildCreateActionPayloadMeasurementFields(
   const { enteredMegotsKg, enteredButtsCount, enteredVolumeLiters, cigaretteButtsCondition } = parts;
   const derivedVolunteersCount =
     declarationMode === "complete"
-      ? parts.volunteerParticipation.participantsCount
+      ? toOptionalNumber(form.volunteersCount)
       : toOptionalNumber(form.volunteersCount) ?? parts.volunteerParticipation.participantsCount ?? 1;
   return {
     wasteKg: toOptionalNumber(form.wasteKg) ?? null,
@@ -139,6 +139,9 @@ export function buildCreateActionPayloadMeasurementFields(
     cigaretteButtsCount: enteredButtsCount,
     volunteerParticipation: parts.volunteerParticipationInput as CreateActionPayload["volunteerParticipation"],
     collectorsCount: form.collectorsCount.trim() === "" ? null : toOptionalNumber(form.collectorsCount) ?? null,
+    collectorsCountProvenance: form.collectorsCountProvenance === "participant_total_default" || form.collectorsCountProvenance === "user_confirmed"
+      ? form.collectorsCountProvenance
+      : undefined,
     ...(derivedVolunteersCount === null || derivedVolunteersCount === undefined
       ? {}
       : { volunteersCount: derivedVolunteersCount }),

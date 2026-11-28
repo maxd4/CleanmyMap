@@ -17,6 +17,46 @@ describe("action declaration payload mesures", () => {
     expect(toRequiredNumber("invalid", 3)).toBe(3);
   });
 
+  it("keeps the declared total and only derives adults from two known categories", () => {
+    const form = createInitialFormState("Alice");
+    form.volunteersCount = "15";
+    form.childrenCount = "1";
+    form.retiredCount = "1";
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.volunteersCount).toBe(15);
+    expect(payload.volunteerParticipation).toMatchObject({
+      childrenCount: 1,
+      retiredCount: 1,
+      adultCount: 13,
+    });
+
+    form.childrenCount = "";
+    const unknownComposition = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+    expect(unknownComposition.volunteersCount).toBe(15);
+    expect(unknownComposition.volunteerParticipation).toMatchObject({
+      childrenCount: null,
+      retiredCount: 1,
+      adultCount: null,
+    });
+  });
+
   it("keeps blank post-action measurements unknown and explicit zero measured", () => {
     const blankPayload = buildCreateActionPayload({
       form: createInitialFormState("Alice"),

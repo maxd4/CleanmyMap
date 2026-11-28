@@ -8,7 +8,7 @@ import type {
   ActionWasteMeasurementMethod,
   CreateActionPayload,
 } from "@/lib/actions/types";
-import type { ActionVolunteerParticipation } from "@/lib/actions/volunteer-participation";
+import type { ActionVolunteerParticipation, CollectorsCountProvenance } from "@/lib/actions/volunteer-participation";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import type { ActionContext, ActionContextSource } from "@/lib/actions/action-context";
 import type { ActionManualInvitationStatusRecord, ActionRegistrationProjectionRecord } from "@/lib/actions/participation/registration-records";
@@ -59,6 +59,8 @@ export type ActionEditorRecord = {
   cigaretteButtsKg?: number | null;
   cigaretteButts: number | null;
   volunteersCount: number | null;
+  collectorsCount?: number | null;
+  collectorsCountProvenance?: CollectorsCountProvenance;
   durationMinutes: number;
   eventStartTime?: string | null;
   eventEndTime?: string | null;

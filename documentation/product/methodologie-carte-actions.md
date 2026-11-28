@@ -39,10 +39,11 @@ Le vert ne doit pas être utilisé comme niveau de « faible pollution » d'une 
 
 ### Participants et unités opérationnelles
 
-Les nouvelles actions déclarent le total réel des personnes présentes, puis les
-deux catégories complémentaires Enfants et Retraités, sans âge exact ni date
-de naissance. Le nombre d'adultes n'est pas une saisie indépendante : il est
-calculé par l'owner canonique à partir des trois entrées :
+Les actions déclarent le total réel des personnes présentes. Enfants et
+Retraités sont des catégories complémentaires facultatives, sans âge exact ni
+date de naissance. Le nombre d'adultes n'est pas une saisie indépendante : il
+est calculé par l'owner canonique uniquement lorsque le total et les deux
+catégories sont connus :
 
 `adultCount = volunteersCount - childrenCount - retiredCount`.
 
@@ -210,11 +211,13 @@ la composition des groupes ; elle ne remplace ni le nombre réel de participants
 ni une analyse démographique exhaustive, et ne doit pas être utilisée pour
 inférer une efficacité individuelle.
 
-Les catégories sources sont persistées dans les colonnes typées
+Les catégories sources connues sont persistées dans les colonnes typées
 `children_count`, `adult_count` et `retired_count`, atomiquement avec
-`volunteers_count`. `[cmm-meta]` reste un repli de lecture et une source de
-backfill historique strictement limité aux compositions complètes et cohérentes;
-aucune répartition n'est reconstruite pour une action ambiguë.
+`volunteers_count`. Les catégories inconnues restent `NULL`; un adulte n'est
+jamais inféré d'un total seul. `[cmm-meta]` reste un repli de lecture lorsque
+les colonnes typées sont absentes, sans masquer des valeurs typées présentes ni
+incohérentes. Une composition partielle cohérente est conservée et ne produit
+pas d'unités opérationnelles tant que ses sources ne suffisent pas.
 Pour une ancienne action qui ne possède que `volunteersCount`, ce nombre reste
 le nombre historique de participants, les trois catégories et les unités
 opérationnelles restent inconnues (`NULL`). Il est interdit de supposer que ces
@@ -1299,8 +1302,12 @@ Voir également :
 Le bilan final conserve `volunteers_count` comme effectif total physiquement
 présent, avec la composition par âge lorsqu'elle est connue. Le champ distinct
 `collectors_count` décrit les personnes ayant effectivement ramassé ; `NULL`
-signifie que ce décompte n'a pas été renseigné. Le formulaire de bilan peut
-laisser ce champ inconnu, sinon il ne peut dépasser l'effectif présent.
+signifie que ce décompte n'a pas été renseigné. Pour une nouvelle saisie, le
+total des présents est prérempli à titre d'hypothèse visible et suivi jusqu'à
+une modification manuelle. La provenance est conservée dans `[cmm-meta]` ; une
+action historique sans provenance reste inconnue lors de sa réouverture. Le
+formulaire peut laisser le décompte inconnu, sinon il ne peut dépasser
+l'effectif présent.
 
 Pour les actions déclarées avec cette attribution, la répartition conservatrice
 du reliquat d'impact collectif porte uniquement sur les comptes confirmés dont

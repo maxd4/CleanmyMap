@@ -143,6 +143,7 @@ function buildActionContractDetailFields(
       legacyParticipation: parsedMetadata.volunteerParticipation,
     }),
     collectorsCount: row.collectors_count,
+    collectorsCountProvenance: parsedMetadata.collectorsCountProvenance ?? ("historical_unknown" as const),
     collectionAttributionVersion: parsedMetadata.collectionAttributionVersion,
     cigaretteButtsKg: parsedMetadata.cigaretteButtsKg,
     cigaretteButts: row.cigarette_butts,

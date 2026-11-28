@@ -2,6 +2,7 @@ export const EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION =
   "effective-volunteer-units-v1" as const;
 
 export type VolunteerDerivedProvenance = "derived" | "historical_unknown" | null;
+export type CollectorsCountProvenance = "participant_total_default" | "user_confirmed" | "historical_unknown" | null;
 export type VolunteerRecalculationStatus =
   | "recalculable"
   | "not_recalculable"
@@ -41,6 +42,10 @@ export type VolunteerParticipationFormInput = {
   retiredCount: string;
 };
 
+export type FinalVolunteerCompositionFormInput = Pick<VolunteerParticipationFormInput, "childrenCount" | "retiredCount"> & {
+  volunteersCount: string;
+};
+
 export function parseVolunteerCategoryInput(rawValue: string): number | null {
   if (rawValue.trim() === "") return null;
   const value = Number(rawValue);
@@ -72,17 +77,20 @@ export function buildVolunteerParticipationFromForm(
 }
 
 export function getFinalVolunteerCompositionValidationMessage(
-  input: VolunteerParticipationFormInput,
+  input: FinalVolunteerCompositionFormInput,
 ): string | null {
-  const values = [input.adultCount, input.retiredCount, input.childrenCount];
-  if (values.some((value) => value.trim() === "")) {
-    return "Renseignez les nombres entiers d’adultes, de retraités et d’enfants présents.";
+  const total = input.volunteersCount.trim() === "" ? null : Number(input.volunteersCount);
+  if (total === null || !Number.isInteger(total) || total < 1 || total > 500) {
+    return "Renseignez un nombre total de participants entier compris entre 1 et 500.";
   }
-  if (values.some((value) => parseVolunteerCategoryInput(value) === null)) {
-    return "Les nombres d’adultes, de retraités et d’enfants doivent être des entiers compris entre 0 et 500.";
+  const categories = [input.childrenCount, input.retiredCount];
+  if (categories.some((value) => value.trim() !== "" && parseVolunteerCategoryInput(value) === null)) {
+    return "Les nombres d’enfants et de retraités doivent être des entiers compris entre 0 et 500.";
   }
-  if (deriveVolunteerCountFromForm(input) === null) {
-    return "La somme des adultes, retraités et enfants doit être comprise entre 1 et 500.";
+  const childrenCount = parseVolunteerCategoryInput(input.childrenCount);
+  const retiredCount = parseVolunteerCategoryInput(input.retiredCount);
+  if ((childrenCount ?? 0) + (retiredCount ?? 0) > total) {
+    return "Le nombre d’enfants et de retraités ne peut pas dépasser le total des participants.";
   }
   return null;
 }
@@ -174,7 +182,7 @@ export function deriveVolunteerParticipationFromTotal(
   };
 }
 
-export function getVolunteerActionCompositionValidationMessage(
+export function getVolunteerTotalAndKnownCategoryValidationMessage(
   input: ActionVolunteerCompositionInput,
 ): string | null {
   const volunteersCount = input.volunteersCount;
@@ -185,36 +193,33 @@ export function getVolunteerActionCompositionValidationMessage(
     return "Renseignez un nombre total de participants entier compris entre 1 et 500.";
   }
 
-  if (
-    childrenCount === null ||
-    childrenCount === undefined ||
-    retiredCount === null ||
-    retiredCount === undefined
-  ) {
-    return "Renseignez les nombres entiers d’enfants et de retraités présents.";
-  }
-
-  if (!areValidVolunteerCategories(childrenCount, retiredCount)) {
+  const hasInvalidCategory = [childrenCount, retiredCount].some(
+    (value) => value != null && (!Number.isInteger(value) || value < 0 || value > 500),
+  );
+  if (hasInvalidCategory) {
     return "Les nombres d’enfants et de retraités doivent être des entiers positifs ou nuls.";
   }
 
-  if (childrenCount + retiredCount > volunteersCount) {
+  if ((childrenCount ?? 0) + (retiredCount ?? 0) > volunteersCount) {
     return "Le nombre d’enfants et de retraités ne peut pas dépasser le total des participants.";
   }
 
   return null;
 }
 
-function isValidVolunteerTotal(value: number | null | undefined): value is number {
-  return value !== null && value !== undefined && Number.isInteger(value) && value >= 1 && value <= 500;
+export function getVolunteerActionCompositionValidationMessage(
+  input: ActionVolunteerCompositionInput,
+): string | null {
+  const totalAndKnownCategoryMessage = getVolunteerTotalAndKnownCategoryValidationMessage(input);
+  if (totalAndKnownCategoryMessage) return totalAndKnownCategoryMessage;
+  if (input.childrenCount == null || input.retiredCount == null) {
+    return "Renseignez les nombres entiers d’enfants et de retraités présents.";
+  }
+  return null;
 }
 
-function areValidVolunteerCategories(
-  childrenCount: number,
-  retiredCount: number,
-): boolean {
-  return Number.isInteger(childrenCount) && Number.isInteger(retiredCount) &&
-    childrenCount >= 0 && retiredCount >= 0 && childrenCount <= 500 && retiredCount <= 500;
+function isValidVolunteerTotal(value: number | null | undefined): value is number {
+  return value !== null && value !== undefined && Number.isInteger(value) && value >= 1 && value <= 500;
 }
 
 export function normalizeActionVolunteerParticipationFromTotal(input: {
@@ -419,11 +424,7 @@ export function resolveEffectiveVolunteerUnits(
   return typeof units === "number" && Number.isFinite(units) ? units : null;
 }
 
-/**
- * Projects the complete, validated composition to the typed action columns.
- * Incomplete or inconsistent legacy/form states remain NULL instead of
- * inventing an adult count from the total.
- */
+/** Projects validated known categories to typed columns without imputing unknown values. */
 export function resolvePersistedVolunteerComposition(params: {
   participation: ActionVolunteerParticipation | null | undefined;
   volunteersCount: number | null | undefined;
@@ -432,20 +433,23 @@ export function resolvePersistedVolunteerComposition(params: {
     ? normalizeVolunteerParticipation(params.participation)
     : null;
   const volunteersCount = normalizeIntegerCount(params.volunteersCount);
-  if (
-    !participation ||
-    participation.childrenCount === null ||
-    participation.adultCount === null ||
-    participation.retiredCount === null ||
-    volunteersCount === null
-  ) {
+  if (!participation || volunteersCount === null) {
     return { children_count: null, adult_count: null, retired_count: null };
   }
 
-  const childrenCount = participation.childrenCount as number;
-  const adultCount = participation.adultCount as number;
-  const retiredCount = participation.retiredCount as number;
-  if (childrenCount + adultCount + retiredCount !== volunteersCount) {
+  const childrenCount = participation.childrenCount;
+  const retiredCount = participation.retiredCount;
+  const adultCount = participation.adultCount ?? (
+    childrenCount !== null && retiredCount !== null
+      ? volunteersCount - childrenCount - retiredCount
+      : null
+  );
+  if (
+    (childrenCount ?? 0) + (retiredCount ?? 0) > volunteersCount ||
+    (adultCount !== null && adultCount < 0) ||
+    (childrenCount !== null && adultCount !== null && retiredCount !== null &&
+      childrenCount + adultCount + retiredCount !== volunteersCount)
+  ) {
     return { children_count: null, adult_count: null, retired_count: null };
   }
 
@@ -464,17 +468,17 @@ function normalizePersistedVolunteerComposition(params: {
   const childrenCount = normalizeIntegerCount(params.childrenCount);
   const adultCount = normalizeIntegerCount(params.adultCount);
   const retiredCount = normalizeIntegerCount(params.retiredCount);
-  if (childrenCount === null || adultCount === null || retiredCount === null) {
+  if (childrenCount === null && adultCount === null && retiredCount === null) {
     return null;
   }
   return normalizeVolunteerParticipation({ childrenCount, adultCount, retiredCount });
 }
 
 /**
- * Resolves a final composition from the typed action columns, with a bounded
+ * Resolves known categories from typed action columns, with a bounded
  * compatibility fallback for historical rows that have no typed values.
- * Present but incomplete or incoherent typed values fail closed and never
- * fall back to divergent historical metadata.
+ * Coherent partial categories remain partial; incoherent typed values fail
+ * closed and never fall back to divergent historical metadata.
  */
 export function resolvePersistedVolunteerParticipation(params: {
   childrenCount: number | null | undefined;

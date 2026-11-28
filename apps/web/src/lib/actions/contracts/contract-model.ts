@@ -22,7 +22,7 @@ import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "../organizer-type";
 import type { ActionContext, ActionContextSource } from "../action-context";
 import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
-import type { ActionVolunteerParticipation } from "../volunteer-participation";
+import type { ActionVolunteerParticipation, CollectorsCountProvenance } from "../volunteer-participation";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { projectAdministrativeRequirementsForRead } from "@/lib/actions/administrative-requirements";
 
@@ -92,6 +92,7 @@ type ActionDataMetadata = {
   observedPollutionScore?: number | null;
   volunteersCount: number | null;
   collectorsCount?: number | null;
+  collectorsCountProvenance?: CollectorsCountProvenance;
   collectionAttributionVersion?: "collectors-v1" | null;
   durationMinutes: number;
   manualDrawing: ActionDrawing | null;
@@ -139,6 +140,7 @@ export type BuildActionContractParams = {
   observedPollutionScore?: number | null;
   volunteersCount?: number | null;
   collectorsCount?: number | null;
+  collectorsCountProvenance?: CollectorsCountProvenance;
   collectionAttributionVersion?: "collectors-v1" | null;
   durationMinutes?: number | null;
   eventStartTime?: string | null;
@@ -336,6 +338,7 @@ function buildActionMeasureMetadata(
   | "postActionPollutionScore"
   | "volunteersCount"
   | "collectorsCount"
+  | "collectorsCountProvenance"
   | "collectionAttributionVersion"
   | "durationMinutes"
 > & { observedPollutionScore?: number | null } {
@@ -346,6 +349,7 @@ function buildActionMeasureMetadata(
     | "postActionPollutionScore"
     | "volunteersCount"
     | "collectorsCount"
+    | "collectorsCountProvenance"
     | "collectionAttributionVersion"
     | "durationMinutes"
   > & { observedPollutionScore?: number | null } = {
@@ -358,6 +362,7 @@ function buildActionMeasureMetadata(
         : toFiniteNumber(params.postActionPollutionScore, 0),
     volunteersCount: normalizeNullableCount(params.volunteersCount),
     collectorsCount: normalizeNullableCount(params.collectorsCount),
+    collectorsCountProvenance: params.collectorsCountProvenance ?? null,
     collectionAttributionVersion: params.collectionAttributionVersion ?? null,
     durationMinutes: normalizeCount(params.durationMinutes),
   };

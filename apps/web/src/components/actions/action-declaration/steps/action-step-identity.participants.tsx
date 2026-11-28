@@ -3,9 +3,8 @@ import { ActionParticipantPicker } from "../../action-participant-picker";
 import {
   deriveAdultCountFromTotal,
   deriveVolunteerParticipationFromTotal,
-  deriveVolunteerCountFromForm,
   getFinalVolunteerCompositionValidationMessage,
-  getVolunteerActionCompositionValidationMessage,
+  getVolunteerTotalAndKnownCategoryValidationMessage,
   normalizeVolunteerParticipation,
 } from "@/lib/actions/volunteer-participation";
 import type { FormState } from "../model";
@@ -125,25 +124,63 @@ function FinalParticipantCountInputs({
   const isCurrentForm = interactionState.formIdentityKey === formIdentityKey;
 
   const compositionInput = {
-    adultCount: form.adultCount,
+    volunteersCount: form.volunteersCount,
     retiredCount: form.retiredCount,
     childrenCount: form.childrenCount,
   };
   const compositionMessage = hasAttemptedSubmit || (isCurrentForm && interactionState.hasInteracted)
     ? getFinalVolunteerCompositionValidationMessage(compositionInput)
     : null;
-  const volunteersCount = deriveVolunteerCountFromForm(compositionInput);
+  const volunteersCount = form.volunteersCount.trim() === "" ? null : Number(form.volunteersCount);
+  const adultCount = deriveAdultCountFromTotal({
+    volunteersCount,
+    childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount),
+    retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
+  });
   const fields = [
-    ["action-adult-count", "Adultes", "adultCount"],
     ["action-retired-count", "Retraités", "retiredCount"],
     ["action-children-count", "Enfants", "childrenCount"],
   ] as const;
 
   return (
     <fieldset className="min-w-0 space-y-3">
-      <legend className="sr-only">Composition des participants présents</legend>
-      <div className="grid min-w-0 grid-cols-1 items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)]">
-        {fields.map(([id, label, key], index) => (
+      <legend className="sr-only">Participants présents</legend>
+      <label htmlFor="action-volunteers-count" className="block space-y-1.5">
+        <span className="block text-sm font-semibold text-emerald-950">Nombre total de participants présents</span>
+        <input
+          id="action-volunteers-count"
+          type="number"
+          min="1"
+          max="500"
+          step="1"
+          inputMode="numeric"
+          placeholder="Ex. 8"
+          aria-invalid={Boolean(compositionMessage)}
+          aria-describedby={compositionMessage ? "action-volunteer-composition-error" : "action-volunteers-count-help"}
+          className={compactInputCls}
+          value={form.volunteersCount}
+          onChange={(event) => {
+            setInteractionState({ formIdentityKey, hasInteracted: true });
+            const nextTotal = event.target.value;
+            updateField("volunteersCount", nextTotal);
+            const mayFollowTotal = form.collectorsCountProvenance === "participant_total_default" ||
+              (form.collectorsCountProvenance === null && form.collectorsCount.trim() === "");
+            if (mayFollowTotal) {
+              const parsedTotal = nextTotal.trim() === "" ? null : Number(nextTotal);
+              if (parsedTotal !== null && Number.isInteger(parsedTotal) && parsedTotal >= 1 && parsedTotal <= 500) {
+                updateField("collectorsCount", nextTotal);
+                updateField("collectorsCountProvenance", "participant_total_default");
+              } else if (nextTotal.trim() === "") {
+                updateField("collectorsCount", "");
+                updateField("collectorsCountProvenance", null);
+              }
+            }
+          }}
+        />
+        <span id="action-volunteers-count-help" className="block text-xs text-emerald-900/60">Les catégories sont facultatives si vous ne connaissez pas la répartition.</span>
+      </label>
+      <div className="grid min-w-0 grid-cols-1 items-center gap-2 sm:grid-cols-2">
+        {fields.map(([id, label, key]) => (
           <div key={id} className="contents">
             <label htmlFor={id} className="min-w-0">
               <span className="sr-only">{label}</span>
@@ -165,9 +202,6 @@ function FinalParticipantCountInputs({
                 }}
               />
             </label>
-            {index < fields.length - 1 ? (
-              <span aria-hidden="true" className="hidden px-1 text-lg font-bold text-emerald-700 sm:inline">+</span>
-            ) : null}
           </div>
         ))}
       </div>
@@ -176,6 +210,9 @@ function FinalParticipantCountInputs({
           {compositionMessage}
         </p>
       ) : null}
+      <p className="text-xs text-emerald-900/70">
+        Adultes : {adultCount === null ? "non calculés (renseignez enfants et retraités)" : adultCount}
+      </p>
       <label htmlFor="action-collectors-count" className="block space-y-1.5">
         <span className="block text-sm font-semibold text-emerald-950">Personnes ayant réellement ramassé</span>
         <input
@@ -189,8 +226,25 @@ function FinalParticipantCountInputs({
           aria-describedby="action-collectors-count-help"
           className={compactInputCls}
           value={form.collectorsCount}
-          onChange={(event) => updateField("collectorsCount", event.target.value)}
+          onChange={(event) => {
+            updateField("collectorsCount", event.target.value);
+            updateField("collectorsCountProvenance", "user_confirmed");
+          }}
         />
+        {form.collectorsCountProvenance === "participant_total_default" ? (
+          <span className="block text-xs text-emerald-900/70" role="status">Valeur préremplie par hypothèse, égale au total présent : vérifiez-la si certaines personnes n’ont pas ramassé.</span>
+        ) : null}
+        {form.collectorsCountProvenance === "user_confirmed" || form.collectorsCountProvenance === "historical_unknown" ? (
+          <button
+            type="button"
+            className="min-h-11 text-sm font-semibold text-emerald-800 underline underline-offset-2"
+            onClick={() => {
+              updateField("collectorsCount", volunteersCount === null ? "" : String(volunteersCount));
+              updateField("collectorsCountProvenance", volunteersCount === null ? null : "participant_total_default");
+            }}
+            disabled={volunteersCount === null}
+          >{form.collectorsCountProvenance === "historical_unknown" ? "Utiliser le total comme valeur proposée" : "Rétablir le total prérempli"}</button>
+        ) : null}
         <span id="action-collectors-count-help" className="block text-xs text-emerald-900/60">
           Comptez les personnes qui ont ramassé, quel que soit leur âge ou besoin d’accompagnement. Laissez vide si inconnu. Exemple : 20 personnes présentes, 12 ramasseurs.
         </span>
@@ -361,7 +415,7 @@ function ParticipantCounts({ form, updateField, compact, hasAttemptedSubmit = fa
   const adultCount = deriveAdultCountFromTotal({ volunteersCount, childrenCount, retiredCount });
   const participation = normalizeVolunteerParticipation(deriveVolunteerParticipationFromTotal({ volunteersCount, childrenCount, retiredCount }));
   const hasParticipantEntry = form.volunteersCount.trim() !== "" || form.childrenCount.trim() !== "0" || form.retiredCount.trim() !== "0";
-  const compositionMessage = hasParticipantEntry ? getVolunteerActionCompositionValidationMessage({ volunteersCount, childrenCount, retiredCount }) : null;
+  const compositionMessage = hasParticipantEntry ? getVolunteerTotalAndKnownCategoryValidationMessage({ volunteersCount, childrenCount, retiredCount }) : null;
   return (
       <ParticipantCountInputs
       form={form}

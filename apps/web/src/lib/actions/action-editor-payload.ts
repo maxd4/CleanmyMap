@@ -50,6 +50,7 @@ function buildEditorMeasurementFields(row: ActionRow, metadata: ActionEditorMeta
     cigaretteButts: row.cigarette_butts,
     volunteersCount: row.volunteers_count,
     collectorsCount: row.collectors_count ?? null,
+    collectorsCountProvenance: metadata.collectorsCountProvenance ?? "historical_unknown",
     volunteerParticipation: persistedParticipation,
     durationMinutes: row.duration_minutes,
     eventStartTime: normalizeClockTime(row.event_start_time),

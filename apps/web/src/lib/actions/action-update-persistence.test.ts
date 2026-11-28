@@ -576,14 +576,13 @@ describe("prepareActionUpdate administrative requirements continuation", () => {
     });
   });
 
-  it("rejects a partial total PATCH when typed columns are incomplete despite history", async () => {
+  it("preserves a coherent partial typed composition without falling back to conflicting history", async () => {
     resolveActionDepartmentForPersistenceMock.mockResolvedValue({
       departmentCode: null,
       departmentName: null,
     });
 
-    await expect(
-      prepareActionUpdate({
+    const prepared = await prepareActionUpdate({
         current: buildCurrent({}, {
           action_phase: "post_action_complete",
           volunteers_count: 26,
@@ -593,8 +592,14 @@ describe("prepareActionUpdate administrative requirements continuation", () => {
           notes: "[cmm-meta]{\"volunteerParticipation\":{\"childrenCount\":20,\"adultCount\":6,\"retiredCount\":0}}",
         }),
         parsedBody: ({ volunteersCount: 26 } as unknown as ActionUpdateInput),
-      }),
-    ).rejects.toMatchObject({ field: "volunteerParticipation" });
+      });
+
+    expect(prepared.updateData).toMatchObject({
+      volunteers_count: 26,
+      children_count: 18,
+      adult_count: 8,
+      retired_count: 0,
+    });
   });
 
   it("does not invent adults while editing a historical complete action without participant fields", async () => {
@@ -613,6 +618,29 @@ describe("prepareActionUpdate administrative requirements continuation", () => {
 
     expect(prepared.updateData).not.toHaveProperty("volunteers_count");
     expect(prepared.updateData.notes).toContain("Correction indépendante");
+  });
+
+  it("accepts a finalization with a known total and wholly unknown composition", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({}, { action_phase: "post_action_draft" }),
+      parsedBody: ({
+        actionPhase: "post_action_complete",
+        volunteersCount: 15,
+      } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData).toMatchObject({
+      action_phase: "post_action_complete",
+      volunteers_count: 15,
+      children_count: null,
+      adult_count: null,
+      retired_count: null,
+    });
   });
 
   it("allows the post-action draft transition while requirements are pending", async () => {

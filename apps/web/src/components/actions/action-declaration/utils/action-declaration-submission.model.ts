@@ -14,10 +14,7 @@ import {
 } from "../payload";
 import type { FormState, ValidationIssue } from "../model";
 import { normalizeActionInterventionMode } from "@/lib/actions/intervention-mode";
-import {
-  deriveVolunteerCountFromForm,
-  getFinalVolunteerCompositionValidationMessage,
-} from "@/lib/actions/volunteer-participation";
+import { getFinalVolunteerCompositionValidationMessage } from "@/lib/actions/volunteer-participation";
 import { toOptionalNumber } from "../payload-numbers";
 import {
   calculateCigaretteButtsLotsTotalCount,
@@ -239,7 +236,7 @@ function getMeasurementIssues(form: FormState): ValidationIssue[] {
 function getParticipantIssues(form: FormState): ValidationIssue[] {
   if (form.recordType !== "action") return [];
   const compositionInput = {
-    adultCount: form.adultCount,
+    volunteersCount: form.volunteersCount,
     retiredCount: form.retiredCount,
     childrenCount: form.childrenCount,
   };
@@ -247,9 +244,7 @@ function getParticipantIssues(form: FormState): ValidationIssue[] {
   if (compositionMessage) {
     return [{ field: "volunteerParticipation", message: compositionMessage }];
   }
-  return deriveVolunteerCountFromForm(compositionInput) === null
-    ? [{ field: "volunteerParticipation", message: "La composition des participants est incomplète." }]
-    : [];
+  return [];
 }
 
 function getGeometryIssues(params: Pick<SubmissionValidationParams, "form" | "payload" | "declarationMode" | "hasValidDrawing" | "hasServerRouteInput" | "isCleanPlaceMode" | "gpxImport" | "manualDrawingSource">): ValidationIssue[] {

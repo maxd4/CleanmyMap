@@ -25,7 +25,7 @@ import type {
   ActionCigaretteButtsMeasurements,
   RawCigaretteButtsMeasurementInput,
 } from "@/lib/waste/cigarette-butts";
-import type { ActionVolunteerParticipation } from "./volunteer-participation";
+import type { ActionVolunteerParticipation, CollectorsCountProvenance } from "./volunteer-participation";
 import type { OrganizerType } from "./organizer-type";
 import type { ActionContext, ActionContextSource } from "./action-context";
 import type { ActionFieldRoleCode } from "./field-roles";
@@ -571,6 +571,7 @@ export type CreateActionPayload = {
   volunteersCount: number;
   /** Number of physically present people who collected; null means unknown. */
   collectorsCount?: number | null;
+  collectorsCountProvenance?: Exclude<CollectorsCountProvenance, "historical_unknown" | null>;
   durationMinutes: number;
   eventStartTime?: string | null;
   eventEndTime?: string | null;

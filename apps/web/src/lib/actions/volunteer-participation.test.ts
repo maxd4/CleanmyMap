@@ -5,6 +5,7 @@ import {
   deriveVolunteerParticipationFromTotal,
   EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
   getVolunteerActionCompositionValidationMessage,
+  getVolunteerTotalAndKnownCategoryValidationMessage,
   getFinalVolunteerCompositionValidationMessage,
   getVolunteerParticipationDisclosureDetail,
   normalizeActionVolunteerParticipationFromTotal,
@@ -25,9 +26,10 @@ describe("volunteer participation contract", () => {
   });
 
   it.each([
-    ["missing", { adultCount: "", retiredCount: "0", childrenCount: "0" }, "Renseignez les nombres entiers d’adultes, de retraités et d’enfants présents."],
-    ["fractional", { adultCount: "1.5", retiredCount: "0", childrenCount: "0" }, "Les nombres d’adultes, de retraités et d’enfants doivent être des entiers compris entre 0 et 500."],
-    ["over maximum", { adultCount: "500", retiredCount: "1", childrenCount: "0" }, "La somme des adultes, retraités et enfants doit être comprise entre 1 et 500."],
+    ["missing total", { volunteersCount: "", retiredCount: "", childrenCount: "" }, "Renseignez un nombre total de participants entier compris entre 1 et 500."],
+    ["fractional category", { volunteersCount: "12", retiredCount: "0", childrenCount: "1.5" }, "Les nombres d’enfants et de retraités doivent être des entiers compris entre 0 et 500."],
+    ["category exceeds total", { volunteersCount: "12", retiredCount: "1", childrenCount: "12" }, "Le nombre d’enfants et de retraités ne peut pas dépasser le total des participants."],
+    ["unknown composition is accepted", { volunteersCount: "15", retiredCount: "", childrenCount: "" }, null],
   ] as const)("validates final category sources: %s", (_label, input, expected) => {
     expect(getFinalVolunteerCompositionValidationMessage(input)).toBe(expected);
   });
@@ -72,7 +74,7 @@ describe("volunteer participation contract", () => {
     })).toBe("Le nombre d’enfants et de retraités ne peut pas dépasser le total des participants.");
   });
 
-  it("keeps the composition unavailable until all action inputs exist", () => {
+  it("requires a complete composition for calculations while accepting an unknown split for participant totals", () => {
     expect(deriveAdultCountFromTotal({
       volunteersCount: null,
       childrenCount: 0,
@@ -83,6 +85,11 @@ describe("volunteer participation contract", () => {
       childrenCount: null,
       retiredCount: 0,
     })).toBe("Renseignez les nombres entiers d’enfants et de retraités présents.");
+    expect(getVolunteerTotalAndKnownCategoryValidationMessage({
+      volunteersCount: 12,
+      childrenCount: null,
+      retiredCount: 0,
+    })).toBeNull();
   });
 
   it.each([
@@ -298,12 +305,28 @@ describe("volunteer participation contract", () => {
     })).toMatchObject({ childrenCount: 3, adultCount: 1, retiredCount: 0 });
   });
 
-  it.each([
-    { childrenCount: 18, adultCount: null, retiredCount: 0 },
-    { childrenCount: 18, adultCount: 9, retiredCount: 0 },
-  ])("does not hide invalid typed columns behind historical metadata", (typed) => {
+  it("preserves a valid partial typed category without falling back to conflicting legacy metadata", () => {
     expect(resolvePersistedVolunteerParticipation({
-      ...typed,
+      childrenCount: 18,
+      adultCount: null,
+      retiredCount: 0,
+      volunteersCount: 26,
+      legacyParticipation: {
+        childrenCount: 20,
+        adultCount: 6,
+        retiredCount: 0,
+        participantsCount: 26,
+        effectiveVolunteerUnits: 16,
+        effectiveVolunteerUnitsFormulaVersion: EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
+      },
+    })).toMatchObject({ childrenCount: 18, adultCount: 8, retiredCount: 0, participantsCount: 26 });
+  });
+
+  it("does not hide invalid typed columns behind historical metadata", () => {
+    expect(resolvePersistedVolunteerParticipation({
+      childrenCount: 18,
+      adultCount: 9,
+      retiredCount: 0,
       volunteersCount: 26,
       legacyParticipation: {
         childrenCount: 20,

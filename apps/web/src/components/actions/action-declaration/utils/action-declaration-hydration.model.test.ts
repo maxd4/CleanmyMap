@@ -41,6 +41,22 @@ function createEditorRecord(
 }
 
 describe("action declaration hydration model", () => {
+  it("restores declared collector provenance and marks legacy rows unknown", () => {
+    const confirmed = buildActionEditorFormState(
+      createInitialFormState("Alex", "action"),
+      createEditorRecord({ collectorsCount: 0, collectorsCountProvenance: "user_confirmed" }),
+    );
+    expect(confirmed.collectorsCount).toBe("0");
+    expect(confirmed.collectorsCountProvenance).toBe("user_confirmed");
+
+    const legacy = buildActionEditorFormState(
+      createInitialFormState("Alex", "action"),
+      createEditorRecord({ collectorsCount: null, collectorsCountProvenance: undefined }),
+    );
+    expect(legacy.collectorsCount).toBe("");
+    expect(legacy.collectorsCountProvenance).toBe("historical_unknown");
+  });
+
   it.each([
     ["pre_action", "pré-action"],
     ["post_action_draft", "brouillon post-action"],

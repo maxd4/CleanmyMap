@@ -42,6 +42,7 @@ type ActionNotesExtractionState = {
   cigaretteButtsMeasurements: ActionCigaretteButtsMeasurements | null;
   volunteerParticipation: ActionVolunteerParticipation | null;
   collectionAttributionVersion: "collectors-v1" | null;
+  collectorsCountProvenance: "participant_total_default" | "user_confirmed" | null;
   associationName: string | null;
   groupJoinEnabled: boolean;
   placeType: string | null;
@@ -96,6 +97,7 @@ function initializeActionNotesExtractionState(): ActionNotesExtractionState {
     cigaretteButtsMeasurements: null,
     volunteerParticipation: null,
     collectionAttributionVersion: null,
+    collectorsCountProvenance: null,
     associationName: null,
     groupJoinEnabled: false,
     placeType: null,
@@ -125,6 +127,7 @@ function toActionNotesExtractionResult(
     cigaretteButtsMeasurements: state.cigaretteButtsMeasurements,
     volunteerParticipation: state.volunteerParticipation,
     collectionAttributionVersion: state.collectionAttributionVersion,
+    collectorsCountProvenance: state.collectorsCountProvenance,
     associationName: state.associationName,
     groupJoinEnabled: state.groupJoinEnabled,
     placeType: state.placeType,
@@ -191,6 +194,9 @@ function applyParsedStructuredActionNotesMeta(
   }
   if (parsed.collectionAttributionVersion === "collectors-v1") {
     state.collectionAttributionVersion = parsed.collectionAttributionVersion;
+  }
+  if (parsed.collectorsCountProvenance === "participant_total_default" || parsed.collectorsCountProvenance === "user_confirmed") {
+    state.collectorsCountProvenance = parsed.collectorsCountProvenance;
   }
   if (
     typeof parsed.associationName === "string" &&

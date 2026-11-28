@@ -12,6 +12,7 @@ import {
 import {
   hasVolunteerCategoryData,
   normalizeVolunteerParticipation,
+  type CollectorsCountProvenance,
   type ActionVolunteerParticipation,
 } from "@/lib/actions/volunteer-participation";
 
@@ -23,6 +24,7 @@ export type ActionNotesMeta = {
   cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements;
   volunteerParticipation?: ActionVolunteerParticipation;
   collectionAttributionVersion?: "collectors-v1";
+  collectorsCountProvenance?: Exclude<CollectorsCountProvenance, "historical_unknown" | null>;
   associationName?: string;
   groupJoinEnabled?: boolean;
   placeType?: string;
@@ -96,6 +98,7 @@ export function hasActionMetadata(metadata: ActionInputMetadata): boolean {
     hasStructuredWasteMetadata(metadata) ||
     hasStructuredParticipationMetadata(metadata) ||
     metadata.collectionAttributionVersion === "collectors-v1" ||
+    metadata.collectorsCountProvenance !== undefined ||
     hasStructuredLocationMetadata(metadata) ||
     hasContentMetadata(metadata)
   );
@@ -114,6 +117,9 @@ function buildStructuredMetadataPayload(metadata: ActionInputMetadata): Partial<
       : {}),
     ...(metadata.collectionAttributionVersion === "collectors-v1"
       ? { collectionAttributionVersion: metadata.collectionAttributionVersion }
+      : {}),
+    ...(metadata.collectorsCountProvenance
+      ? { collectorsCountProvenance: metadata.collectorsCountProvenance }
       : {}),
     ...(metadata.associationName?.trim() ? { associationName: metadata.associationName.trim() } : {}),
     ...(typeof metadata.groupJoinEnabled === "boolean" ? { groupJoinEnabled: metadata.groupJoinEnabled } : {}),
