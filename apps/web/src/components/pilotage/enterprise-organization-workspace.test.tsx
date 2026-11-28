@@ -277,9 +277,9 @@ describe("enterprise organization workspace roster", () => {
     expect(host.querySelector('a[href="/actions/history"]')).not.toBeNull();
     expect([...host.querySelectorAll("button")].find((button) => button.textContent === "Précédent")?.disabled).toBe(true);
 
-    for (const [title, state] of [["Brouillon", "active"], ["Active", "completed"], ["Terminée", "archived"]]) {
+    for (const [title, state, label] of [["Brouillon", "active", "Activer"], ["Active", "completed", "Terminer"], ["Terminée", "archived", "Archiver"]]) {
       const listItem = [...host.querySelectorAll("li")].find((item) => item.textContent?.startsWith(`${title} ·`));
-      const button = [...(listItem?.querySelectorAll("button") ?? [])][0];
+      const button = [...(listItem?.querySelectorAll("button") ?? [])].find((candidate) => candidate.textContent === label);
       expect(button).toBeDefined();
       await act(async () => {
         button?.click();
@@ -312,6 +312,41 @@ describe("enterprise organization workspace roster", () => {
     const previous = [...host.querySelectorAll("button")].find((button) => button.textContent === "Précédent");
     await act(async () => { previous?.click(); await new Promise((resolve) => setTimeout(resolve, 0)); });
     expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).includes("offset=0"))).toBe(true);
+  });
+
+  it("lets a manager revise a draft campaign", async () => {
+    apiWorkspace = workspace("owner", orgId, "Entreprise Alpha", true);
+    await renderWorkspace();
+    const campaignsTab = [...host.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Campagnes");
+    await act(async () => { campaignsTab?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    const edit = [...host.querySelectorAll("button")].find((button) => button.textContent === "Modifier");
+    expect(edit).toBeDefined();
+    await act(async () => { edit?.click(); });
+    const form = [...host.querySelectorAll("form")].find((candidate) => [...candidate.querySelectorAll("button")].some((button) => button.textContent === "Enregistrer la campagne"));
+    const setInput = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    const title = form?.querySelector('input:not([type="date"]):not([type="number"])') as HTMLInputElement;
+    const dates = [...(form?.querySelectorAll('input[type="date"]') ?? [])] as HTMLInputElement[];
+    const target = form?.querySelector('input[type="number"]') as HTMLInputElement;
+    setInput?.call(title, "Campagne révisée");
+    await act(async () => { title.dispatchEvent(new Event("input", { bubbles: true })); });
+    setInput?.call(dates[0], "2026-02-01");
+    await act(async () => { dates[0]?.dispatchEvent(new Event("input", { bubbles: true })); });
+    setInput?.call(dates[1], "2026-11-30");
+    await act(async () => { dates[1]?.dispatchEvent(new Event("input", { bubbles: true })); });
+    setInput?.call(target, "8");
+    await act(async () => { target.dispatchEvent(new Event("input", { bubbles: true })); });
+    await act(async () => { form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); await new Promise((resolve) => setTimeout(resolve, 0)); });
+    const posted = vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST").map(([, init]) => JSON.parse(String(init?.body)));
+    expect(posted).toContainEqual(expect.objectContaining({ operation: "campaign", campaignId: "00000000-0000-4000-8000-000000000041", title: "Campagne révisée", startsOn: "2026-02-01", endsOn: "2026-11-30", targetActions: 8, state: "draft" }));
+
+  });
+
+  it("does not expose campaign editing to members", async () => {
+    apiWorkspace = workspace("member", orgId, "Entreprise Alpha", true);
+    await renderWorkspace();
+    const memberCampaignsTab = [...host.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Campagnes");
+    await act(async () => { memberCampaignsTab?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Modifier")).toBe(false);
   });
 
   it("links only selected actions, creates a campaign, and exports a private CSV", async () => {
