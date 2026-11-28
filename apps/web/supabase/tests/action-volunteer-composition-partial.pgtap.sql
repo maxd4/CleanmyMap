@@ -63,8 +63,6 @@ reset role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"partial-composition-rpc-test"}', true);
 create function pg_temp.persists_coherent_partial_composition_in_rpc() returns boolean
 language plpgsql as $$
-declare
-  caught_sqlstate text;
 begin
   begin
     perform * from public.create_action_with_relations_legacy(
@@ -73,10 +71,13 @@ begin
         'client_request_id', null,
         'action_date', current_date + 1,
         'location_label', 'RPC partial composition',
+        'waste_kg', 0,
+        'cigarette_butts', 0,
         'volunteers_count', 10,
         'children_count', 3,
         'adult_count', null,
         'retired_count', 2,
+        'duration_minutes', 0,
         'status', 'pending',
         'action_phase', 'pre_action'
       ),
@@ -94,10 +95,7 @@ begin
          and retired_count = 2
     );
   exception
-    when others then
-      get stacked diagnostics caught_sqlstate = returned_sqlstate;
-      raise notice 'SQLSTATE=%', caught_sqlstate;
-      return false;
+    when others then return false;
   end;
 end;
 $$;
