@@ -7,6 +7,8 @@
 | Question | Source documentaire | Autorité exécutable / vérification |
 |---|---|---|
 | AuthN/AuthZ réellement appliquées | [`authz-authn-regles.md`](./authz-authn-regles.md) (`CURRENT`) | `apps/web/src/lib/authz.ts`, fragments `apps/web/src/lib/auth/api-authorization-contract.*.ts`, handlers et tests API |
+| Cycle de vie du compte et effacement | [`account-erasure.md`](./account-erasure.md) (`PLAN / TARGET`, décision produit validée) | Demandes RGPD, identité, données, contributions et rapports ; pas un effacement déjà livré |
+| Modification du pseudonyme | [`account-handle-lifecycle.md`](./account-handle-lifecycle.md) (`PLAN / TARGET`, décision produit validée) | Profils, synchronisation, projections et parcours /reglages ; règles temporelles à intégrer |
 | Autorisation future par capacités | [`authorization-capabilities.md`](./authorization-capabilities.md) (`PLAN / TARGET`) | **Ne pas** traiter cette matrice comme des droits livrés |
 | Doctrine sécurité transversale | [`SECURITY.md`](./SECURITY.md) (`CURRENT`) | Code, garde-fous et configuration concernés |
 | Contrat et erreurs HTTP | [`../development/api-standard.md`](../development/api-standard.md) (`CURRENT`) | Handler API, consommateurs, `apps/web/src/lib/http/api-errors.ts` |
