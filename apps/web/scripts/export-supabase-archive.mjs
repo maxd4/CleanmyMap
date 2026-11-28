@@ -153,10 +153,10 @@ async function main() {
   }
 
   try {
-    if (!process.env.SUPABASE_STORAGE_READ_KEY) throw new Error("SUPABASE_STORAGE_READ_KEY is required for exhaustive Storage export");
+    if (!process.env.SUPABASE_BACKUP_STORAGE_READ_KEY) throw new Error("SUPABASE_BACKUP_STORAGE_READ_KEY is required for exhaustive Storage export");
     const storageResult = await exportStorage({
       supabaseUrl,
-      storageReadKey: process.env.SUPABASE_STORAGE_READ_KEY,
+      storageReadKey: process.env.SUPABASE_BACKUP_STORAGE_READ_KEY,
       outDir: join(baseDir, "storage"),
     });
     manifest.storage = { status: "PASS", ...storageResult };
