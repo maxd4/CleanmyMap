@@ -276,8 +276,9 @@ select ok(pg_temp.personal_ai_expect_sqlstate($statement$
     jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
       '{periodStartUtc}', 'null'::jsonb), '{periodEndUtc}', 'null'::jsonb),
     '{"version":"personal-ai-chat-usage-v1","sourceKind":"SELF_REPORTED_CHAT_USAGE","chatbot":"CHATGPT","chatbotLabel":null,"accessMode":"FREE","frequency":"UNKNOWN","exchanges":null,"questionCharacters":null,"answerCharacters":null,"imageUse":null,"audioUse":null}'::jsonb,
-    '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb, 'personal-ai-v1', '{}'
-  ), null, 'user-a-isolated-period-check'
+    '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb,
+    'personal-ai-v1', '{}', null, 'user-a-isolated-period-check'
+  )
 $statement$, '23514'), 'a quick scenario still requires a complete period');
 select lives_ok($$
   select * from pg_temp.personal_ai_confirm_test(jsonb_build_array(jsonb_build_object(
