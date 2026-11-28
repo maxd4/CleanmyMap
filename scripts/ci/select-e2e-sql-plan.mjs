@@ -25,7 +25,6 @@ const SHARED_BOOTSTRAP_INFRA_FILES = [
   "scripts/ci/supabase-config.test.mjs",
   "scripts/ci/diagnose-supabase-start.mjs",
   "scripts/ci/diagnose-supabase-start.test.mjs",
-  "scripts/ci/select-e2e-sql-plan.mjs",
   "scripts/ci/e2e-project-catalog.mjs",
   "package.json",
   "package-lock.json",
@@ -196,13 +195,20 @@ export function planE2eAndSql({
   let validateAllSql = false;
 
   const hasSharedSchema = files.some(isSharedSupabaseSchemaFile);
+  const enterpriseOrganizationMigrations = files.filter((file) =>
+    /^apps\/web\/supabase\/migrations\/\d+_enterprise_(?:organization|member)_[^/]+\.sql$/.test(file),
+  );
+  const hasOnlyEnterpriseOrganizationSchema =
+    enterpriseOrganizationMigrations.length > 0 &&
+    files.filter(isSharedSupabaseSchemaFile).every((file) => enterpriseOrganizationMigrations.includes(file)) &&
+    !files.some((file) => SHARED_SQL_INFRA_FILES.has(file) || SHARED_E2E_INFRA_FILES.has(file));
   const hasSharedAuth = files.some(isSharedAuthOrRuntimeFile);
   const hasSharedE2eInfra = files.some(
     (file) => SHARED_E2E_INFRA_FILES.has(file) || file.startsWith("e2e/fixtures/") || file.startsWith("scripts/dev/"),
   );
   const hasSharedSqlInfra = files.some((file) => SHARED_SQL_INFRA_FILES.has(file));
 
-  if (hasSharedSchema || hasSharedAuth || hasSharedE2eInfra) {
+  if ((hasSharedSchema && !hasOnlyEnterpriseOrganizationSchema) || hasSharedAuth || hasSharedE2eInfra) {
     for (const project of ALL_CI_E2E_PROJECTS) projects.add(project);
     runSpogomiIntegration = true;
     for (const unmapped of findUnmappedActiveE2eFiles(activeE2eList ?? [])) {
@@ -210,7 +216,9 @@ export function planE2eAndSql({
     }
   }
 
-  if (hasSharedSchema || hasSharedSqlInfra) {
+  if (hasOnlyEnterpriseOrganizationSchema) {
+    sqlTargets.add("apps/web/supabase/tests/enterprise-organization-foundation.pgtap.sql");
+  } else if (hasSharedSchema || hasSharedSqlInfra) {
     runAllSql = true;
     validateAllSql = true;
   }

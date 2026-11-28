@@ -97,6 +97,22 @@ test("shared migration change runs full SQL proof and E2E integration/projects",
   assert.equal(plan.validate_all_sql, true);
 });
 
+test("enterprise organization migrations select only their PostgreSQL contract in DEVELOPMENT", () => {
+  const plan = planE2eAndSql({
+    eventName: "push",
+    validationMode: "DEVELOPMENT",
+    changedFiles: [
+      "apps/web/supabase/migrations/20261128000005_enterprise_member_aggregate_report_scope.sql",
+    ],
+  });
+
+  assert.equal(plan.e2e_should_run, false);
+  assert.equal(plan.run_spogomi_integration, false);
+  assert.equal(plan.sql_should_run, true);
+  assert.equal(plan.sql_proof_targets, "apps/web/supabase/tests/enterprise-organization-foundation.pgtap.sql");
+  assert.equal(plan.validate_all_sql, false);
+});
+
 test("FULL validation mode or schedule runs the complete campaign", () => {
   for (const input of [
     { eventName: "workflow_dispatch", validationMode: "FULL", changedFiles: ["README.md"] },
