@@ -1,6 +1,6 @@
 # Entreprise et RSE : réception des candidats
 
-Statut : CANDIDATE / PLAN. Préparé le 27 novembre 2026 par ChatGPT, suivant CHATGPT.md, AGENTS.md et le protocole hybride. Constat de lecture : main `202267461c69ce033ebe44bbfb479d78d378b3f0`. Ce SHA est une preuve historique et non une instruction de checkout. Aucun changement runtime, SQL actif ou déploiement n'est livré par ce dossier.
+Statut : RÉCEPTION PARTIELLE — au 28 novembre 2026. Préparé le 27 novembre 2026 par ChatGPT, suivant CHATGPT.md, AGENTS.md et le protocole hybride. Référence initiale vérifiée : `main`/`origin/main` à `78f7ca05748ada1a7d9cba5453858bd32fdbce2c`; les commits `b4c5907` et `0068fed` sont déjà intégrés et ne doivent pas être rejoués. Les patches runtime candidats correspondent déjà aux sources publiées. La migration `20261127000001` est déjà enregistrée sur le projet Supabase lié; elle n'est pas rejouée. La réception courante ajoute une migration forward-only `20261128000002` et reste incomplète tant que les preuves PostgreSQL, navigateur et couverture ci-dessous ne passent pas.
 
 ## Objectif et périmètre
 
@@ -12,13 +12,29 @@ Cible : espace web de préparation, rattachement, suivi multisite, campagnes, bi
 
 | Artefact | Cible | Lots | État |
 |---|---|---|---|
-| [01-parcours-entreprise.patch](01-parcours-entreprise.patch) | page /sponsor-portal, navigation, CTA, composant de liens, test et fiche route | 01, 07 | CANDIDATE |
-| [organization-foundation.sql](candidates/sql/organization-foundation.sql) | migration nouvelle dans l'arbre canonique, nom/timestamp à allouer au checkout | 02, 03, 05, 06 | CANDIDATE |
-| [organization-foundation.pgtap.sql](candidates/sql/organization-foundation.pgtap.sql) | suite pgTAP du dépôt | 02, 10 | CANDIDATE |
-| [02-03-05-06-organization-api.patch](02-03-05-06-organization-api.patch) | lib/organizations/contracts, service, test, API /organizations et bootstrap admin | 02, 03, 05, 06 | CANDIDATE |
-| [04-05-report-scope.patch](04-05-report-scope.patch) | lib/organizations/report, report-summary, test, API /reports/organization | 04, 05 | CANDIDATE |
-| [02-03-05-06-workspace-ui.patch](02-03-05-06-workspace-ui.patch) | components/pilotage/enterprise-organization-workspace.tsx | 02, 03, 05, 06 | CANDIDATE |
-| [03-08-invitation-qr.patch](03-08-invitation-qr.patch) | private-action-access-section, QR existant et avertissement de transmission | 03, 08 | CANDIDATE |
+| [01-parcours-entreprise.patch](01-parcours-entreprise.patch) | page /sponsor-portal, navigation, CTA, composant de liens, test et fiche route | 01, 07 | ALREADY_INTEGRATED — verify consumers, do not reapply |
+| [organization-foundation.sql](candidates/sql/organization-foundation.sql) | source préparatoire; correctif courant dans `apps/web/supabase/migrations/20261128000002_enterprise_organization_team_projection.sql` | 02, 03, 05, 06 | MIGRATION FORWARD-ONLY CANDIDATE — SQL éphémère non exécuté |
+| [organization-foundation.pgtap.sql](candidates/sql/organization-foundation.pgtap.sql) | source préparatoire; fixture Alpha/Beta adaptée dans `enterprise-organization-foundation.pgtap.sql` | 02, 10 | 66 assertions déclarées, plan vérifié, exécution pgTAP en attente |
+| [02-03-05-06-organization-api.patch](02-03-05-06-organization-api.patch) | lib/organizations/contracts, service, test, API /organizations et bootstrap admin | 02, 03, 05, 06 | ALREADY_INTEGRATED — verify consumers, do not reapply |
+| [04-05-report-scope.patch](04-05-report-scope.patch) | lib/organizations/report, report-summary, test, API /reports/organization | 04, 05 | ALREADY_INTEGRATED — verify consumers, do not reapply |
+| [02-03-05-06-workspace-ui.patch](02-03-05-06-workspace-ui.patch) | components/pilotage/enterprise-organization-workspace.tsx | 02, 03, 05, 06 | ALREADY_INTEGRATED — residual UI work remains |
+| [03-08-invitation-qr.patch](03-08-invitation-qr.patch) | private-action-access-section, QR existant et avertissement de transmission | 03, 08 | ALREADY_INTEGRATED — lot 08 remains separate |
+
+### Réception du lot 01 — état vérifié
+
+- `b4c5907` et `0068fed` sont déjà dans l'ascendance du checkout courant ; aucun patch n'a été recopié.
+- Le scénario pgTAP crée Alpha et Beta réellement, avec identifiants persistés distincts et non nuls; `plan(66)` correspond aux 66 appels d'assertion reconnus par le vérificateur du dépôt. Ce nombre est une preuve de source, pas une exécution PostgreSQL.
+- Le candidat ajoute une projection d'équipe minimisée, invitation par adresse email vérifiée côté serveur, départ d'un membre, navigation indépendante du rôle actif et une file/UI admin pour la vérification explicite du mandat. Une correction au service renvoie désormais aux membres un roster minimal sans données d'actions, sites ou bilans.
+- Une preuve de concurrence à deux sessions est ajoutée à `e2e/enterprise-organization-concurrency.mjs` et enregistrée au runner SQL; le runner n'a pas encore été exécuté sur son environnement PostgreSQL éphémère.
+- Le scénario Playwright deux comptes est enregistré dans le projet authentifié et prépare des fixtures uniquement sur l'URL Supabase locale du runner éphémère. `playwright --list --project="authenticated campaign"` recense 10 tests dans 5 fichiers, dont celui-ci; cette commande prouve la découverte, pas l'exécution. Aucun navigateur n'a été lancé.
+- Tests ciblés de l'espace organisation, équipe et administration : 50/50 PASS. Couverture ciblée des cinq modules instrumentés : 94,51/85,27/95,86/98,85 % (statements/branches/fonctions/lignes); ce scope ne représente pas la couverture globale ni tous les modules sensibles.
+- La couverture Web complète a été lancée puis interrompue après plusieurs échecs, avant le rapport final : seuils globaux `NOT_MEASURED`, diagnostics à reprendre. `npm run typecheck -w apps/web` échoue actuellement sur `apps/web/src/lib/actions/action-update-notes.ts:88` (valeur `null` non assignable); ce chemin Actions concurrent n'a pas été modifié par le candidat entreprise.
+- Contrôle documentaire PASS, gouvernance AGENTS PASS et miroir des skills PASS. Le contrôle `git diff --check` passe.
+- Couverture re-mesurée antérieurement sur huit modules effectivement inclus : total 58,50/54,40/50,71/75,48 %. Les seuils du prompt ne sont pas atteints. Les pages `page.tsx` sont exclues par la configuration de couverture existante et restent `NOT_MEASURED`; aucune exclusion ni aucun ratchet n'a été modifié.
+- Préflight Supabase lié : dernier état observé `BLOCKED`; la migration candidate `20261128000002` est la seule en attente. Le rapport classe la preuve sensible comme invalide car son empreinte/schema version ne correspond pas encore au candidat courant; `REMOTE_WRITES: NONE`. Aucun déploiement ni écriture en base liée n'a été exécuté.
+- Le lien produit direct vers `plans/` a été remplacé par l'index des fonctionnalités, et la fiche entreprise est référencée par `documentation/features/README.md`. L'index interne des chantiers demeure dans `documentation/plans/README.md`.
+- Validation navigateur avec comptes Clerk Development distincts et données Supabase éphémères : `NOT_RUN`. Pas encore de preuve exécutée de responsive multi-largeur.
+- Lots PDF et commercial, QR indépendant et Challenges demeurent `PLAN` ; Challenges restent conditionnels à une démonstration distincte du besoin.
 
 Les chemins exacts des fichiers cibles sont les en-têtes diff. Ne pas recopier les patches dans les sources ou publier le SQL dans les migrations actives sans vérification. Réception atomique du bloc organisation SQL/API/report/UI/portail : le patch 01 importe le composant workspace ; il n'est pas indépendant dans sa forme actuelle. Le patch QR reste indépendant. En cas de conflit avec un chantier concurrent, adapter uniquement les hunks concernés et conserver le reste.
 
@@ -63,8 +79,7 @@ Le PDF privé et son historique restent délibérément non activés : les contr
 
 - Lecture main et fichiers cibles/consommateurs, gouvernance, contrats d'autorisation, source des actions et reports : effectuée.
 - Validation statique des hunks : 17 cibles, comptes de lignes et contexte exact des 5 fichiers existants conformes au SHA de lecture (contrôle textuel, pas git apply exécuté).
-- Tests candidats : 3 fichiers Vitest (contrats, agrégats, liens) et une suite pgTAP structurelle. Non exécutés.
-- Typecheck, lint, Vitest, pgTAP, navigateur, preflight Supabase, CI et production : NOT_RUN / DB_SEMANTICS_NOT_EXECUTED. Couverture NOT_MEASURED. Hooks locaux HOOK_NOT_AVAILABLE.
-- Publication de ce lot : documentation et fichiers candidats seulement. Aucun nouveau rôle, endpoint, table, permission ou comportement réellement activé.
+- Tests du roster/workspace/admin : 50/50 exécutés; tests Reports ciblés : 7/7 exécutés. La suite pgTAP candidate et les tests CI éphémères restent non exécutés.
+- La publication immédiate de cette réception porte uniquement sur les manifestes documentaires et les références de routage. Le code runtime et la migration `20261128000002` restent des changements locaux CANDIDATE et ne sont ni activés ni inclus dans ce commit documentaire. Aucun SQL lié n'a été appliqué.
 
-STOP CONDITION : réception démontrée du sous-ensemble intégré, tests de sécurité et de non-régression pertinents, documents CURRENT alignés, preuves de publication et limites restantes explicites. Ne pas bloquer le lot indépendant QR sur les preuves SQL ; ne pas activer un espace organisationnel incomplet pour prétendre clôturer les dix lots.
+STOP CONDITION : toujours ouverte. Réception complète du Lot 01 exige pgTAP et concurrence réussis sur le candidat publié, parcours navigateur éphémère à deux comptes Clerk exécuté aux cinq largeurs, seuils de couverture atteints pour les fichiers mesurables, documentation CURRENT cohérente, absence de régression critique et publication sans contournement des hooks. Les PDF, challenges sans besoin distinct, QR indépendant, certification ESG et extensions commerciales restent PLAN.

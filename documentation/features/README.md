@@ -14,6 +14,7 @@
 | Quiz / SRS / banque | [`quiz/README.md`](./quiz/README.md) (`CURRENT` pour routage) | `apps/web/data/environmental-quiz-bank/`, `apps/web/src/lib/learning/quiz/`, SRS et tests |
 | Rapports existants | [`reports/README.md`](./reports/README.md) (`CURRENT`) | `apps/web/src/lib/reports/`, modèles, générations, APIs et tests |
 | SPOGOMI | [`spogomi.md`](./spogomi.md) (`CURRENT`) | Code et tests SPOGOMI ; kit [références](./spogomi-references/README.md) non runtime |
+| Organisations entreprise | [`enterprise-organizations-CURRENT.md`](./enterprise-organizations-CURRENT.md) | `apps/web/src/lib/organizations/`, workspace et routes API ; roster, adhésions et mandats selon le runtime et les tests |
 
 ## Quiz : contrat / historique
 
