@@ -361,6 +361,9 @@ async function buildAuthenticatedIdentity(
       loadUserCurrentLevel(userId),
       loadStoredProfile(userId),
     ]);
+    if (fetchedUser.id !== userId) {
+      throw new Error("Clerk returned a different user than the authenticated session.");
+    }
     if (options.syncActiveRole) {
       await syncActiveRoleProjectionToSupabase(fetchedUser);
     } else {

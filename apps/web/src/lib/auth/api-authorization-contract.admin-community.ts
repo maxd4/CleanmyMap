@@ -114,10 +114,18 @@ export const adminCommunityAuthorizationContract = {
     },
   },
   "admin/organizations/bootstrap": {
+    GET: {
+      expected: "Admin reads a minimized, private list of accepted organization applications for manual mandate review",
+      dimensions: ["admin/creator role"],
+      actual: "requireAdminAccess + authenticated rate limit + accepted company application filter + no-store response",
+      evidence: ["requireAdminAccess", "enforceServerRateLimitForAuthenticatedUser"],
+      evidenceScope: "method",
+      handlerEvidence: ["requireAdminAccess", "enforceServerRateLimitForAuthenticatedUser"],
+    },
     POST: {
       expected: "Admin verifies an accepted organization mandate and exact organizer identity before creating the private organization; the submitting account receives the initial owner membership",
       dimensions: ["admin/creator role", "audit"],
-      actual: "requireAdminAccess + authenticated rate limit + accepted partner/source checks + exact organizer resolution + service-only bootstrap_organization RPC",
+      actual: "requireAdminAccess + authenticated rate limit + accepted partner/source checks + legal identity to organizer reference match + service-only bootstrap_organization RPC",
       evidence: ["requireAdminAccess", "enforceServerRateLimitForAuthenticatedUser", "bootstrap_organization"],
       evidenceScope: "method",
       handlerEvidence: ["requireAdminAccess", "enforceServerRateLimitForAuthenticatedUser", "bootstrap_organization"],

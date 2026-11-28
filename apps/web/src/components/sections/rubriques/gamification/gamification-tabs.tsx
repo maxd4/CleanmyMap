@@ -25,6 +25,7 @@ export function tabForGamificationTarget(id: string, summary?: GamificationSumma
     const item = summary?.progressions.find((entry) => `progression-${entry.id}` === id);
     if (item?.state === "not_started") return "discover";
     if (item?.state === "in_progress") return "active";
+    if (item?.state === "completed") return "acquired";
     return null;
   }
   if (id.startsWith("milestone-")) {
@@ -34,6 +35,12 @@ export function tabForGamificationTarget(id: string, summary?: GamificationSumma
     if (item?.state === "not_started") return "discover";
   }
   return null;
+}
+
+export function mountedGamificationTarget(id: string, summary?: GamificationSummary): string {
+  if (!id.startsWith("progression-") || !summary) return id;
+  const item = summary.progressions.find((entry) => `progression-${entry.id}` === id);
+  return item?.state === "completed" ? `acquired-${id}` : id;
 }
 
 export function GamificationTabs({ locale, summary, receiptId, renderPanel }: {
@@ -55,9 +62,12 @@ export function GamificationTabs({ locale, summary, receiptId, renderPanel }: {
       let id: string;
       try { id = decodeURIComponent(window.location.hash.slice(1)); } catch { return; }
       const next = tabForGamificationTarget(id, summary);
-      if (!next) return;
+      if (!next) {
+        setTarget(null);
+        return;
+      }
       setTab(next);
-      setTarget(id);
+      setTarget(mountedGamificationTarget(id, summary));
     };
     reveal();
     window.addEventListener("hashchange", reveal);

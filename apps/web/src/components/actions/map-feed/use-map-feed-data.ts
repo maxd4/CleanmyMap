@@ -81,6 +81,7 @@ export function useMapFeedData({
   const swrKey = useMemo(
     () => enabled ? [
       "actions-map",
+      String(limit),
       String(days),
       dateScope,
       statusFilter,
@@ -106,6 +107,7 @@ export function useMapFeedData({
       impactFilter,
       contextFilter,
       qualityMin,
+      limit,
       viewport,
       enabled,
     ],
@@ -129,6 +131,7 @@ export function useMapFeedData({
       }),
     {
       ...swrRecentViewOptions,
+      keepPreviousData: false,
       onSuccess: () => {
         setLastRefreshedAt(Date.now());
       },

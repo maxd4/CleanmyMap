@@ -137,6 +137,24 @@ export const platformAuthorizationContract = {
       handlerEvidence: ["requireAuthenticatedAccess", "enforceServerRateLimitForAuthenticatedUser", "loadOrganizationReport"],
     },
   },
+  organizations: {
+    GET: {
+      expected: "Authenticated account may list only its own active organization memberships and pending invitations, without depending on the active application role",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + authenticated rate limit + session-bound service-only membership projection + private no-store response",
+      evidence: ["requireAuthenticatedAccess", "listOrganizations"],
+      evidenceScope: "method",
+      handlerEvidence: ["requireAuthenticatedAccess", "listOrganizations"],
+    },
+    POST: {
+      expected: "Authenticated account may perform only an operation allowed by the organization RPC for its session-bound membership; invitations resolve verified Clerk email server-side",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + authenticated rate limit + strict command schema + Clerk session actor + service-only RPC",
+      evidence: ["requireAuthenticatedAccess", "safeParse", "mutateOrganization"],
+      evidenceScope: "method",
+      handlerEvidence: ["requireAuthenticatedAccess", "safeParse", "mutateOrganization"],
+    },
+  },
   "reports/generations/[id]": {
     GET: {
       expected: "Authenticated user may load an authorized Reports generation snapshot",

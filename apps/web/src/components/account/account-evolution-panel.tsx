@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSWRConfig } from "swr";
 import { CheckCircle2, Clock3, FileClock, ShieldCheck, XCircle } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -21,6 +21,7 @@ export type AccountEvolutionRequest = {
 };
 
 type AccountEvolutionPanelProps = {
+  userId: string;
   currentRole: AppProfile;
   activeRole: AppProfile;
   initialRequest: AccountEvolutionRequest | null;
@@ -68,6 +69,7 @@ function StatusIcon({ status }: { status: AccountEvolutionRequest["status"] }) {
 }
 
 export function AccountEvolutionPanel({
+  userId,
   currentRole,
   activeRole,
   initialRequest,
@@ -77,8 +79,20 @@ export function AccountEvolutionPanel({
   const [latestRequest, setLatestRequest] = useState<AccountEvolutionRequest | null>(initialRequest);
   const [statusAvailable, setStatusAvailable] = useState(initialStatusAvailable);
   const [isRefreshing, setIsRefreshing] = useState(!initialStatusAvailable);
+  const requestVersion = useRef(0);
+  const renderedUserId = useRef(userId);
+  useEffect(() => {
+    if (renderedUserId.current !== userId) {
+      renderedUserId.current = userId;
+      requestVersion.current += 1;
+      setLatestRequest(initialRequest);
+      setStatusAvailable(initialStatusAvailable);
+    }
+  }, [userId, initialRequest, initialStatusAvailable]);
 
   const refreshStatus = useCallback(async () => {
+    const version = ++requestVersion.current;
+    const requestUserId = userId;
     setIsRefreshing(true);
     try {
       const response = await fetch("/api/account/promotion-requests", {
@@ -87,19 +101,20 @@ export function AccountEvolutionPanel({
       if (!response.ok) throw new Error("status_unavailable");
       const payload = (await response.json()) as StatusResponse;
       const latest = payload.items?.[0] ?? null;
+      if (version !== requestVersion.current || requestUserId !== renderedUserId.current) return;
       setLatestRequest(latest);
       setStatusAvailable(true);
       void mutate(
-        (key) => Array.isArray(key) && key[0] === "account-promotion-requests",
+        ["account-promotion-requests", userId],
         latest?.status === "pending_owner_review",
         { revalidate: false },
       );
     } catch {
-      setStatusAvailable(false);
+      if (version === requestVersion.current && requestUserId === renderedUserId.current) setStatusAvailable(false);
     } finally {
-      setIsRefreshing(false);
+      if (version === requestVersion.current && requestUserId === renderedUserId.current) setIsRefreshing(false);
     }
-  }, [mutate]);
+  }, [mutate, userId]);
 
   useEffect(() => {
     if (!initialStatusAvailable) {

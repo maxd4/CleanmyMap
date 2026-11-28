@@ -60,10 +60,15 @@ select is(
   (select clerk_user_id from public.organization_memberships where organization_id=(select id from public.organizations where partner_entry_id='test-enterprise-alpha') and member_role='owner'),
   'clerk-owner-a',
   'verified applicant, not reviewing admin, receives initial ownership');
+-- Published action triggers enforce the same service-role boundary as the API.
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"enterprise-fixture"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 insert into public.actions(id,created_by_clerk_id,organizer_id,organizer_type,action_date,action_phase,status,published_at,location_label,moderation_visibility,access_mode)
 values
   ('00000000-0000-4000-8000-000000000141','clerk-owner-a','alpha-ref','company','2026-11-20','post_action_complete','approved',now(),'Alpha site','visible','public'),
   ('00000000-0000-4000-8000-000000000142','clerk-owner-b','beta-ref','company','2026-11-21','post_action_complete','approved',now(),'Beta site','visible','public');
+reset role;
 select lives_ok($test$select public.link_organization_action((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-owner-a','00000000-0000-4000-8000-000000000141',null::uuid,'00000000-0000-4000-8000-000000000151')$test$,'Alpha owner links an action belonging to Alpha');
 select lives_ok($test$select public.link_organization_action((select id from public.organizations where partner_entry_id='test-enterprise-beta'),'clerk-owner-b','00000000-0000-4000-8000-000000000142',null::uuid,'00000000-0000-4000-8000-000000000152')$test$,'Beta owner links an action belonging to Beta');
 select throws_ok($test$select public.link_organization_action((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-owner-a','00000000-0000-4000-8000-000000000142',null::uuid,'00000000-0000-4000-8000-000000000153')$test$,'42501','action unavailable','Alpha cannot attach Beta action');

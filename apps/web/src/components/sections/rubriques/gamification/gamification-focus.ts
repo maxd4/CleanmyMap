@@ -26,7 +26,9 @@ export function navigateToGamificationTarget(targetId: string): void {
 
   const hash = `#${targetId}`;
   if (window.location.hash === hash) {
-    focusGamificationTarget(targetId);
+    // Re-enter the same resolver used for a new hash. The mounted DOM id may
+    // differ from the stable legacy link id (for example completed progressions).
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
     return;
   }
 

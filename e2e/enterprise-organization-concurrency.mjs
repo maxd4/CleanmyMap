@@ -59,26 +59,46 @@ try {
     begin;
     ${serviceClaims("enterprise-concurrency-bootstrap")}
     select public.bootstrap_organization('test-enterprise-concurrency','enterprise-concurrency-ref','enterprise-concurrency-admin','${bootstrapRequestId}');
-    select public.mutate_organization_membership(
-      (select id from public.organizations where partner_entry_id='test-enterprise-concurrency'),
-      '${ownerId}','invite',null,'${successorId}','manager',null,'${inviteRequestId}'
-    );
-    select public.mutate_organization_membership(
-      (select id from public.organizations where partner_entry_id='test-enterprise-concurrency'),
-      '${successorId}','accept',(select id from public.organization_memberships where clerk_user_id='${successorId}'),null,null,null,'${acceptRequestId}'
-    );
     commit;
   `);
 
   const organization = await run("select id from public.organizations where partner_entry_id='test-enterprise-concurrency';");
   const organizationId = organization.stdout.trim();
   assert.match(organizationId, /^[0-9a-f-]{36}$/i, "fixture must create a real organization");
+  await run(`
+    begin;
+    ${serviceClaims(ownerId)}
+    select public.mutate_organization_membership(
+      '${organizationId}'::uuid,'${ownerId}','invite',null,'${successorId}','manager',null,'${inviteRequestId}'
+    );
+    commit;
+  `);
+
+  // service_role may execute the audited RPCs, but must not read membership
+  // rows directly. Resolve fixture IDs from the administrative session before
+  // entering the restricted mutation session.
+  const invitedMembership = await run(`select id from public.organization_memberships where organization_id=(select id from public.organizations where partner_entry_id='test-enterprise-concurrency') and clerk_user_id='${successorId}';`);
+  const successorMembershipId = invitedMembership.stdout.trim();
+  assert.match(successorMembershipId, /^[0-9a-f-]{36}$/i, "invitation fixture must persist a membership");
+  await run(`
+    begin;
+    ${serviceClaims(successorId)}
+    select public.mutate_organization_membership(
+      '${organizationId}'::uuid,
+      '${successorId}','accept','${successorMembershipId}'::uuid,null,null,null,'${acceptRequestId}'
+    );
+    commit;
+  `);
+
+  const transferTarget = await run(`select id from public.organization_memberships where organization_id='${organizationId}'::uuid and clerk_user_id='${successorId}';`);
+  const transferMembershipId = transferTarget.stdout.trim();
+  assert.match(transferMembershipId, /^[0-9a-f-]{36}$/i, "successor must have a persisted membership before ownership transfer");
 
   const transfer = run(`
     begin;
     ${serviceClaims(ownerId)}
     select set_config('application_name','${writerAName}',true);
-    select public.mutate_organization_membership('${organizationId}'::uuid,'${ownerId}','transfer_owner',(select id from public.organization_memberships where organization_id='${organizationId}'::uuid and clerk_user_id='${successorId}'),null,null,null,'${transferRequestId}');
+    select public.mutate_organization_membership('${organizationId}'::uuid,'${ownerId}','transfer_owner','${transferMembershipId}'::uuid,null,null,null,'${transferRequestId}');
     select pg_sleep(1.5);
     commit;
   `);

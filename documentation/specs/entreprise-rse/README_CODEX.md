@@ -1,6 +1,6 @@
 # Entreprise et RSE : réception des candidats
 
-Statut : RÉCEPTION PARTIELLE — au 28 novembre 2026. Réconciliation vérifiée avec `main`/`origin/main` à `d0913c1f9e8cae8987d2fb45dab1621e1f911679` ; le runtime entreprise a été publié par `42e202c9`. Les commits Actions/SQL `83c3ced5`, `16669edc`, `86c1752c` et `d0913c1f` sont des changements concurrents en amont et ont été conservés. Les migrations `20261127000001`, `20261128000002` et `20261128000003` sont enregistrées sur Supabase lié. Le préflight read-only est `ALIGNED` : 539 locales, 539 appliquées, aucune en attente, `REMOTE_WRITES: NONE`. Cette exécution n'a appliqué aucune migration.
+Statut : RÉCEPTION PARTIELLE — au 28 novembre 2026. `main` et `origin/main` sont réconciliés à `47be4a9307`; le runtime entreprise a été publié par `42e202c9`. Les commits Actions/SQL `83c3ced5`, `16669edc`, `86c1752c` et `d0913c1f` et les commits de sauvegarde `49c60aef`, `fa7753a8`, `47be4a93` sont conservés. Les migrations `20261127000001`, `20261128000002` et `20261128000003` sont enregistrées sur Supabase lié. Le préflight read-only observé est `ALIGNED` : 539 locales, 539 appliquées, aucune en attente, `REMOTE_WRITES: NONE`. Cette exécution n'a appliqué aucune migration.
 
 ## Objectif et périmètre
 
@@ -33,7 +33,7 @@ Cible : espace web de préparation, rattachement, suivi multisite, campagnes, bi
 - Les tests de route `/api/organizations`, `/api/admin/organizations/bootstrap` et `/api/reports/organization` couvrent les erreurs privées, l'identité de session, les limites et les projections. Les contrats Actions récemment publiés ne changent pas la projection du bilan entreprise : `report.ts` continue à normaliser les actions via `toActionContract`, et les tests de projection sont verts. Les scénarios SQL Actions associés ne sont toutefois pas tous verts.
 - Préflight lié relancé en lecture seule le 28 novembre : `ALIGNED`, 539/539, 0 en attente, `REMOTE_WRITES: NONE`. Les RPC `bootstrap_organization`, `leave_organization`, `list_organization_bootstrap_queue`, `mutate_organization_membership`, `organization_report_action_ids` et `read_organization_team_members` ont été observées dans le schéma lié avec `SECURITY DEFINER`, `search_path=public, pg_temp`, exécution `service_role` et refus d'exécution directe `authenticated`.
 
-### Matrice de couverture ciblée — WORKTREE_LIVE `d0913c1f`
+### Matrice de couverture ciblée — WORKTREE_LIVE `47be4a93` (sources runtime inchangées depuis `d0913c1f`)
 
 Seuils appliqués sans changement : UI 80/80/80/80; API/métier/persistance 85 statements, 80 branches, 85 fonctions, 85 lignes; modules sécurité 90 statements, 85 branches, 90 fonctions, 90 lignes. Ordre des valeurs : statements/branches/fonctions/lignes. La couverture globale Web n'est pas mesurée par cette campagne ciblée.
 
@@ -50,12 +50,12 @@ Seuils appliqués sans changement : UI 80/80/80/80; API/métier/persistance 85 s
 | `src/lib/organizations/report-summary.ts` | Métier, agrégats et données manquantes | 100 / 100 / 100 / 100 | Métier 85/80/85/85 | PASS |
 | `src/lib/organizations/report.ts` | Persistance/API, lecture et projection privée | 96,87 / 85,71 / 100 / 100 | Métier 85/80/85/85 | PASS |
 | `src/lib/organizations/service.ts` | Métier/persistance, adhésions et mutations | 98,50 / 93,02 / 100 / 100 | Métier 85/80/85/85 | PASS |
-| `src/lib/actions/unified-source/contracts.ts` | Contrat Actions canonique partagé par le bilan | 32,14 / 56 / 45,45 / 32,14 | Métier 85/80/85/85 | FAIL — les tests couvrent plusieurs projections `toActionContract`; les branches spot/import du module restent peu exercées |
+| `src/lib/actions/unified-source/contracts.ts` | Contrat Actions canonique partagé par le bilan | 100 / 96 / 100 / 100 | Métier 85/80/85/85 | PASS — projection action, import, statuts, spot et lieu propre |
 | `src/lib/reports/page-data-export.ts` | Export, format CSV partagé | 100 / 100 / 100 / 100 | Métier 85/80/85/85 | PASS |
 
-La campagne ciblée a exécuté 95 tests dans 13 fichiers. Son agrégat est 92,69/83,42/93,33/94,05; il ne compense pas l'échec du module Actions canonique et ne représente pas le workspace complet. Les tests `page.test.tsx` admin organisations et `sponsor-portal/page.test.ts` ont aussi passé (12/12), mais les pages restent `NOT_MEASURED` conformément à la configuration canonique : `src/app/admin/organizations/page.tsx`, `src/app/(app)/sponsor-portal/page.tsx` et les autres entrées `page.tsx`. La page dashboard n'a pas été mesurée dans cette campagne.
+La campagne ciblée réexécutée a passé 99 tests dans 14 fichiers et mesure les 13 modules du tableau à 96,07 % statements, 89,07 % branches, 96,96 % fonctions et 98,96 % lignes. Chaque module instrumenté dépasse désormais le seuil de sa famille. Les pages `page.test.tsx` admin organisations et `sponsor-portal/page.test.ts` ont aussi passé (12/12), mais les pages restent `NOT_MEASURED` conformément à la configuration canonique : `src/app/admin/organizations/page.tsx`, `src/app/(app)/sponsor-portal/page.tsx` et les autres entrées `page.tsx`. La page dashboard n'a pas été mesurée dans cette campagne. Ce ciblage n'est pas une couverture globale Web.
 
-Les preuves hors V8 restent distinctes : `enterprise-organization-foundation.pgtap.sql` déclare 66 assertions mais n'a pas encore obtenu de preuve 66/66; la preuve multi-session entreprise a échoué en `42501`; le test Actions de composition partielle a passé 7/7 sur `86c1752c`. Le run FULL sur `86c1752c` a été refusé par le garde du workflow, car `main` avait avancé à `d0913c1f` avant `Verify manual run targets current main`. Un nouveau run FULL sur `d0913c1f` et une campagne E2E Clerk/réactive sur ce HEAD sont en cours.
+Les preuves hors V8 restent distinctes : le run FULL SQL `46154036758` sur `d0913c1f` a échoué après 41 des 66 assertions, au déclenchement service-only de la fixture d’action; le scénario concurrent y a échoué en `42501` car il lisait directement les adhésions depuis `service_role`. Les deux fixtures ont été corrigées localement, sans toucher aux RPC métier; la preuve CI sur le nouveau candidat reste `PENDING`. Le test Actions de composition partielle a passé 7/7 sur `86c1752c` puis 9/9 sur `d0913c1f`. Le run E2E Clerk/réactif `46153880092` sur `d0913c1f` reste en cours; aucune preuve à deux comptes n'est revendiquée avant son résultat.
 
 ### Blocages étrangers à coordonner
 
@@ -104,11 +104,8 @@ Le PDF privé et son historique restent délibérément non activés : les contr
 5. Exécuter les scénarios navigateur (anonyme, entreprise sans adhésion, membre, owner, manager local, élus) : vérification du mandat, invitation/réponse, rattachement, action privée, partage QR, campagne, bilan et révocation. Vérifier AuthZ sur les API même si l'interface masque un bouton. Vérifier le profil, les autres parcours et les consommateurs mobiles. Contrôler l'accès par identifiant arbitraire, anciennes URLs et caches ; tester les mutations concurrentes. Toute sortie de données déjà téléchargée ne peut être révoquée rétroactivement.
 6. Après preuve seulement, mettre à jour la fiche route sponsor (hunk fourni, à compléter avec l'onglet organisation), parcours utilisateurs, matrice des rubriques, règles AuthZ, gouvernance des données, documentation du domaine Actions et du domaine Reports. Ne pas présenter les capacités privées comme CURRENT avant leur intégration réelle. Les chantiers non achevés restent PLAN. Actualiser le registre et supprimer les artefacts consommés selon la gouvernance existante.
 
-## Preuves accessibles à la préparation
+## Provenance de la préparation
 
-- Lecture main et fichiers cibles/consommateurs, gouvernance, contrats d'autorisation, source des actions et reports : effectuée.
-- Validation statique des hunks : 17 cibles, comptes de lignes et contexte exact des 5 fichiers existants conformes au SHA de lecture (contrôle textuel, pas git apply exécuté).
-- Tests du roster/workspace/admin : 50/50 exécutés; tests Reports ciblés : 7/7 exécutés. La suite pgTAP candidate et les tests CI éphémères restent non exécutés.
-- La publication immédiate de cette réception porte uniquement sur les manifestes documentaires et les références de routage. Le code runtime et la migration `20261128000002` restent des changements locaux CANDIDATE et ne sont ni activés ni inclus dans ce commit documentaire. Aucun SQL lié n'a été appliqué.
+La préparation initiale date du 27 novembre et décrivait un candidat local avant sa publication. Elle n'est plus une preuve de l'état actuel. Les validations, statuts de migration, résultats CI et limites ci-dessus ont été actualisés depuis le runtime publié; les comptes de tests et résultats de préparation antérieurs ne sont pas réutilisés comme preuve de réception.
 
 STOP CONDITION : toujours ouverte. Réception complète du Lot 01 exige pgTAP et concurrence réussis sur le candidat publié, parcours navigateur éphémère à deux comptes Clerk exécuté aux cinq largeurs, seuils de couverture atteints pour les fichiers mesurables, documentation CURRENT cohérente, absence de régression critique et publication sans contournement des hooks. Les PDF, challenges sans besoin distinct, QR indépendant, certification ESG et extensions commerciales restent PLAN.

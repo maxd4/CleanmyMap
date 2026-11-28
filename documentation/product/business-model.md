@@ -53,7 +53,7 @@ Selon les sources canoniques du dépôt consultées pour ce cadrage :
 | `/reports`, PDF/CSV, historique et snapshots | Livrer un bilan exploitable à un partenaire | Résolution serveur des scopes, provenance, qualité des observations et versionnement ; ne pas promettre une certification |
 | `/actions/map`, signalements, suivi de zones | Aider à préparer et suivre un programme territorial | Historique et projection ne sont pas une mesure actuelle exhaustive de pollution |
 | `/pilotage` | Coordination d'actions effectivement organisées | Périmètre limité aux relations métier autorisées, pas à toutes les données d'une structure |
-| `/sponsor-portal` | Présenter des synthèses à des partenaires | **Pas encore un espace client privé par organisation/territoire** ; ne pas le vendre comme tel |
+| `/sponsor-portal` | Présenter des synthèses et un espace privé d'organisation aux membres autorisés | Le workspace organisationnel et le bilan agrégé/CSV sont des capacités produit; ils ne définissent pas une offre payante, une analyse territoriale exhaustive ni une certification |
 | Réseau, annuaire et outils de partenariat | Relation avec les structures et prospection | Aucun classement, niveau de confiance ou modération ne doit être acheté |
 | Apprentissage, quiz, pédagogie | Préparer des ateliers accompagnés | L'animation humaine et son contenu constituent la prestation, pas un accès payant aux guides généraux |
 | Domaine événementiel SPOGOMI (`CURRENT PARTIEL`) | Aide à l'organisation d'événements, selon les droits réels | Ne pas revendiquer de licence ou partenariat officiel, d'homologation ou de règlement non vérifié |

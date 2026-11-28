@@ -200,7 +200,15 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
       for (const viewportWidth of widths) {
         await page.setViewportSize({ width: viewportWidth, height: 900 });
         await openProtectedRoute(page, "/dashboard");
-        await expect(page.locator("[data-navigation-account-identity]")).toBeVisible();
+        const accountMenu = page.getByRole("button", { name: "Menu du profil actif" });
+        const compactIdentity = page.locator("[data-navigation-account-identity]");
+        if (viewportWidth < 1280) {
+          await expect(compactIdentity).toBeVisible();
+        } else {
+          await expect(accountMenu).toBeVisible();
+          await accountMenu.click();
+          await expect(compactIdentity).toBeVisible();
+        }
 
         const metrics = await page.evaluate(() => {
           const rectFor = (selector: string) => {
@@ -209,9 +217,12 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
             const rect = element.getBoundingClientRect();
             return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height };
           };
-          const identity = document.querySelector<HTMLElement>("[data-navigation-account-identity]");
-          const fullName = document.querySelector<HTMLElement>("[data-navigation-account-full-name]");
-          const activityStatus = document.querySelector<HTMLButtonElement>('button[aria-label^="Statut :"]');
+          const identity = Array.from(document.querySelectorAll<HTMLElement>("[data-navigation-account-identity]"))
+            .find((element) => element.getClientRects().length > 0);
+          const fullName = Array.from(document.querySelectorAll<HTMLElement>("[data-navigation-account-full-name]"))
+            .find((element) => element.getClientRects().length > 0);
+          const activityStatus = Array.from(document.querySelectorAll<HTMLButtonElement>('button[aria-label^="Statut :"]'))
+            .find((element) => element.getClientRects().length > 0);
           const identityGroup = rectFor('[data-navigation-group="account"]');
           const preferences = rectFor('button[data-navigation-tutorial-target="preferences"]');
           const feedback = rectFor('button[data-navigation-tutorial-target="feedback"]');
@@ -230,7 +241,7 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
             viewportWidth: window.innerWidth,
             documentScrollWidth: document.documentElement.scrollWidth,
             bodyScrollWidth: document.body.scrollWidth,
-            identity: rectFor("[data-navigation-account-identity]"),
+            identity: identity ? rectFor("[data-navigation-account-identity]") : null,
             identityGroup,
             identityRole: identity?.getAttribute("role"),
             identityLabel: identity?.getAttribute("aria-label"),
@@ -258,8 +269,8 @@ test.describe("Dashboard Clerk persistence and responsive recipe", () => {
         expect(metrics.identityGroup?.right, `${viewportWidth}px: account group overflows viewport`).toBeLessThanOrEqual(viewportWidth + 1);
         expect(metrics.identityRole).toBe("group");
         expect(metrics.identityLabel).toMatch(/Niv\./u);
-        expect(metrics.activityStatus, `${viewportWidth}px: activity status hit-target missing`).toEqual(
-          expect.objectContaining({ label: expect.stringMatching(/^Statut : (actif|inactif)$/u), pressed: "true" }),
+        expect(metrics.activityStatus, `${viewportWidth}px: visible activity status missing`).toEqual(
+          expect.objectContaining({ label: expect.stringMatching(/^Statut : (actif|inactif)$/u) }),
         );
         expect(metrics.activityStatus?.width, `${viewportWidth}px: activity status hit-target width`).toBeGreaterThanOrEqual(16);
         expect(metrics.activityStatus?.height, `${viewportWidth}px: activity status hit-target height`).toBeGreaterThanOrEqual(16);

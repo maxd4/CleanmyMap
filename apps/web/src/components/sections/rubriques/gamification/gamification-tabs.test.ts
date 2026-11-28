@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { GamificationSummary } from "@/lib/gamification/progression/gamification-summary";
-import { GamificationTabs, tabForGamificationTarget } from "./gamification-tabs";
+import { GamificationTabs, mountedGamificationTarget, tabForGamificationTarget } from "./gamification-tabs";
 
 const summary = {
-  progressions: [{ id: "participation", state: "in_progress" }, { id: "exploration", state: "not_started" }],
+  progressions: [{ id: "participation", state: "in_progress" }, { id: "exploration", state: "not_started" }, { id: "mastery", state: "completed" }],
   milestones: [{ id: "parcours_documente", state: "completed" }, { id: "boucle_bouclee", state: "in_progress" }, { id: "mobilisateur", state: "not_started" }],
 } as GamificationSummary;
 
@@ -13,6 +13,13 @@ describe("Gamification navigation", () => {
   it("routes receipt links to their actual applicable catalog item", () => {
     expect(tabForGamificationTarget("progression-participation", summary)).toBe("active");
     expect(tabForGamificationTarget("progression-exploration", summary)).toBe("discover");
+    expect(tabForGamificationTarget("progression-mastery", summary)).toBe("acquired");
+    expect(mountedGamificationTarget("progression-mastery", summary)).toBe("acquired-progression-mastery");
+    expect(mountedGamificationTarget("progression-participation", summary)).toBe("progression-participation");
+    expect(mountedGamificationTarget("progression-exploration", summary)).toBe("progression-exploration");
+    expect(tabForGamificationTarget("progression-mastery", undefined)).toBeNull();
+    expect(tabForGamificationTarget("acquired-progression-mastery", summary)).toBe("acquired");
+    expect(tabForGamificationTarget("progression-unknown", summary)).toBeNull();
     expect(tabForGamificationTarget("milestone-parcours_documente", summary)).toBe("acquired");
     expect(tabForGamificationTarget("milestone-boucle_bouclee", summary)).toBe("active");
     expect(tabForGamificationTarget("milestone-mobilisateur", summary)).toBe("discover");

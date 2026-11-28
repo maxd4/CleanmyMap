@@ -26,6 +26,7 @@ const request = (
 function renderPanel(latestRequest: AccountEvolutionRequest | null, currentRole: "benevole" | "elu" | "admin" | "max" = "benevole") {
   return renderToStaticMarkup(
     <AccountEvolutionPanel
+      userId="user-a"
       currentRole={currentRole}
       activeRole={currentRole}
       initialRequest={latestRequest}
