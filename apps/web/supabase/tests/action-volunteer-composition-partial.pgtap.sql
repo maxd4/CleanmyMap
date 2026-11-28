@@ -73,9 +73,9 @@ select is((
         'status', 'pending',
         'action_phase', 'pre_action'
       ),
-      '[{"organizer_clerk_id":"partial-composition-rpc-test","organizer_label":"Test"}]'::jsonb,
       '[]'::jsonb,
-      'partial-composition-rpc-test', null, null, true
+      '[]'::jsonb,
+      'partial-composition-rpc-test', null, null, false
     )
 ), 1, 'legacy creation RPC persists a coherent partial composition');
 
@@ -97,9 +97,9 @@ begin
         'status', 'pending',
         'action_phase', 'pre_action'
       ),
-      '[{"organizer_clerk_id":"partial-composition-rpc-invalid","organizer_label":"Test"}]'::jsonb,
       '[]'::jsonb,
-      'partial-composition-rpc-invalid', null, null, true
+      '[]'::jsonb,
+      'partial-composition-rpc-invalid', null, null, false
     );
   exception when sqlstate '22023' then
     return true;
