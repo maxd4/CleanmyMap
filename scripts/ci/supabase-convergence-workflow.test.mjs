@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
@@ -60,7 +61,7 @@ function passingEvidence(overrides = {}) {
       path: "e2e/action-attendance-registry-concurrency.mjs",
       status: "INTEGRATION_PROOF",
       outcome: "PASS",
-      contentSha256: "0b76640cec8f646fe13692775eae136dd3529ff11ad854753b0ce030a56ef161",
+      contentSha256: "a137e3d2c7304a642d879301dcda869620f9e68c6cdc9d5b7d0d61a3d0a2813f",
     }],
     ...overrides,
   };
@@ -183,9 +184,15 @@ test("ephemeral SQL evidence is validated by exact input digests rather than cur
   const expectedDigests = {
     "apps/web/supabase/migrations/20261122000014_private_action_attendance_registry.sql": "2f4b4ea37497fa05d67b3566a78b57ef927644c70b41a2983b2487958d885234",
     "apps/web/supabase/tests/action-attendance-registry.pgtap.sql": "cde4d55d936c9bf7ae915ad8c9d2aed4670d7d55ce2b3d375e0edc6f15ffd6c8",
-    "e2e/action-attendance-registry-concurrency.mjs": "0b76640cec8f646fe13692775eae136dd3529ff11ad854753b0ce030a56ef161",
+    "e2e/action-attendance-registry-concurrency.mjs": "a137e3d2c7304a642d879301dcda869620f9e68c6cdc9d5b7d0d61a3d0a2813f",
   };
   const verifyOk = () => ({ ok: true });
+  const staleConcurrencyDigest = "0b76640cec8f646fe13692775eae136dd3529ff11ad854753b0ce030a56ef161";
+  assert.equal(validateEphemeralEvidence({
+    evidence: olderShaEvidence,
+    expectedDigests: { ...expectedDigests, "e2e/action-attendance-registry-concurrency.mjs": staleConcurrencyDigest },
+    verifyGitHubRun: verifyOk,
+  }).mode, "BLOCKED");
   assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence, expectedDigests, verifyGitHubRun: verifyOk }).valid, true);
   assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence, verifyGitHubRun: verifyOk }).mode, "BLOCKED");
   assert.equal(validateEphemeralEvidence({ evidence: olderShaEvidence, expectedDigests: {}, verifyGitHubRun: verifyOk }).mode, "BLOCKED");
@@ -240,6 +247,19 @@ test("ephemeral SQL evidence is validated by exact input digests rather than cur
       assert.equal(validateEphemeralEvidence({ evidence, expectedDigests, verifyGitHubRun: verifyOk }).mode, "BLOCKED", `${stage}=${status}`);
     }
   }
+});
+
+test("approved concurrency proof digests match the normalized tracked file and all fixtures", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(repositoryRoot, "scripts", "ci", "supabase-migration-approvals.json"), "utf8"));
+  const proofPath = "e2e/action-attendance-registry-concurrency.mjs";
+  const proofBytes = fs.readFileSync(path.join(repositoryRoot, proofPath));
+  const normalized = proofBytes.toString("utf8").replace(/\r\n/g, "\n");
+  const actualDigest = createHash("sha256").update(normalized, "utf8").digest("hex");
+  const approval = manifest.approvals.find(({ id }) => id === "20261122000014");
+  const approvedProof = approval?.proofs.find(({ path: candidate }) => candidate === proofPath);
+  assert.equal(approvedProof?.sha256, actualDigest);
+  assert.equal(actualDigest, "a137e3d2c7304a642d879301dcda869620f9e68c6cdc9d5b7d0d61a3d0a2813f");
+  assert.equal(passingEvidence().records.find(({ path: candidate }) => candidate === proofPath)?.contentSha256, actualDigest);
 });
 
 test("all third-party actions in the workflow are pinned to full commit SHAs", () => {

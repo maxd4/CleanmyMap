@@ -1,6 +1,6 @@
 # Entreprise et RSE : réception des candidats
 
-Statut : RÉCEPTION PARTIELLE — au 28 novembre 2026. Préparé le 27 novembre 2026 par ChatGPT, suivant CHATGPT.md, AGENTS.md et le protocole hybride. Référence initiale vérifiée : `main`/`origin/main` à `78f7ca05748ada1a7d9cba5453858bd32fdbce2c`; les commits `b4c5907` et `0068fed` sont déjà intégrés et ne doivent pas être rejoués. Les patches runtime candidats correspondent déjà aux sources publiées. La migration `20261127000001` est déjà enregistrée sur le projet Supabase lié; elle n'est pas rejouée. La réception courante ajoute une migration forward-only `20261128000002` et reste incomplète tant que les preuves PostgreSQL, navigateur et couverture ci-dessous ne passent pas.
+Statut : RÉCEPTION PARTIELLE — au 28 novembre 2026. Réconciliation vérifiée avec `main`/`origin/main` à `d0913c1f9e8cae8987d2fb45dab1621e1f911679` ; le runtime entreprise a été publié par `42e202c9`. Les commits Actions/SQL `83c3ced5`, `16669edc`, `86c1752c` et `d0913c1f` sont des changements concurrents en amont et ont été conservés. Les migrations `20261127000001`, `20261128000002` et `20261128000003` sont enregistrées sur Supabase lié. Le préflight read-only est `ALIGNED` : 539 locales, 539 appliquées, aucune en attente, `REMOTE_WRITES: NONE`. Cette exécution n'a appliqué aucune migration.
 
 ## Objectif et périmètre
 
@@ -13,8 +13,8 @@ Cible : espace web de préparation, rattachement, suivi multisite, campagnes, bi
 | Artefact | Cible | Lots | État |
 |---|---|---|---|
 | [01-parcours-entreprise.patch](01-parcours-entreprise.patch) | page /sponsor-portal, navigation, CTA, composant de liens, test et fiche route | 01, 07 | ALREADY_INTEGRATED — verify consumers, do not reapply |
-| [organization-foundation.sql](candidates/sql/organization-foundation.sql) | source préparatoire; correctif courant dans `apps/web/supabase/migrations/20261128000002_enterprise_organization_team_projection.sql` | 02, 03, 05, 06 | MIGRATION FORWARD-ONLY CANDIDATE — SQL éphémère non exécuté |
-| [organization-foundation.pgtap.sql](candidates/sql/organization-foundation.pgtap.sql) | source préparatoire; fixture Alpha/Beta adaptée dans `enterprise-organization-foundation.pgtap.sql` | 02, 10 | 66 assertions déclarées, plan vérifié, exécution pgTAP en attente |
+| [organization-foundation.sql](candidates/sql/organization-foundation.sql) | source préparatoire; migration canonique `apps/web/supabase/migrations/20261128000002_enterprise_organization_team_projection.sql` | 02, 03, 05, 06 | PUBLIÉE ET PRÉSENTE DANS L'HISTORIQUE LIÉ — aucune écriture distante dans cette exécution |
+| [organization-foundation.pgtap.sql](candidates/sql/organization-foundation.pgtap.sql) | source préparatoire; fixture Alpha/Beta adaptée dans `enterprise-organization-foundation.pgtap.sql` | 02, 10 | 66 assertions déclarées; preuve complète non réussie |
 | [02-03-05-06-organization-api.patch](02-03-05-06-organization-api.patch) | lib/organizations/contracts, service, test, API /organizations et bootstrap admin | 02, 03, 05, 06 | ALREADY_INTEGRATED — verify consumers, do not reapply |
 | [04-05-report-scope.patch](04-05-report-scope.patch) | lib/organizations/report, report-summary, test, API /reports/organization | 04, 05 | ALREADY_INTEGRATED — verify consumers, do not reapply |
 | [02-03-05-06-workspace-ui.patch](02-03-05-06-workspace-ui.patch) | components/pilotage/enterprise-organization-workspace.tsx | 02, 03, 05, 06 | ALREADY_INTEGRATED — residual UI work remains |
@@ -22,18 +22,47 @@ Cible : espace web de préparation, rattachement, suivi multisite, campagnes, bi
 
 ### Réception du lot 01 — état vérifié
 
-- `b4c5907` et `0068fed` sont déjà dans l'ascendance du checkout courant ; aucun patch n'a été recopié.
+- Le runtime entreprise est dans l'ascendance publiée de `main` depuis `42e202c9`; aucune migration ou correction déjà intégrée n'a été rejouée. `20261127000001` n'a pas été réappliquée.
 - Le scénario pgTAP crée Alpha et Beta réellement, avec identifiants persistés distincts et non nuls; `plan(66)` correspond aux 66 appels d'assertion reconnus par le vérificateur du dépôt. Ce nombre est une preuve de source, pas une exécution PostgreSQL.
 - Le candidat ajoute une projection d'équipe minimisée, invitation par adresse email vérifiée côté serveur, départ d'un membre, navigation indépendante du rôle actif et une file/UI admin pour la vérification explicite du mandat. Une correction au service renvoie désormais aux membres un roster minimal sans données d'actions, sites ou bilans.
-- Une preuve de concurrence à deux sessions est ajoutée à `e2e/enterprise-organization-concurrency.mjs` et enregistrée au runner SQL; le runner n'a pas encore été exécuté sur son environnement PostgreSQL éphémère.
-- Le scénario Playwright deux comptes est enregistré dans le projet authentifié et prépare des fixtures uniquement sur l'URL Supabase locale du runner éphémère. `playwright --list --project="authenticated campaign"` recense 10 tests dans 5 fichiers, dont celui-ci; cette commande prouve la découverte, pas l'exécution. Aucun navigateur n'a été lancé.
-- Tests ciblés de l'espace organisation, équipe et administration : 50/50 PASS. Couverture ciblée des cinq modules instrumentés : 94,51/85,27/95,86/98,85 % (statements/branches/fonctions/lignes); ce scope ne représente pas la couverture globale ni tous les modules sensibles.
-- La couverture Web complète a été lancée puis interrompue après plusieurs échecs, avant le rapport final : seuils globaux `NOT_MEASURED`, diagnostics à reprendre. `npm run typecheck -w apps/web` échoue actuellement sur `apps/web/src/lib/actions/action-update-notes.ts:88` (valeur `null` non assignable); ce chemin Actions concurrent n'a pas été modifié par le candidat entreprise.
-- Contrôle documentaire PASS, gouvernance AGENTS PASS et miroir des skills PASS. Le contrôle `git diff --check` passe.
-- Couverture re-mesurée antérieurement sur huit modules effectivement inclus : total 58,50/54,40/50,71/75,48 %. Les seuils du prompt ne sont pas atteints. Les pages `page.tsx` sont exclues par la configuration de couverture existante et restent `NOT_MEASURED`; aucune exclusion ni aucun ratchet n'a été modifié.
-- Préflight Supabase lié : dernier état observé `BLOCKED`; la migration candidate `20261128000002` est la seule en attente. Le rapport classe la preuve sensible comme invalide car son empreinte/schema version ne correspond pas encore au candidat courant; `REMOTE_WRITES: NONE`. Aucun déploiement ni écriture en base liée n'a été exécuté.
+- La preuve multi-session à deux sessions a été exécutée sur l'environnement éphémère au SHA `42e202c9`, mais échoue avec SQLSTATE `42501` dans `e2e/enterprise-organization-concurrency.mjs` (1 test, 1,45 s). Le cleanup est le point fautif à corriger avant de prétendre au transfert suivi du départ.
+- Le scénario Playwright à deux comptes réels est dans le projet authentifié. Son exécution éphémère sur `42e202c9` a échoué au setup Clerk (`e2e/global.setup.ts:125`, timeout après 34 s) : 9 tests n'ont pas démarré. Il ne constitue pas une preuve de partage ou d'isolation. Le contrôle responsive intégré 390/768/1440 px reste `NOT_RUN`.
+- Sur les 11 modules UI/API/métier mesurés par V8, la couverture ciblée est de 95,84 % statements, 87,29 % branches, 96,73 % fonctions et 98,87 % lignes. Le run ciblé exécute 86 tests dans 11 fichiers et n'est pas comparable à la couverture globale.
+- Contrôle Web complet exécuté sur le candidat `42e202c9` : 1 985 réussites, 1 skip et 7 échecs dans 5 fichiers; aucun résumé de couverture global n'a été produit. Les échecs recouvrent les attentes d'anciens tests Actions et de gamification face au contrat récent de composition partielle. Une relance ciblée sur le HEAD `d0913c1f` reproduit 6 échecs sur 49 tests dans 4 fichiers (`submission-validation`, `action-declaration-form-content`, `payload`, `school-action-recognition`); leur attente et le runtime divergent sur les compositions partielles et colonnes typées. Ces chemins n'appartiennent pas au diff entreprise; ils restent à coordonner avec l'owner Actions/GAME. Le typecheck Web complet passe sur `d0913c1f`.
+- Les modules entreprise UI/API/métier instrumentés dépassent leur seuil de famille. Le module Actions canonique partagé sous-testé est signalé séparément dans la matrice ci-dessous. Les pages `page.tsx` restent `NOT_MEASURED` selon l'exclusion canonique; aucun seuil, ratchet ou exclusion n'a été changé.
+- Les tests de route `/api/organizations`, `/api/admin/organizations/bootstrap` et `/api/reports/organization` couvrent les erreurs privées, l'identité de session, les limites et les projections. Les contrats Actions récemment publiés ne changent pas la projection du bilan entreprise : `report.ts` continue à normaliser les actions via `toActionContract`, et les tests de projection sont verts. Les scénarios SQL Actions associés ne sont toutefois pas tous verts.
+- Préflight lié relancé en lecture seule le 28 novembre : `ALIGNED`, 539/539, 0 en attente, `REMOTE_WRITES: NONE`. Les RPC `bootstrap_organization`, `leave_organization`, `list_organization_bootstrap_queue`, `mutate_organization_membership`, `organization_report_action_ids` et `read_organization_team_members` ont été observées dans le schéma lié avec `SECURITY DEFINER`, `search_path=public, pg_temp`, exécution `service_role` et refus d'exécution directe `authenticated`.
+
+### Matrice de couverture ciblée — WORKTREE_LIVE `d0913c1f`
+
+Seuils appliqués sans changement : UI 80/80/80/80; API/métier/persistance 85 statements, 80 branches, 85 fonctions, 85 lignes; modules sécurité 90 statements, 85 branches, 90 fonctions, 90 lignes. Ordre des valeurs : statements/branches/fonctions/lignes. La couverture globale Web n'est pas mesurée par cette campagne ciblée.
+
+| Fichier | Famille / risque | Couverture % | Seuil | Résultat |
+|---|---|---:|---|---|
+| `src/app/admin/organizations/organization-bootstrap-review-panel.tsx` | UI, vérification du mandat | 90,16 / 83,92 / 88,23 / 95,91 | UI 80 partout | PASS |
+| `src/components/pilotage/enterprise-action-links.tsx` | UI, navigation | 100 / 100 / 100 / 100 | UI 80 partout | PASS |
+| `src/components/pilotage/enterprise-organization-workspace.tsx` | UI, cloisonnement et réponses asynchrones | 95,62 / 84,50 / 95,77 / 100 | UI 80 partout | PASS |
+| `src/components/pilotage/organization-team-panel.tsx` | UI, adhésions et invitations | 100 / 87,50 / 100 / 100 | UI 80 partout | PASS |
+| `src/app/api/admin/organizations/bootstrap/route.ts` | Sécurité/API, bootstrap et mandat | 95 / 88,88 / 100 / 100 | Sécurité 90/85/90/90 | PASS |
+| `src/app/api/organizations/route.ts` | Sécurité/API, identité session et scope | 97,05 / 95,23 / 100 / 100 | Sécurité 90/85/90/90 | PASS |
+| `src/app/api/reports/organization/route.ts` | Sécurité/API, scope privé et CSV | 100 / 90,47 / 100 / 100 | Sécurité 90/85/90/90 | PASS |
+| `src/lib/organizations/contracts.ts` | Métier, commandes et validation | 90,90 / 82,35 / 100 / 90,90 | Métier 85/80/85/85 | PASS |
+| `src/lib/organizations/report-summary.ts` | Métier, agrégats et données manquantes | 100 / 100 / 100 / 100 | Métier 85/80/85/85 | PASS |
+| `src/lib/organizations/report.ts` | Persistance/API, lecture et projection privée | 96,87 / 85,71 / 100 / 100 | Métier 85/80/85/85 | PASS |
+| `src/lib/organizations/service.ts` | Métier/persistance, adhésions et mutations | 98,50 / 93,02 / 100 / 100 | Métier 85/80/85/85 | PASS |
+| `src/lib/actions/unified-source/contracts.ts` | Contrat Actions canonique partagé par le bilan | 32,14 / 56 / 45,45 / 32,14 | Métier 85/80/85/85 | FAIL — les tests couvrent plusieurs projections `toActionContract`; les branches spot/import du module restent peu exercées |
+| `src/lib/reports/page-data-export.ts` | Export, format CSV partagé | 100 / 100 / 100 / 100 | Métier 85/80/85/85 | PASS |
+
+La campagne ciblée a exécuté 95 tests dans 13 fichiers. Son agrégat est 92,69/83,42/93,33/94,05; il ne compense pas l'échec du module Actions canonique et ne représente pas le workspace complet. Les tests `page.test.tsx` admin organisations et `sponsor-portal/page.test.ts` ont aussi passé (12/12), mais les pages restent `NOT_MEASURED` conformément à la configuration canonique : `src/app/admin/organizations/page.tsx`, `src/app/(app)/sponsor-portal/page.tsx` et les autres entrées `page.tsx`. La page dashboard n'a pas été mesurée dans cette campagne.
+
+Les preuves hors V8 restent distinctes : `enterprise-organization-foundation.pgtap.sql` déclare 66 assertions mais n'a pas encore obtenu de preuve 66/66; la preuve multi-session entreprise a échoué en `42501`; le test Actions de composition partielle a passé 7/7 sur `86c1752c`. Le run FULL sur `86c1752c` a été refusé par le garde du workflow, car `main` avait avancé à `d0913c1f` avant `Verify manual run targets current main`. Un nouveau run FULL sur `d0913c1f` et une campagne E2E Clerk/réactive sur ce HEAD sont en cours.
+
+### Blocages étrangers à coordonner
+
+- `npm run security:secrets -- --ref=83c3ced5` et le même contrôle sur `16669edc` échouent sur `documentation/specs/gamification-engine-refactor/README_CODEX.md:39`, où un digest hexadécimal de 40 caractères décrit comme référence factuelle déclenche le détecteur `[low] Hash digest`. Le fichier et les règles de détection n'ont pas été modifiés. La correction doit être coordonnée avec l'owner GAME avant de pouvoir valider le garde de publication.
+- Les échecs du run Web complet concernent les attentes d'anciens tests Actions face au contrat récent de composition partielle, et ne proviennent pas du diff entreprise. Les fichiers concurrents Actions/GAME restent sous leur owner et n'ont pas été édités par ce lot.
 - Le lien produit direct vers `plans/` a été remplacé par l'index des fonctionnalités, et la fiche entreprise est référencée par `documentation/features/README.md`. L'index interne des chantiers demeure dans `documentation/plans/README.md`.
-- Validation navigateur avec comptes Clerk Development distincts et données Supabase éphémères : `NOT_RUN`. Pas encore de preuve exécutée de responsive multi-largeur.
+- Authentification Clerk a réellement été tentée en navigateur éphémère mais a expiré avant les scénarios; le parcours à deux comptes reste `FAIL/NOT_PROVEN`. Responsive 390/768/1440 reste `NOT_RUN`.
 - Lots PDF et commercial, QR indépendant et Challenges demeurent `PLAN` ; Challenges restent conditionnels à une démonstration distincte du besoin.
 
 Les chemins exacts des fichiers cibles sont les en-têtes diff. Ne pas recopier les patches dans les sources ou publier le SQL dans les migrations actives sans vérification. Réception atomique du bloc organisation SQL/API/report/UI/portail : le patch 01 importe le composant workspace ; il n'est pas indépendant dans sa forme actuelle. Le patch QR reste indépendant. En cas de conflit avec un chantier concurrent, adapter uniquement les hunks concernés et conserver le reste.

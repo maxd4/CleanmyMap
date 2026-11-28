@@ -19,7 +19,7 @@
       "justification": "Backfills confirmed registrations into the private attendance registry using an action-scoped unique Clerk identity and ON CONFLICT DO NOTHING; no status is inferred beyond unknown.",
       "proofs": [
         { "path": "apps/web/supabase/tests/action-attendance-registry.pgtap.sql", "sha256": "cde4d55d936c9bf7ae915ad8c9d2aed4670d7d55ce2b3d375e0edc6f15ffd6c8" },
-        { "path": "e2e/action-attendance-registry-concurrency.mjs", "sha256": "0b76640cec8f646fe13692775eae136dd3529ff11ad854753b0ce030a56ef161" }
+        { "path": "e2e/action-attendance-registry-concurrency.mjs", "sha256": "a137e3d2c7304a642d879301dcda869620f9e68c6cdc9d5b7d0d61a3d0a2813f" }
       ]
     }
   ]

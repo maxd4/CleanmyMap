@@ -206,15 +206,26 @@ Il existe également une table dédiée aux co-organisateurs d’actions.
 
 #### Évolution recommandée
 
-À terme, mettre en place une vraie couche organisationnelle :
+Le modèle organisationnel est maintenant présent dans Supabase (`organizations`,
+`organization_memberships`, `organization_sites`, `action_organizations` et les
+relations de campagne) et expose un bilan privé agrégé par l'API dédiée
+`/api/reports/organization`. Cette projection résout l'organisation, le site,
+la campagne et la période côté serveur, et n'utilise pas un nom d'entreprise
+comme scope. Voir le contrat [`Organisations entreprise — CURRENT`](../enterprise-organizations-CURRENT.md).
+
+Cette intégration reste séparée du générateur PDF multi-actions décrit dans ce
+document : ses scopes PDF acceptés ne comprennent pas encore les organisations.
+Le bilan privé d'organisation ne génère ni PDF ni historique privé.
+
+Le modèle relationnel canonique est :
 
 ```text
 organizations
 organization_memberships
+organization_sites
 action_organizations
+organization_campaigns
 ```
-
-L’objectif est d’éviter de dépendre uniquement d’un nom de structure libre dans les actions et de rendre fiables les rapports associatifs, institutionnels et RSE.
 
 ---
 

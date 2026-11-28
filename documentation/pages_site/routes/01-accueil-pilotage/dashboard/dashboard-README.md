@@ -53,6 +53,7 @@
 - Indicateurs collectifs : agrégat de plateforme approuvé via `loadPilotageOverview`, comparaison sur 30 jours, dernière activité publiée disponible (qui peut être antérieure à la période), limites de source et recommandations ; aucun scope personnel implicite.
 - Engagement : parrainages et classement global par consentement existant, accès au profil détaillé, erreurs de données indépendantes.
 - Compte : rôle attribué, rôle actif, changement de parcours autorisé, lien vers l'évolution du compte et réglages. Aucune nouvelle mutation.
+- Le raccourci « Mon organisation » est disponible dès qu'une adhésion organisationnelle active ou une invitation valide est liée au compte Clerk, quel que soit le rôle actif. Sa visibilité ne confère aucun droit : les données et mutations sont revalidées côté serveur par les API entreprise.
 - Les onglets sont des liens de navigation avec `aria-current`, historique navigateur et préchargement désactivé. Une valeur inconnue ou multiple revient à Aujourd'hui. Aucun accès privé sans session, rappel de complétion conservé. Les modes changent la présentation, jamais les accès prioritaires.
 - Les chargements collectif et engagement ne sont déclenchés que par la vue correspondante. Aucun polling ajouté.
 

@@ -222,7 +222,7 @@ test("requires valid ephemeral evidence with matching canonical digests for sens
   };
 
   const passed = evaluatePreflight({ ...base, evidence: validEvidence });
-  assert.equal(passed.status, "READY_TO_APPLY");
+  assert.equal(passed.status, "READY_TO_APPLY", JSON.stringify(passed.causes));
   assert.equal(passed.sensitiveProofStatus, "PASS");
 
   // Declarative COMMITTED_SNAPSHOT without verified GitHub Actions run fails
