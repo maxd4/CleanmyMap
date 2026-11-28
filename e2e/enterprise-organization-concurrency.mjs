@@ -36,6 +36,18 @@ begin;
 set local role postgres;
 select set_config('request.jwt.claims', '{"role":"postgres","sub":"enterprise-concurrency-cleanup"}', true);
 select set_config('request.jwt.claim.role', 'postgres', true);
+delete from public.organization_audit
+where organization_id = (select id from public.organizations where partner_entry_id = 'test-enterprise-concurrency');
+delete from public.organization_campaign_actions
+where organization_id = (select id from public.organizations where partner_entry_id = 'test-enterprise-concurrency');
+delete from public.organization_campaigns
+where organization_id = (select id from public.organizations where partner_entry_id = 'test-enterprise-concurrency');
+delete from public.action_organizations
+where organization_id = (select id from public.organizations where partner_entry_id = 'test-enterprise-concurrency');
+delete from public.organization_sites
+where organization_id = (select id from public.organizations where partner_entry_id = 'test-enterprise-concurrency');
+delete from public.organization_memberships
+where organization_id = (select id from public.organizations where partner_entry_id = 'test-enterprise-concurrency');
 delete from public.organizations where partner_entry_id = 'test-enterprise-concurrency';
 delete from public.partner_annuaire_entries where id = 'test-enterprise-concurrency';
 delete from public.partner_onboarding_requests where id = '${entryId}';
