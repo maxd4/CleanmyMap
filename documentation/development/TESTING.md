@@ -10,6 +10,16 @@ Le workflow CleanMyMap distingue trois modes de validation : `DEVELOPMENT`,
 `FULL` et `RELEASE`. Les tests spécialisés restent des briques appelables
 séparément, pas des modes supplémentaires.
 
+Les quality/security gates distinguent `PASS` (aucune anomalie bloquante ni
+avertissement), `PASS_WITH_WARNINGS` (contrôle exécuté, avertissements visibles
+et motivés, sans anomalie bloquante), `FAIL` (violation démontrée) et `BLOCKED`
+(contrôle impossible ou preuve indisponible). Un avertissement reste présent
+dans le JSON de preuve et les résumés CI ; il ne devient jamais un succès
+silencieux. `BLOCKED` n'est ni exécuté avec succès ni accepté comme passage.
+Les défauts secondaires documentaires peuvent avertir ; les violations de
+gouvernance canonique, secrets, migrations, skills ou données privées restent
+bloquantes selon le contrat spécialisé.
+
 ## Attribution, scopes et preuves de livraison
 
 Au démarrage, chaque exécution capture sa référence initiale (`HEAD`,

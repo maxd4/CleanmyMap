@@ -196,7 +196,12 @@ pas uniquement à une comparaison de rôle.
 
 - **Publication autorisee** : adresses generiques officielles (administrations, services publics, associations, entreprises), coordonnees fonctionnelles publiques necessaires aux fonctionnalites (Annuaire, organigramme institutionnel, contacts DPE, REQ, partenaires) et liens vers les sources institutionnelles officielles.
 - **Donnees nominatives** : stockage Supabase rectifiable et supprimable privilegie, avec projection publique uniquement si justifiee ; espaces prives exclusifs pour les echanges prives, notes relationnelles et engagements non publics ; interdiction des adresses deduites et donnees excessives.
-- **Audit des secrets (`secret-audit.mjs`)** : seuls les domaines d'exemples reserves (`example.com`, `example.org`, `example.net`) et les domaines synthetiques explicites de test (`cleanmymap.local`, `example.invalid`, `example.local`, `example.test`, `test.local`) sont exemptes globalement ; les exceptions `Email address` exigent `path`, `category`, `exact`, `sourceUrl`, `verifiedAt` et `justification` (avec `kind` explicite `upstream_vendor_metadata` ou `synthetic_fixture` lorsque applicable), les entrees sans `category` ou `contains`-only sont rejetees, et toutes les valeurs sensibles d'une meme ligne sont masquees dans les journaux sans jamais masquer un email voisin ni un secret technique adjacent.
+- **Audit des secrets (`secret-audit.mjs`)** : les secrets probables/exploitables et données personnelles non justifiées restent bloquants. Les coordonnées publiques ne sont admises que par correspondance exacte, chemin, source publique, date de vérification et justification ; aucune exemption générale de domaine réel n'est permise. Les références Git dans un contexte documentaire explicite sont reconnues comme références, pas comme credentials. Les hash documentaires ambigus à faible risque peuvent donner `PASS_WITH_WARNINGS` avec motif affiché ; tout contexte `password`, `token`, `secret`, `credential` ou authentification reste bloquant. Les valeurs sensibles d'une même ligne sont masquées sans masquer un email voisin ni un secret technique adjacent.
+
+Les contrôles publiés distinguent `PASS`, `PASS_WITH_WARNINGS`, `FAIL` et
+`BLOCKED`. Les avertissements sont conservés dans les preuves et résumés ; ils
+ne sont ni convertis en `PASS` silencieux ni confondus avec une impossibilité
+d'exécuter le contrôle.
 - **Conformite RGPD / CNIL** : finalite explicite, minimisation, mise en balance de l'interet legitime, information selon l'article 14 du RGPD, droits de rectification, opposition, effacement et revalidation.
 
 La route `/api/email/test` est la surface de test admin recommandée.

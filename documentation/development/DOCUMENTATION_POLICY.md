@@ -94,6 +94,17 @@ Les chemins suivants ne constituent pas des sources publiques `CURRENT` :
 - `documentation/operations/agent-memory-governance.md` ;
 - `documentation/operations/session-standard-runbook.md`.
 
+Cette classification décrit le statut et l'audience des documents ; elle
+n'interdit pas de les citer dans un contrat technique interne. Une référence
+devient une violation seulement si le document est réellement destiné à une
+surface publique et expose un chemin privé ou une donnée qui ne doit pas y
+figurer. Les sources `CURRENT`, `PLAN`, `AUDIT`, `HISTORY`, `SNAPSHOT`, `ADR`
+et `GENERATED`, ainsi que l'audience et la destination, sont évaluées ensemble
+par le contrôle documentaire. Les liens internes valides vers les plans
+versionnés restent permis ; un défaut secondaire de découverte est signalé en
+`PASS_WITH_WARNINGS`, tandis qu'une contradiction canonique ou une exposition
+`BLOCKING` échoue.
+
 Règles :
 
 - une spec terminée doit céder sa connaissance durable au domaine canonique ;

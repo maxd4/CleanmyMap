@@ -14,6 +14,7 @@ const repositoryRoot = process.cwd();
 const SECURITY_EVIDENCE_ROOT = process.env.SECURITY_EVIDENCE_ROOT ?? "artifacts/security-evidence";
 const GATES = Object.freeze([
   { key: "secrets", label: "Secrets", fileKey: "secret-audit" },
+  { key: "documentation-governance", label: "Documentation governance", fileKey: "documentation-governance" },
   { key: "github-actions-security", label: "GitHub Actions", fileKey: "github-actions-security" },
   { key: "semgrep-architectural", label: "Semgrep architectural", fileKey: "semgrep-architectural" },
   { key: "semgrep-fixtures", label: "Semgrep fixtures", fileKey: "semgrep-fixtures" },
@@ -45,7 +46,8 @@ function isUsable(evidence, candidateSha) {
 function currentForGate(gate, evidence) {
   if (!evidence) return "—";
   const metrics = evidence.metrics ?? {};
-  if (gate.key === "secrets") return `${display(evidence.findings)} finding(s)`;
+  if (gate.key === "secrets") return `${display(evidence.findings)} blocking / ${display(metrics.warningCount)} warning(s)`;
+  if (gate.key === "documentation-governance") return `${display(evidence.findings)} blocking / ${display(metrics.warningCount)} warning(s)`;
   if (gate.key === "github-actions-security") return `${display(metrics.workflowCount)} workflows / ${display(metrics.issueCount)} issue(s)`;
   if (gate.key === "semgrep-architectural") return `${display(metrics.blockingFindings ?? evidence.findings)} blocking finding(s)`;
   if (gate.key === "semgrep-fixtures") return `${display(metrics.fixturesPassed)} fixture(s) tested`;

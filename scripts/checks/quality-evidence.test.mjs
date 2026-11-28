@@ -123,6 +123,30 @@ test("PASS_WITH_GRACE is an accepted quality result", () => {
   assert.deepEqual(failures, []);
 });
 
+test("PASS_WITH_WARNINGS remains an accepted, visible quality result", () => {
+  const evidenceByKey = Object.fromEntries(QUALITY_GATES.map((gate) => [gate, {
+    schemaVersion: 1, gate, candidateSha: PASS_SHA, executed: true,
+    status: "PASS_WITH_WARNINGS", baseline: { sourceCommit: PASS_SHA },
+    details: { warnings: [{ rationale: "documentary ambiguity" }] },
+  }]));
+  const failures = validateQualityEvidence({ candidateSha: PASS_SHA, evidenceByKey, gitRunner: () => undefined });
+  assert.deepEqual(failures, []);
+  assert.match(buildQualitySummary({ candidateSha: PASS_SHA, evidenceByKey }), /PASS_WITH_WARNINGS/);
+});
+
+test("BLOCKED is a distinct non-passing evidence state", () => {
+  const root = temporaryRepository();
+  try {
+    const file = writeQualityEvidence({ repositoryRoot: root, gate: "cycles", candidateSha: PASS_SHA, status: "BLOCKED", metrics: {} });
+    const evidence = JSON.parse(fs.readFileSync(file, "utf8"));
+    assert.equal(evidence.status, "BLOCKED");
+    assert.equal(evidence.executed, false);
+    assert.match(validateQualityEvidenceForGate({ evidence, candidateSha: PASS_SHA, gitRunner: () => undefined }).join(" "), /ratchet status is BLOCKED/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("a cycle policy skip is valid evidence without pretending to be executed", () => {
   const root = temporaryRepository();
   const evidencePath = writeQualityEvidence({

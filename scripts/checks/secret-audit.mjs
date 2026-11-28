@@ -187,20 +187,22 @@ const SECRET_PATTERNS = [
 const HASH_DIGEST_SENSITIVE_WORDS = /password|token|secret|credential/i;
 const HASH_DIGEST_AUTH_CONTEXT = /(?:^|[^a-z0-9_\/])auth(?:entication|orization)?(?:$|[^a-z0-9_\/])|(?:^|[^a-z0-9_\/])auth[A-Z][a-z0-9_]*/i;
 const GIT_BLOB_SHA_JSON_LINE = /"(?:apps|documentation|scripts|e2e|packages|maintenance)\/[^"]+"\s*:\s*"[a-f0-9]{40}"/i;
-const GIT_COMMIT_SHA_DOC_LINE = /(?:Référence factuelle lue|SHA|commit|référence|base)\s*:?\s*`?[a-f0-9]{40}`?/i;
+const GIT_COMMIT_SHA_DOC_LINE = /(?:référence(?: factuelle(?: lue)?)?|sha|commit|revision|révision|base)\s*:?\s*`?[a-f0-9]{40}`?/i;
 
-function hasHashDigestSecretContext(line) {
-  if (HASH_DIGEST_SENSITIVE_WORDS.test(line)) {
+function hasHashDigestSecretContext(line, raw) {
+  const hashIndex = Math.max(0, line.indexOf(raw ?? ""));
+  const nearby = line.slice(Math.max(0, hashIndex - 64), hashIndex + (raw?.length ?? 0) + 64);
+  if (HASH_DIGEST_SENSITIVE_WORDS.test(nearby)) {
     return true;
   }
   if (GIT_BLOB_SHA_JSON_LINE.test(line) || GIT_COMMIT_SHA_DOC_LINE.test(line)) {
     return false;
   }
-  return HASH_DIGEST_AUTH_CONTEXT.test(line);
+  return HASH_DIGEST_AUTH_CONTEXT.test(nearby) || /\b(?:digest|checksum|empreinte)\b/i.test(nearby);
 }
 
-function matchesContext(context, line) {
-  return typeof context === "function" ? context(line) : context.test(line);
+function matchesContext(context, line, raw) {
+  return typeof context === "function" ? context(line, raw) : context.test(line);
 }
 
 function parseArgs(argv) {
@@ -556,12 +558,10 @@ function scanLine(file, line, lineNumber) {
   const rawFindings = [];
 
   for (const pattern of SECRET_PATTERNS) {
-    if (pattern.context && !matchesContext(pattern.context, line)) {
-      continue;
-    }
     pattern.regex.lastIndex = 0;
     for (const match of line.matchAll(pattern.regex)) {
       const raw = match[0];
+      if (pattern.context && !matchesContext(pattern.context, line, raw)) continue;
       if (pattern.validator && !pattern.validator(raw, line)) {
         continue;
       }
@@ -571,6 +571,11 @@ function scanLine(file, line, lineNumber) {
         category: pattern.category,
         severity: pattern.severity,
         raw,
+        documentaryAmbiguous: pattern.category === "Hash digest"
+          && /\.(?:md|mdx|txt)$/i.test(file)
+          && /\b(?:digest|checksum|empreinte)\b/i.test(line.slice(Math.max(0, match.index - 64), match.index + raw.length + 64))
+          && !HASH_DIGEST_SENSITIVE_WORDS.test(line.slice(Math.max(0, match.index - 64), match.index + raw.length + 64))
+          && !HASH_DIGEST_AUTH_CONTEXT.test(line.slice(Math.max(0, match.index - 64), match.index + raw.length + 64)),
       });
     }
   }
@@ -600,6 +605,14 @@ function scanFile(relativePath) {
 export function scanContent(relativePath, content) {
   const lines = content.split(/\r?\n/);
   return lines.flatMap((line, index) => scanLine(relativePath, line, index + 1));
+}
+
+function classifyFinding(finding) {
+  const { documentaryAmbiguous, ...publicFinding } = finding;
+  if (documentaryAmbiguous && finding.severity === "low") {
+    return { ...publicFinding, disposition: "WARNING", rationale: "Hash documentaire sans contexte d'authentification ni marqueur de credential." };
+  }
+  return { ...publicFinding, disposition: "BLOCKING" };
 }
 
 function readGitFiles(ref, files) {
@@ -643,6 +656,8 @@ function scanGitFiles(files, ref) {
 }
 
 function printSummary(findings, scannedCount, allowlistPath) {
+  const blocking = findings.filter((finding) => finding.disposition !== "WARNING");
+  const warnings = findings.filter((finding) => finding.disposition === "WARNING");
   if (findings.length === 0) {
     console.log(`[secret-audit] OK: ${scannedCount} file(s) scanned, no probable secret found.`);
     if (allowlistPath) {
@@ -651,17 +666,19 @@ function printSummary(findings, scannedCount, allowlistPath) {
     return;
   }
 
-  console.error(`[secret-audit] ${findings.length} probable sensitive value(s) found in ${scannedCount} scanned file(s):`);
+  if (warnings.length > 0) console.warn(`[secret-audit] PASS_WITH_WARNINGS: ${warnings.length} documented ambiguous finding(s) require review.`);
+  if (blocking.length > 0) console.error(`[secret-audit] FAIL: ${blocking.length} probable secret(s) or unjustified private value(s) found in ${scannedCount} scanned file(s):`);
   for (const finding of findings) {
-    console.error(
-      ` - ${finding.file}:${finding.line} [${finding.severity}] ${finding.category}: ${finding.excerpt}`,
-    );
+    const print = finding.disposition === "WARNING" ? console.warn : console.error;
+    print(` - ${finding.file}:${finding.line} [${finding.disposition ?? "BLOCKING"}/${finding.severity}] ${finding.category}: ${finding.excerpt}${finding.rationale ? ` — ${finding.rationale}` : ""}`);
   }
-  console.error("[secret-audit] Values are masked. Rotate any real exposed secret before removing it from the repo history.");
+  if (blocking.length > 0) console.error("[secret-audit] Values are masked. Rotate any real exposed secret before removing it from the repo history.");
 }
 
 function writeSecretEvidence({ options, findings, scannedCount }) {
   const candidateRef = options.ref ?? options.candidateRefs[0] ?? "HEAD";
+  const blocking = findings.filter((finding) => finding.disposition !== "WARNING");
+  const warnings = findings.filter((finding) => finding.disposition === "WARNING");
   writeQualityEvidence({
     repositoryRoot: ROOT,
     evidenceRoot: SECURITY_EVIDENCE_ROOT,
@@ -669,10 +686,10 @@ function writeSecretEvidence({ options, findings, scannedCount }) {
     gate: "secrets",
     candidateSha: resolveCandidateShaFromRef(ROOT, candidateRef),
     candidateRef,
-    status: findings.length > 0 ? "FAIL" : "PASS",
-    findings: findings.length,
-    metrics: { scannedFiles: scannedCount },
-    details: { scope: options.scope },
+    status: blocking.length > 0 ? "FAIL" : warnings.length > 0 ? "PASS_WITH_WARNINGS" : "PASS",
+    findings: blocking.length,
+    metrics: { scannedFiles: scannedCount, warningCount: warnings.length },
+    details: { scope: options.scope, warnings: warnings.map(({ file, line, category, excerpt, rationale }) => ({ file, line, category, excerpt, rationale })) },
   });
 }
 
@@ -690,11 +707,11 @@ function main() {
     if (options.scope === "staged") {
       const allowlist = loadAllowlist(options.allowlistPath, ":", { explicit: explicitAllowlist });
       files = listStagedFiles().filter(shouldScan);
-      findings = scanGitFiles(files, ":").filter((finding) => !isAllowed(finding, allowlist));
+      findings = scanGitFiles(files, ":").filter((finding) => !isAllowed(finding, allowlist)).map(classifyFinding);
     } else if (options.scope === "ref") {
       const allowlist = loadAllowlist(options.allowlistPath, options.ref, { explicit: explicitAllowlist });
       files = listRefFiles(options.ref).filter(shouldScan);
-      findings = scanGitFiles(files, options.ref).filter((finding) => !isAllowed(finding, allowlist));
+      findings = scanGitFiles(files, options.ref).filter((finding) => !isAllowed(finding, allowlist)).map(classifyFinding);
     } else if (options.scope === "candidate") {
       const candidates = options.candidateRefs.map((ref, index) => ({
         ref,
@@ -707,12 +724,12 @@ function main() {
       files = [...new Set(filesByCandidate.flatMap(({ files: candidateFiles }) => candidateFiles))];
       findings = filesByCandidate.flatMap(({ ref, files: candidateFiles }) => {
         const allowlist = loadAllowlist(options.allowlistPath, ref, { explicit: explicitAllowlist });
-        return scanGitFiles(candidateFiles, ref).filter((finding) => !isAllowed(finding, allowlist));
+        return scanGitFiles(candidateFiles, ref).filter((finding) => !isAllowed(finding, allowlist)).map(classifyFinding);
       });
     } else {
       const allowlist = loadAllowlist(options.allowlistPath, null, { explicit: explicitAllowlist });
       files = listRepoFiles().filter(shouldScan);
-      findings = files.flatMap(scanFile).filter((finding) => !isAllowed(finding, allowlist));
+      findings = files.flatMap(scanFile).filter((finding) => !isAllowed(finding, allowlist)).map(classifyFinding);
     }
     writeSecretEvidence({ options, findings, scannedCount: files.length });
 
@@ -721,7 +738,7 @@ function main() {
     }
 
     printSummary(findings, files.length, options.allowlistPath);
-    if (findings.length > 0) {
+    if (findings.some((finding) => finding.disposition !== "WARNING")) {
       process.exit(1);
     }
   } catch (error) {
@@ -734,7 +751,7 @@ function main() {
         gate: "secrets",
         candidateSha: resolveCandidateShaFromRef(ROOT, candidateRef),
         candidateRef,
-        status: "FAIL",
+        status: "BLOCKED",
         findings: null,
         metrics: {},
         details: { scope: options.scope, executionError: error?.constructor?.name ?? "Error" },

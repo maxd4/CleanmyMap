@@ -43,7 +43,7 @@ describe("documentation roadmap governance", () => {
     assert.deepEqual(findConcurrentActiveRoadmaps(view), []);
   });
 
-  it("scans MDX for forbidden documentation references", () => {
+  it("does not block an internal technical reference to a versioned plan", () => {
     const view = createView({
       "documentation/features/fixture.mdx": "See plans/internal-roadmap.md\n",
       [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
@@ -51,22 +51,38 @@ describe("documentation roadmap governance", () => {
 
     const violations = validateDocumentationGovernance(view);
 
-    assert.ok(violations.some((violation) =>
-      violation.file === "documentation/features/fixture.mdx" && violation.pattern === "plans/",
-    ));
+    assert.deepEqual(violations, []);
   });
 
-  it("rejects internal instruction filenames in public Markdown", () => {
+  it("rejects a real internal-path exposure in a public CURRENT page", () => {
     const view = createView({
-      "documentation/development/fixture.md": "Consulter AGENTS.md avant toute modification.\n",
+      "documentation/pages_site/routes/fixture.md": "> Statut documentaire : CURRENT\n> Audience : public\nConsulter AGENTS.md avant toute modification.\n",
       [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
     });
 
     const violations = validateDocumentationGovernance(view);
 
     assert.ok(violations.some((violation) =>
-      violation.file === "documentation/development/fixture.md" && violation.pattern === "AGENTS.md",
+      violation.file === "documentation/pages_site/routes/fixture.md" && violation.severity === "BLOCKING",
     ));
+  });
+
+  it("does not treat an internal link as a public exposure without a public destination", () => {
+    const view = createView({
+      "documentation/development/fixture.md": "> Statut documentaire : CURRENT\n> Audience : interne\nVoir [plan](../plans/security-plan.md).\n",
+      [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
+    });
+    assert.deepEqual(validateDocumentationGovernance(view), []);
+  });
+
+  it("keeps historical-public internal references visible as warnings", () => {
+    const view = createView({
+      "documentation/pages_site/routes/fixture.md": "> Statut documentaire : HISTORY\n> Audience : public\nVoir plans/ancien-plan.md.\n",
+      [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
+    });
+    const findings = validateDocumentationGovernance(view);
+    assert.equal(findings.length, 1);
+    assert.equal(findings[0].severity, "WARNING");
   });
 
   it("accepts compliant MDX and keeps documentary exclusions", () => {
@@ -82,7 +98,7 @@ describe("documentation roadmap governance", () => {
     assert.deepEqual(violations, []);
   });
 
-  it("detects broken or renamed links in AI discovery index files", () => {
+  it("reports broken links in AI discovery indexes as non-blocking warnings", () => {
     const view = createView({
       "documentation/development/AI_DEVELOPER_GUIDE.md": "See [Missing](../features/renamed-missing.md) and [MissingDir](../../apps/web/src/lib/missing-dir/).\n",
       [DEPENDENCY_ADVISORY_PATH]: DEPENDENCY_ADVISORY_CONTENT,
@@ -91,6 +107,6 @@ describe("documentation roadmap governance", () => {
     const violations = validateDocumentationGovernance(view);
 
     assert.equal(violations.length, 2);
-    assert.ok(violations.every((v) => v.pattern === "broken-discovery-link"));
+    assert.ok(violations.every((v) => v.pattern === "broken-discovery-link" && v.severity === "WARNING"));
   });
 });

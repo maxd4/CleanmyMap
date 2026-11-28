@@ -90,7 +90,7 @@ jobs:
         with:
           node-version-file: ${{ env.NODE_VERSION_FILE }}
 
-      - name: Verify candidate tree and run secret audit
+      - name: Verify candidate tree and run security governance checks
         id: secret_audit
         shell: bash
         env:
@@ -99,17 +99,20 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           npm run security:secrets -- --ref="$CANDIDATE_SHA"
+          node scripts/checks/check-documentation-governance.mjs --ref="$CANDIDATE_SHA"
 
       - name: Secrets security summary
         if: ${{ always() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' }}
-        run: node scripts/ci/write-security-summary.mjs --gates=secrets
+        run: node scripts/ci/write-security-summary.mjs --gates=secrets,documentation-governance
 
       - name: Upload compact secrets evidence
         if: ${{ always() && steps.checkout.outcome == 'success' && steps.setup_node.outcome == 'success' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: security-secrets-evidence-${{ github.run_id }}
-          path: artifacts/security-evidence/secret-audit.json
+          name: security-governance-evidence-${{ github.run_id }}
+          path: |
+            artifacts/security-evidence/secret-audit.json
+            artifacts/security-evidence/documentation-governance.json
           if-no-files-found: ignore
           retention-days: 3
 

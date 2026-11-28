@@ -32,7 +32,7 @@ function evidenceIsUsable(evidence, candidateSha) {
       && evidence.schemaVersion === QUALITY_EVIDENCE_SCHEMA_VERSION
       && evidence.candidateSha === candidateSha
       && QUALITY_EVIDENCE_STATUSES.includes(evidence.status)
-      && (evidence.executed === true || evidence.status === "SKIPPED_BY_POLICY")
+      && (evidence.executed === true || evidence.status === "SKIPPED_BY_POLICY" || evidence.status === "BLOCKED")
       && evidence.status !== "NOT_RUN",
   );
 }

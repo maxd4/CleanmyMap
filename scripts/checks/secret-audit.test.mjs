@@ -206,6 +206,29 @@ test("asset integrity SHA-256 is allowed", () => {
   assert.match(result.stdout, /PUSH_CANDIDATE/);
 });
 
+test("a Git SHA cited as a French documentary reference is recognized", () => {
+  const sha = "c78bcd12a07dd8ca2e625dc1a08c9d1951f09d51";
+  const result = runAudit({
+    candidateContent: `Référence factuelle \`${sha}\` : owners et contrôles documentaires.\n`,
+    foreignContent: "no secret here\n",
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /no probable secret found/);
+});
+
+test("an ambiguous documentary checksum is visible as a non-blocking warning", () => {
+  const digest = "d".repeat(40);
+  const result = runAudit({
+    candidateContent: `Empreinte documentaire indicative: ${digest}\n`,
+    foreignContent: "no secret here\n",
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stderr, /PASS_WITH_WARNINGS/);
+  assert.match(result.stderr, /Hash documentaire sans contexte d'authentification/);
+});
+
 test("a hash next to a password or token remains blocked", () => {
   const sensitiveDigest = "b".repeat(64);
   const result = runAudit({

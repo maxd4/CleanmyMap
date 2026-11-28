@@ -7,8 +7,8 @@ import { gitExecutable } from "../ci/git-executable.mjs";
 
 export const QUALITY_EVIDENCE_SCHEMA_VERSION = 1;
 export const QUALITY_EVIDENCE_RELATIVE_ROOT = "artifacts/quality-evidence";
-export const QUALITY_EVIDENCE_STATUSES = Object.freeze(["PASS", "PASS_WITH_GRACE", "FAIL", "SKIPPED_BY_SCOPE", "SKIPPED_BY_POLICY", "NOT_RUN"]);
-const QUALITY_EVIDENCE_ACCEPTED_STATUSES = Object.freeze(["PASS", "PASS_WITH_GRACE"]);
+export const QUALITY_EVIDENCE_STATUSES = Object.freeze(["PASS", "PASS_WITH_WARNINGS", "PASS_WITH_GRACE", "FAIL", "BLOCKED", "SKIPPED_BY_SCOPE", "SKIPPED_BY_POLICY", "NOT_RUN"]);
+const QUALITY_EVIDENCE_ACCEPTED_STATUSES = Object.freeze(["PASS", "PASS_WITH_WARNINGS", "PASS_WITH_GRACE"]);
 
 function assertCandidateSha(candidateSha) {
   if (!/^[0-9a-f]{40}$/i.test(candidateSha ?? "")) {
@@ -69,7 +69,7 @@ function createQualityEvidence({
     ...(scope ? { scope } : {}),
     candidateSha,
     ...(candidateRef ? { candidateRef } : {}),
-    executed: status !== "NOT_RUN" && status !== "SKIPPED_BY_SCOPE" && status !== "SKIPPED_BY_POLICY",
+    executed: status !== "NOT_RUN" && status !== "BLOCKED" && status !== "SKIPPED_BY_SCOPE" && status !== "SKIPPED_BY_POLICY",
     status,
     metrics,
     findings,
