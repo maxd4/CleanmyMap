@@ -3,7 +3,6 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { validatePrivateBackupDestination } from "./private-backup-destination.mjs";
-import { exportStorage } from "../../../scripts/ci/export-supabase-storage.mjs";
 
 const PAGE_SIZE = 1000;
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -152,17 +151,7 @@ async function main() {
     manifest.localStores.push(fileName);
   }
 
-  try {
-    if (!process.env.SUPABASE_BACKUP_STORAGE_READ_KEY) throw new Error("SUPABASE_BACKUP_STORAGE_READ_KEY is required for exhaustive Storage export");
-    const storageResult = await exportStorage({
-      supabaseUrl,
-      storageReadKey: process.env.SUPABASE_BACKUP_STORAGE_READ_KEY,
-      outDir: join(baseDir, "storage"),
-    });
-    manifest.storage = { status: "PASS", ...storageResult };
-  } catch (error) {
-    manifest.storage = { status: "FAIL", error: error instanceof Error ? error.message : String(error) };
-  }
+  manifest.storage = { status: "NOT_INCLUDED", canonicalExporter: "scripts/ci/export-supabase-storage.mjs" };
 
   await writeFile(
     join(baseDir, "manifest.json"),
