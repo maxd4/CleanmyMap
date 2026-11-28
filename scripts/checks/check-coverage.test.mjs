@@ -139,6 +139,65 @@ test("baseline exacte => PASS", () => {
   assert.deepEqual(compareCoverage(current, baseline), { status: "PASS", failures: [], grace: [] });
 });
 
+test("un rapport ciblé évalue les fichiers candidats sans inventer les domaines historiques absents", () => {
+  const candidateFile = "C:\\repo\\apps\\web\\src\\components\\pilotage\\enterprise-organization-workspace.tsx";
+  const candidateSummary = {
+    total: Object.fromEntries(COVERAGE_METRICS.map((name) => [name, metric(95)])),
+    [candidateFile]: {
+      statements: metric(95),
+      branches: metric(82),
+      functions: metric(95),
+      lines: metric(100),
+    },
+  };
+  const current = aggregateCoverage(candidateSummary);
+  assert.deepEqual(current.domains, {});
+  assert.equal(evaluateCandidateFileCoverage(candidateSummary, [candidateFile]).status, "PASS");
+
+  const historicalBaseline = baselineFrom(aggregateCoverage(summary()));
+  const comparison = compareCoverage(current, historicalBaseline);
+  assert.equal(comparison.status, "NOT_MEASURED");
+  assert.deepEqual(comparison.missingDomains, Object.keys(historicalBaseline.domains));
+});
+
+test("le gate candidat ciblé applique toujours les quatre seuils au diff exact", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-candidate-"));
+  const candidateFile = "src/components/pilotage/enterprise-organization-workspace.tsx";
+  const absoluteFile = path.join(root, "apps", "web", candidateFile);
+  const summaryPath = path.join(root, "coverage-summary.json");
+  const lcovPath = path.join(root, "lcov.info");
+  try {
+    fs.mkdirSync(path.dirname(absoluteFile), { recursive: true });
+    fs.mkdirSync(path.join(root, "apps", "web"), { recursive: true });
+    fs.writeFileSync(absoluteFile, "export const component = true;\n", "utf8");
+    fs.writeFileSync(lcovPath, "", "utf8");
+    const fileRow = (branchCoverage) => ({
+      statements: metric(95),
+      branches: metric(branchCoverage),
+      functions: metric(95),
+      lines: metric(100),
+    });
+    const run = (branchCoverage) => {
+      fs.writeFileSync(summaryPath, JSON.stringify({
+        total: Object.fromEntries(COVERAGE_METRICS.map((name) => [name, metric(95)])),
+        [absoluteFile]: fileRow(branchCoverage),
+      }), "utf8");
+      return runCoverageCheck({
+        repositoryRoot: root,
+        paths: { summary: summaryPath, lcov: lcovPath, baseline: path.join(root, "missing-baseline.json") },
+        candidateFiles: [candidateFile],
+        candidateFilesRequired: true,
+        setProcessExitCode: false,
+      });
+    };
+
+    assert.equal(run(82).enforcementStatus, "PASS");
+    assert.equal(run(69).enforcementStatus, "FAIL");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("amélioration => PASS", () => {
   const current = coverageFixture();
   const baseline = coverageFixture({ global: { lines: { covered: 799 } } });

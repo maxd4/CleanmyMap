@@ -661,9 +661,12 @@ export function aggregateCoverage(summary, { scope = "web" } = {}) {
       const rows = files
         .filter(([file]) => prefixes.some((prefix) => normalizeCoveragePath(file, scope).startsWith(prefix)))
         .map(([, row]) => row);
-      if (rows.length === 0) throw new Error(`Coverage domain has no matching files: ${domain}.`);
+      // Historical domain views are optional in a targeted candidate report.
+      // Enforced risk domains and exact changed-file thresholds are evaluated
+      // separately from these compatibility aggregates.
+      if (rows.length === 0) return null;
       return [domain, { files: rows.length, metrics: aggregateRows(rows), patterns: prefixes }];
-    }),
+    }).filter(Boolean),
   );
   return {
     metrics: total,
@@ -1306,9 +1309,13 @@ export function compareCoverage(current, baseline) {
     }
   }
   const regressions = [...compareScope(current.metrics, baseline.metrics, "global")];
+  const missingDomains = [];
   for (const [domain, baselineDomain] of Object.entries(baseline.domains ?? {})) {
     const currentDomain = current.domains[domain];
-    if (!currentDomain) throw new Error(`Coverage domain is missing: ${domain}.`);
+    if (!currentDomain) {
+      missingDomains.push(domain);
+      continue;
+    }
     for (const metric of COVERAGE_METRICS) {
       if (!currentDomain.metrics[metric] || !baselineDomain.metrics[metric]) {
         throw new Error(`Coverage metric is missing: ${domain}.${metric}.`);
@@ -1321,11 +1328,14 @@ export function compareCoverage(current, baseline) {
   return {
     status: failures.length > 0
       ? "INFORMATIVE_REGRESSION"
+      : missingDomains.length > 0
+        ? "NOT_MEASURED"
       : grace.length > 0
         ? "PASS_WITH_GRACE"
         : "PASS",
     failures,
     grace,
+    ...(missingDomains.length > 0 ? { missingDomains } : {}),
   };
 }
 
