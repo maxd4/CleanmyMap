@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { OrganizationCollectionsPanel } from "./organization-collections-panel";
@@ -73,5 +76,36 @@ describe("organization collection panel", () => {
     const member = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={{ ...base, actions: [{ ...action, can_manage: true }] }} siteId={null} locale="fr" busy={false} offset={0} onPage={() => undefined} onUnlinkAction={() => undefined} />);
     expect(member).not.toContain("Retirer de l’organisation");
     expect(member).not.toContain("Gérer la collecte");
+  });
+
+  it("calls detach only after confirmation and keeps collection paging interactive", async () => {
+    const onUnlinkAction = vi.fn();
+    const onPage = vi.fn();
+    const confirm = vi.fn().mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const previousConfirm = window.confirm;
+    window.confirm = confirm;
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    try {
+      await act(async () => {
+        root.render(<OrganizationCollectionsPanel workspace={{ ...base, role: "manager", actions: [{ ...action, can_manage: true }], actions_has_more: true }} siteId={null} locale="fr" busy={false} offset={10} onPage={onPage} onUnlinkAction={onUnlinkAction} />);
+      });
+      const buttons = [...host.querySelectorAll("button")];
+      const unlink = buttons.find((button) => button.textContent === "Retirer de l’organisation");
+      expect(unlink).toBeDefined();
+      await act(async () => { unlink?.click(); });
+      expect(onUnlinkAction).not.toHaveBeenCalled();
+      await act(async () => { unlink?.click(); });
+      expect(onUnlinkAction).toHaveBeenCalledWith(action.id, null);
+      await act(async () => { buttons.find((button) => button.textContent === "Précédent")?.click(); });
+      await act(async () => { buttons.find((button) => button.textContent === "Suivant")?.click(); });
+      expect(onPage.mock.calls).toEqual([["previous"], ["next"]]);
+      expect(confirm).toHaveBeenCalledTimes(2);
+    } finally {
+      await act(async () => root.unmount());
+      host.remove();
+      window.confirm = previousConfirm;
+    }
   });
 });
