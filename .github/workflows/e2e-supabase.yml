@@ -4,7 +4,8 @@ permissions: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'workflow_dispatch' && inputs.validation_mode == 'FULL') || github.event_name == 'schedule' && 'FULL' || 'DEVELOPMENT' }}
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && github.event_name != 'schedule' }}
+  # Do not discard a long-lived ephemeral proof when a later push arrives.
+  cancel-in-progress: false
 
 on:
   schedule:
@@ -51,6 +52,16 @@ on:
       - "apps/web/src/app/api/personal-ai/**"
       - "apps/web/src/app/reglages/**"
       - "apps/web/src/components/account/**"
+      - "apps/web/src/app/api/organizations/**"
+      - "apps/web/src/app/api/admin/organizations/**"
+      - "apps/web/src/app/api/reports/organization/**"
+      - "apps/web/src/app/admin/organizations/**"
+      - "apps/web/src/lib/organizations/**"
+      - "apps/web/src/components/pilotage/enterprise-organization-workspace*"
+      - "apps/web/src/components/pilotage/organization-team-panel*"
+      - "apps/web/src/components/pilotage/organization-collections-panel*"
+      - "apps/web/src/app/(app)/dashboard/page.tsx"
+      - "apps/web/src/app/(app)/sponsor-portal/page.tsx"
       - "apps/web/src/app/page.tsx"
       - "apps/web/src/app/api/homepage/**"
       - "apps/web/src/components/accueil/**"
@@ -122,6 +133,16 @@ on:
       - "apps/web/src/app/api/personal-ai/**"
       - "apps/web/src/app/reglages/**"
       - "apps/web/src/components/account/**"
+      - "apps/web/src/app/api/organizations/**"
+      - "apps/web/src/app/api/admin/organizations/**"
+      - "apps/web/src/app/api/reports/organization/**"
+      - "apps/web/src/app/admin/organizations/**"
+      - "apps/web/src/lib/organizations/**"
+      - "apps/web/src/components/pilotage/enterprise-organization-workspace*"
+      - "apps/web/src/components/pilotage/organization-team-panel*"
+      - "apps/web/src/components/pilotage/organization-collections-panel*"
+      - "apps/web/src/app/(app)/dashboard/page.tsx"
+      - "apps/web/src/app/(app)/sponsor-portal/page.tsx"
       - "apps/web/src/app/page.tsx"
       - "apps/web/src/app/api/homepage/**"
       - "apps/web/src/components/accueil/**"
@@ -212,6 +233,19 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Reject external pull request secret execution
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo "External pull requests cannot execute the Clerk Development secret-bearing E2E lane."
+          exit 1
+
+      - name: Validate Clerk Development credentials before environment setup
+        if: needs.plan.outputs.run_persistent_e2e == 'true' || needs.plan.outputs.run_spogomi_integration == 'true'
+        env:
+          CMM_E2E_CLERK_DEV_BACKEND_TOKEN: ${{ secrets.CMM_E2E_CLERK_DEV_BACKEND_TOKEN }}
+          CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY: ${{ secrets.CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY }}
+        run: node e2e/run-github-actions-persistent.mjs require-clerk
+
       - name: Verify manual run targets current main
         if: github.event_name == 'workflow_dispatch'
         shell: bash
@@ -244,6 +278,7 @@ jobs:
 
       - name: Install Node dependencies
         if: steps.node_modules_cache.outputs.cache-hit != 'true'
+        timeout-minutes: 12
         run: npm ci --ignore-scripts
 
       - name: Audit canonical Supabase migration tree
@@ -283,11 +318,13 @@ jobs:
 
       - name: Start ephemeral Supabase
         id: start_supabase
+        timeout-minutes: 15
         run: |
           mkdir -p artifacts/ci
           bash scripts/ci/start-supabase-ephemeral.sh apps/web "${{ steps.supabase_network.outputs.network_name }}" artifacts/ci/supabase-start-diagnostic.txt
 
       - name: Apply canonical migrations and seed
+        timeout-minutes: 15
         run: |
           set -o pipefail
           ./node_modules/.bin/supabase db reset --local --workdir apps/web --yes --network-id="${{ steps.supabase_network.outputs.network_name }}" 2>&1 | tee artifacts/ci/supabase-reset.log
@@ -379,14 +416,6 @@ jobs:
             src/lib/spogomi/preparation/composition-lock-routes.contract.test.ts \
             src/lib/spogomi/preparation/preparation-service.preview.test.ts
 
-      - name: Verify persistent Playwright projects are listable
-        if: needs.plan.outputs.run_persistent_e2e == 'true'
-        run: |
-          ./node_modules/.bin/playwright test --list \
-            --project="action sharing" \
-            --project="authenticated campaign" \
-            --project="signalement campaign 2"
-
       - name: Run SPOGOMI Cachan mixed integration on ephemeral Supabase
         id: spogomi_integration
         if: needs.plan.outputs.run_spogomi_integration == 'true'
@@ -397,12 +426,6 @@ jobs:
           CMM_E2E_CLERK_DEV_BACKEND_TOKEN: ${{ secrets.CMM_E2E_CLERK_DEV_BACKEND_TOKEN }}
           CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY: ${{ secrets.CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY }}
         run: node e2e/spogomi-cachan-integration.mjs
-
-      - name: Reject external pull request secret execution
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
-        run: |
-          echo "External pull requests cannot execute the Clerk Development secret-bearing E2E step."
-          exit 1
 
       - name: Run persistent E2E
         id: persistent_e2e

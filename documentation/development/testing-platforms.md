@@ -75,15 +75,15 @@ npm run test:e2e:navigation:local
 ```
 
 Ces commandes sélectionnent uniquement les projets Playwright locaux qui ne
-requièrent pas de base Supabase mutable. Les E2E persistants — partage
-d'action, parcours authentifié de recrutement et signalement/Storage — ne sont
-pas une obligation pour chaque petit commit et sont exécutés par la lane
-GitHub Actions dédiée. Les anciens lanceurs locaux des campagnes persistantes
-restent des gardes explicites et échouent sans appeler Docker ni le cycle de
-vie Supabase :
+requièrent pas de base Supabase mutable. Les E2E persistants ne sont pas une
+obligation pour chaque petit commit : la lane GitHub Actions les sélectionne à
+partir des dépendances du diff. Les projets entreprise, SPOGOMI public,
+SPOGOMI authentifié, actions, signalements, compte et IA restent distincts.
+Les lanceurs locaux d'inventaire ciblé restent disponibles sans appeler Docker
+ni le cycle de vie Supabase :
 
 ```bash
-npx playwright test --list --project="action sharing" --project="authenticated campaign" --project="signalement campaign 2"
+npx playwright test --list --project="enterprise organization" --project="spogomi public" --project="spogomi authenticated"
 ```
 
 La lane `.github/workflows/e2e-supabase.yml` utilise un runner Linux GitHub
@@ -93,12 +93,29 @@ services, un unique `supabase db reset` avec la configuration canonique applique
 les migrations `apps/web/supabase/migrations/` et charge
 `apps/web/supabase/seed.sql`, puis la lane lance
 Next.js contre cette instance locale du runner, puis arrête la stack. Elle
-utilise exclusivement des identifiants Clerk Development ; l'absence de ces
-identifiants fait échouer la lane avant tout E2E. Aucun projet Supabase distant,
-URL de production ou clé de production ne doit être injecté dans cette lane.
+vérifie les identifiants Clerk Development avant l'installation et le démarrage
+de l'environnement éphémère ; leur absence arrête la lane sans rejouer les
+migrations. Les PR externes échouent avant l'accès aux secrets. Aucun projet
+Supabase distant, URL de production ou clé de production ne doit être injecté.
 Cette lane applicative ne lance pas le runner pgTAP/SQL/concurrence. Elle peut
 échouer sur Clerk ou Playwright sans modifier l'attestation SQL ni bloquer à
 elle seule la convergence.
+
+En mode `DEVELOPMENT`, un diff limité à l'entreprise sélectionne son projet
+Playwright et son contrat PostgreSQL ; il ne lance pas SPOGOMI. Les migrations
+SPOGOMI nommées sélectionnent les contrats SQL liés au sous-domaine, sans
+lancer toutes les campagnes E2E. Une migration non qualifiée ou une surface
+transversale reste conservatrice. `FULL` et le déclenchement hebdomadaire
+conservent toutes les campagnes SQL et E2E.
+
+L'installation Node, le démarrage Supabase et le replay des migrations/seed
+ont des étapes Actions séparées. La lane E2E journalise séparément les deux
+phases Clerk, le démarrage du serveur Web et la durée totale Playwright dans ses
+logs assainis.
+Playwright reste à un worker : ses identités Clerk et fixtures PostgreSQL ne
+sont pas indépendantes. Les résultats déjà actifs ne sont pas annulés par un
+push ultérieur. Une erreur de préflight interrompt les étapes dépendantes ; les
+étapes de nettoyage restent exécutées.
 
 La chronologie documentée de l'incident de démarrage et de replay du
 14 novembre 2026 est conservée dans

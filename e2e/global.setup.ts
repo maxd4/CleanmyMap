@@ -69,6 +69,7 @@ async function deleteManagedTemporaryUserIfPresent(client: ReturnType<typeof cre
 }
 
 setup("global setup", async () => {
+  const clerkSetupStartedAt = performance.now();
   loadWebEnvironment();
   assertClerkDevelopmentEnvironment();
   await clerkSetup({ dotenv: false });
@@ -118,11 +119,13 @@ setup("global setup", async () => {
   }
   process.env.E2E_CLERK_USER_EMAIL = email;
   process.env.E2E_CLERK_USER_ID = userId;
+  console.log(`CLERK_IDENTITY_SETUP_DURATION_MS=${Math.round(performance.now() - clerkSetupStartedAt)}`);
 });
 
 const authFileForTests = authFile;
 
 setup("authenticate and save official Clerk state", async ({ page }) => {
+  const clerkSignInStartedAt = performance.now();
   await page.goto("/");
   await clerk.signIn({
     page,
@@ -144,4 +147,5 @@ setup("authenticate and save official Clerk state", async ({ page }) => {
   await page.locator("[data-auth-gate-card]").waitFor({ state: "detached" });
   await page.waitForFunction(() => !window.location.pathname.startsWith("/sign-in"));
   await page.context().storageState({ path: authFileForTests });
+  console.log(`CLERK_SESSION_SETUP_DURATION_MS=${Math.round(performance.now() - clerkSignInStartedAt)}`);
 });

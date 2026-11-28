@@ -82,7 +82,7 @@ test("local SQL contract change selects only that SQL proof without triggering E
   assert.equal(plan.validate_all_sql, false);
 });
 
-test("shared migration change runs full SQL proof and E2E integration/projects", () => {
+test("unmapped migration change remains conservative", () => {
   const plan = planE2eAndSql({
     eventName: "push",
     validationMode: "DEVELOPMENT",
@@ -111,6 +111,21 @@ test("enterprise organization migrations select only their PostgreSQL contract i
   assert.equal(plan.sql_should_run, true);
   assert.equal(plan.sql_proof_targets, "apps/web/supabase/tests/enterprise-organization-foundation.pgtap.sql");
   assert.equal(plan.validate_all_sql, false);
+});
+
+test("isolated SPOGOMI migration selects only domain SQL contracts", () => {
+  const plan = planE2eAndSql({
+    changedFiles: ["apps/web/supabase/migrations/20261128000001_spogomi_event_scoped_reviewer_grants.sql"],
+  });
+  assert.equal(plan.e2e_should_run, false);
+  assert.equal(plan.run_spogomi_integration, false);
+  assert.equal(plan.run_persistent_e2e, false);
+  assert.equal(plan.sql_should_run, true);
+  assert.equal(plan.validate_all_sql, false);
+  assert.ok(plan.sql_proof_targets.includes("spogomi-team-referees.sql"));
+  assert.ok(plan.sql_proof_targets.includes("spogomi-referee-qualification.sql"));
+  assert.equal(plan.sql_proof_targets.split(",").length, 2);
+  assert.ok(plan.sql_proof_targets.split(",").every((target) => target.includes("spogomi-")));
 });
 
 test("FULL validation mode or schedule runs the complete campaign", () => {
@@ -194,7 +209,7 @@ test("every active E2E spec on disk is classified and mixed commits never skip u
     changedFiles: ["e2e/authenticated-enterprise-organization.test.ts"],
   });
   assert.equal(organizationPlan.run_persistent_e2e, true);
-  assert.ok(organizationPlan.playwright_projects.split(",").includes("authenticated campaign"));
+  assert.ok(organizationPlan.playwright_projects.split(",").includes("enterprise organization"));
 
   const fullPlan = planE2eAndSql({ eventName: "workflow_dispatch", validationMode: "FULL" });
   for (const required of ["local public", "settings authenticated", "homepage chromium"]) {
@@ -226,20 +241,18 @@ test("every active E2E spec on disk is classified and mixed commits never skip u
     assert.ok(pushSection.includes(trigger), `e2e-supabase.yml push.paths missing trigger: ${trigger}`);
     assert.ok(prSection.includes(trigger), `e2e-supabase.yml pull_request.paths missing trigger: ${trigger}`);
   }
-  assert.ok(sqlWorkflow.includes("scripts/ci/e2e-project-catalog.mjs"), "supabase-sql-proof.yml missing e2e-project-catalog.mjs");
+  assert.equal(sqlWorkflow.includes("scripts/ci/e2e-project-catalog.mjs"), false, "catalog changes must not trigger SQL proof");
 });
 
-test("catalog changes, SPOGOMI UI/pages, PR SHA digest, and Playwright project alignment stay consistent", () => {
+test("catalog changes, separated domain projects, PR SHA digest, and Playwright alignment stay consistent", () => {
   const root = path.resolve(import.meta.dirname, "../..");
   const catalogPlan = planE2eAndSql({
     eventName: "pull_request",
     changedFiles: ["scripts/ci/e2e-project-catalog.mjs"],
   });
-  assert.equal(catalogPlan.e2e_should_run, true);
-  assert.equal(catalogPlan.run_persistent_e2e, true);
-  assert.equal(catalogPlan.sql_should_run, true);
-  assert.equal(catalogPlan.validate_all_sql, true);
-  assert.deepEqual(catalogPlan.playwright_projects.split(",").sort(), [...ALL_CI_E2E_PROJECTS].sort());
+  assert.equal(catalogPlan.e2e_should_run, false);
+  assert.equal(catalogPlan.run_persistent_e2e, false);
+  assert.equal(catalogPlan.sql_should_run, false);
 
   for (const spogomiFile of [
     "apps/web/src/components/spogomi/spogomi-event-cockpit.tsx",
@@ -251,10 +264,24 @@ test("catalog changes, SPOGOMI UI/pages, PR SHA digest, and Playwright project a
     assert.equal(plan.e2e_should_run, true, `Expected E2E to run for ${spogomiFile}`);
     assert.equal(plan.run_spogomi_integration, true, `Expected SPOGOMI integration for ${spogomiFile}`);
     assert.ok(
-      plan.playwright_projects.split(",").includes("authenticated campaign"),
-      `Expected authenticated campaign for ${spogomiFile}`,
+      plan.playwright_projects.split(",").includes("spogomi authenticated"),
+      `Expected SPOGOMI authenticated project for ${spogomiFile}`,
     );
+    assert.equal(plan.playwright_projects.split(",").includes("enterprise organization"), false);
   }
+
+  const enterprisePlan = planE2eAndSql({ changedFiles: ["apps/web/src/app/api/organizations/members/route.ts"] });
+  assert.equal(enterprisePlan.playwright_projects, "enterprise organization");
+  assert.equal(enterprisePlan.run_spogomi_integration, false);
+
+  const enterpriseComponentTestPlan = planE2eAndSql({
+    changedFiles: ["apps/web/src/components/pilotage/enterprise-organization-workspace.test.tsx"],
+  });
+  assert.equal(enterpriseComponentTestPlan.e2e_should_run, false);
+
+  const publicSpogomiPlan = planE2eAndSql({ changedFiles: ["e2e/spogomi-navigation.spec.ts"] });
+  assert.equal(publicSpogomiPlan.playwright_projects, "spogomi public");
+  assert.equal(publicSpogomiPlan.run_spogomi_integration, false);
 
   assert.equal(
     resolveCandidateSha({
@@ -317,6 +344,18 @@ test("catalog changes, SPOGOMI UI/pages, PR SHA digest, and Playwright project a
   assert.ok(runnerSource.includes("UNMAPPED_E2E_FILES"), "persistent runner must enforce UNMAPPED_E2E_FILES coverage");
 });
 
+test("persistent lane validates Clerk before setup and avoids unconditional Playwright discovery", () => {
+  const root = path.resolve(import.meta.dirname, "../..");
+  const workflow = fs.readFileSync(path.join(root, ".github/workflows/e2e-supabase.yml"), "utf8");
+  assert.equal(workflow.includes("cancel-in-progress: false"), true);
+  assert.ok(
+    workflow.indexOf("Validate Clerk Development credentials before environment setup") <
+      workflow.indexOf("Start ephemeral Supabase"),
+  );
+  assert.equal(workflow.includes("Verify persistent Playwright projects are listable"), false);
+  assert.ok(workflow.includes("timeout-minutes: 45"), "persistent lane must retain its bounded job timeout");
+});
+
 test("settings authenticated and homepage chromium dependencies trigger catalog, selector, and workflows", () => {
   const root = path.resolve(import.meta.dirname, "../..");
   const workflow = fs.readFileSync(path.join(root, ".github/workflows/e2e-supabase.yml"), "utf8");
@@ -360,6 +399,16 @@ test("settings authenticated and homepage chromium dependencies trigger catalog,
   ]) {
     assert.ok(pushSection.includes(trigger), `push.paths missing ${trigger}`);
     assert.ok(prSection.includes(trigger), `pull_request.paths missing ${trigger}`);
+  }
+  for (const enterpriseTrigger of [
+    "apps/web/src/app/api/organizations/**",
+    "apps/web/src/app/api/admin/organizations/**",
+    "apps/web/src/lib/organizations/**",
+    "apps/web/src/components/pilotage/enterprise-organization-workspace*",
+    "apps/web/src/app/(app)/sponsor-portal/page.tsx",
+  ]) {
+    assert.ok(pushSection.includes(enterpriseTrigger), `e2e-supabase.yml push.paths missing enterprise trigger: ${enterpriseTrigger}`);
+    assert.ok(prSection.includes(enterpriseTrigger), `e2e-supabase.yml pull_request.paths missing enterprise trigger: ${enterpriseTrigger}`);
   }
 });
 

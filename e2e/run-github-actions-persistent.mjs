@@ -255,6 +255,7 @@ async function runPersistentE2E() {
       CMM_SUPABASE_EPHEMERAL_TEST_AUTHORIZATION: "I_UNDERSTAND_EPHEMERAL_ONLY",
       CMM_DISABLE_DEV_AUTH_BYPASS: "1",
     };
+    const playwrightStartedAt = performance.now();
     const result = await runCommand(
       "npx",
       [
@@ -264,6 +265,7 @@ async function runPersistentE2E() {
       ],
       { cwd: root, env, stdio: "inherit" },
     );
+    console.log(`PLAYWRIGHT_PROCESS_DURATION_MS=${Math.round(performance.now() - playwrightStartedAt)}`);
     await assertUnmappedSpecsExecutedInReport(process.env.UNMAPPED_E2E_FILES);
     await runCommand(
       "node",

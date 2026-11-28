@@ -12,27 +12,18 @@ import {
 } from "./e2e-project-catalog.mjs";
 import { gitExecutable } from "./git-executable.mjs";
 
-const ALL_PERSISTENT_PROJECTS = [
-  "action sharing",
-  "authenticated campaign",
-  "signalement campaign 2",
-  "personal AI authenticated",
-];
-
 const SHARED_BOOTSTRAP_INFRA_FILES = [
   "scripts/ci/start-supabase-ephemeral.sh",
   "scripts/ci/supabase-config.mjs",
   "scripts/ci/supabase-config.test.mjs",
   "scripts/ci/diagnose-supabase-start.mjs",
   "scripts/ci/diagnose-supabase-start.test.mjs",
-  "scripts/ci/e2e-project-catalog.mjs",
   "package.json",
   "package-lock.json",
 ];
 
 const SHARED_E2E_INFRA_FILES = new Set([
   ...SHARED_BOOTSTRAP_INFRA_FILES,
-  "scripts/ci/e2e-project-catalog.mjs",
   "playwright.config.ts",
   "e2e/global.setup.ts",
   "e2e/global.teardown.ts",
@@ -43,7 +34,6 @@ const SHARED_E2E_INFRA_FILES = new Set([
 
 const SHARED_SQL_INFRA_FILES = new Set([
   ...SHARED_BOOTSTRAP_INFRA_FILES,
-  "scripts/ci/e2e-project-catalog.mjs",
   "apps/web/supabase/config.toml",
   "apps/web/supabase/seed.sql",
   ".github/workflows/supabase-sql-proof.yml",
@@ -52,6 +42,17 @@ const SHARED_SQL_INFRA_FILES = new Set([
   "scripts/ci/isolate-supabase-migration-failure.mjs",
   "scripts/ci/isolate-supabase-migration-failure.test.mjs",
   "scripts/ci/validate-sql-syntax.mjs",
+]);
+
+const SPOGOMI_SQL_CONTRACTS = Object.freeze([
+  "apps/web/supabase/tests/spogomi-division-regulation-configuration.pgtap.sql",
+  "apps/web/supabase/tests/spogomi-mapping-coherence.pgtap.sql",
+  "apps/web/supabase/tests/spogomi-registration-quiz.sql",
+  "apps/web/supabase/tests/spogomi-referee-qualification.sql",
+  "apps/web/supabase/tests/spogomi-team-referees.sql",
+  "apps/web/supabase/tests/spogomi-transactional-contract.sql",
+  "apps/web/supabase/tests/spogomi-volunteer-help-proposals.pgtap.sql",
+  "apps/web/supabase/tests/spogomi-mixed-division-smoke.sql",
 ]);
 
 function normalizePath(filePath) {
@@ -198,9 +199,13 @@ export function planE2eAndSql({
   const enterpriseOrganizationMigrations = files.filter((file) =>
     /^apps\/web\/supabase\/migrations\/\d+_enterprise_(?:organization|member)_[^/]+\.sql$/.test(file),
   );
-  const hasOnlyEnterpriseOrganizationSchema =
-    enterpriseOrganizationMigrations.length > 0 &&
-    files.filter(isSharedSupabaseSchemaFile).every((file) => enterpriseOrganizationMigrations.includes(file)) &&
+  const spogomiMigrations = files.filter((file) =>
+    /^apps\/web\/supabase\/migrations\/\d+_[^/]*spogomi_[^/]+\.sql$/.test(file),
+  );
+  const recognizedDomainMigrations = new Set([...enterpriseOrganizationMigrations, ...spogomiMigrations]);
+  const hasOnlyRecognizedDomainSchema =
+    recognizedDomainMigrations.size > 0 &&
+    files.filter(isSharedSupabaseSchemaFile).every((file) => recognizedDomainMigrations.has(file)) &&
     !files.some((file) => SHARED_SQL_INFRA_FILES.has(file) || SHARED_E2E_INFRA_FILES.has(file));
   const hasSharedAuth = files.some(isSharedAuthOrRuntimeFile);
   const hasSharedE2eInfra = files.some(
@@ -208,7 +213,7 @@ export function planE2eAndSql({
   );
   const hasSharedSqlInfra = files.some((file) => SHARED_SQL_INFRA_FILES.has(file));
 
-  if ((hasSharedSchema && !hasOnlyEnterpriseOrganizationSchema) || hasSharedAuth || hasSharedE2eInfra) {
+  if ((hasSharedSchema && !hasOnlyRecognizedDomainSchema) || hasSharedAuth || hasSharedE2eInfra) {
     for (const project of ALL_CI_E2E_PROJECTS) projects.add(project);
     runSpogomiIntegration = true;
     for (const unmapped of findUnmappedActiveE2eFiles(activeE2eList ?? [])) {
@@ -216,8 +221,28 @@ export function planE2eAndSql({
     }
   }
 
-  if (hasOnlyEnterpriseOrganizationSchema) {
+  if (hasOnlyRecognizedDomainSchema && enterpriseOrganizationMigrations.length > 0 && spogomiMigrations.length === 0) {
     sqlTargets.add("apps/web/supabase/tests/enterprise-organization-foundation.pgtap.sql");
+  } else if (
+    hasOnlyRecognizedDomainSchema &&
+    spogomiMigrations.length > 0 && enterpriseOrganizationMigrations.length === 0 &&
+    files.filter(isSharedSupabaseSchemaFile).every((file) => spogomiMigrations.includes(file)) &&
+    !files.some((file) => SHARED_SQL_INFRA_FILES.has(file) || SHARED_E2E_INFRA_FILES.has(file))
+  ) {
+    const migrationNames = spogomiMigrations.join(" ").toLowerCase();
+    const targetedContracts = /referee|reviewer|team/.test(migrationNames)
+      ? SPOGOMI_SQL_CONTRACTS.filter((target) => /referee-qualification|team-referees/.test(target))
+      : /registration|admission|volunteer|capacity|quiz/.test(migrationNames)
+        ? SPOGOMI_SQL_CONTRACTS.filter((target) => /registration-quiz|volunteer-help-proposals/.test(target))
+        : /division|regulation|mixed|mapping/.test(migrationNames)
+          ? SPOGOMI_SQL_CONTRACTS.filter((target) => /division-regulation|mapping-coherence|mixed-division/.test(target))
+          : SPOGOMI_SQL_CONTRACTS;
+    for (const target of targetedContracts) {
+      sqlTargets.add(target);
+    }
+  } else if (hasOnlyRecognizedDomainSchema) {
+    runAllSql = true;
+    validateAllSql = true;
   } else if (hasSharedSchema || hasSharedSqlInfra) {
     runAllSql = true;
     validateAllSql = true;
@@ -241,7 +266,7 @@ export function planE2eAndSql({
     for (const projectName of matchedProjects) {
       projects.add(projectName);
     }
-    if (matchedProjects.includes("authenticated campaign")) {
+    if (matchedProjects.includes("spogomi authenticated")) {
       runSpogomiIntegration = true;
     }
 

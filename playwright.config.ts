@@ -19,6 +19,8 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.PLAYWRIGHT_CI_RETRIES === "1" ? 1 : 0,
+  // Clerk identities and ephemeral PostgreSQL fixtures are intentionally shared;
+  // keep scenarios sequential until each domain owns independent records.
   workers: 1,
   outputDir: "artifacts/playwright/results",
   reporter: process.env.CI
@@ -43,7 +45,12 @@ export default defineConfig({
     {
       name: "local public",
       testMatch:
-        /(?:smoke-public|reports-public|spogomi-navigation|ui-consistency-geometry|footer-responsive-public|navigation-ribbon-variants|network-demand-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries|accessibility-lighthouse-controls|personal-ai-public|annuaire-public-cleanliness|annuaire-catalog|open-data-science|funding-transparency|page-layout-fluid|formalities-interface)\.(?:spec|test)\.ts/,
+        /(?:smoke-public|reports-public|ui-consistency-geometry|footer-responsive-public|navigation-ribbon-variants|network-demand-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries|accessibility-lighthouse-controls|personal-ai-public|annuaire-public-cleanliness|annuaire-catalog|open-data-science|funding-transparency|page-layout-fluid|formalities-interface)\.(?:spec|test)\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "spogomi public",
+      testMatch: /spogomi-navigation\.(?:spec|test)\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
     {
@@ -115,7 +122,19 @@ export default defineConfig({
     },
     {
       name: "authenticated campaign",
-      testMatch: /authenticated-(?:campaign|spogomi|enterprise-organization)\.(?:spec|test)\.ts/,
+      testMatch: /authenticated-campaign\.(?:spec|test)\.ts/,
+      dependencies: ["global setup"],
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "spogomi authenticated",
+      testMatch: /authenticated-spogomi\.(?:spec|test)\.ts/,
+      dependencies: ["global setup"],
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "enterprise organization",
+      testMatch: /authenticated-enterprise-organization\.(?:spec|test)\.ts/,
       dependencies: ["global setup"],
       use: { ...devices["Desktop Chrome"] },
     },

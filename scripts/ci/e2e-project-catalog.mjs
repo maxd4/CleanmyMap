@@ -6,13 +6,11 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
     name: "local public",
     requiresAuth: false,
     specPatterns: [
-      /^e2e\/(?:smoke-public|reports-public|spogomi-navigation|ui-consistency-geometry|footer-responsive-public|navigation-ribbon-variants|network-demand-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries|accessibility-lighthouse-controls|personal-ai-public|annuaire-public-cleanliness|annuaire-catalog|open-data-science|funding-transparency|page-layout-fluid|formalities-interface)\.(?:spec|test)\.ts$/,
+      /^e2e\/(?:smoke-public|reports-public|ui-consistency-geometry|footer-responsive-public|navigation-ribbon-variants|network-demand-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries|accessibility-lighthouse-controls|personal-ai-public|annuaire-public-cleanliness|annuaire-catalog|open-data-science|funding-transparency|page-layout-fluid|formalities-interface)\.(?:spec|test)\.ts$/,
     ],
     dependencyPrefixes: [
       "apps/web/src/lib/partners/",
       "apps/web/src/components/sections/rubriques/annuaire/",
-      "apps/web/src/components/spogomi/",
-      "apps/web/src/app/(app)/spogomi/",
       "apps/web/src/lib/funding/",
       "apps/web/src/app/api/funding/",
       "apps/web/src/components/sections/rubriques/funding-section",
@@ -22,6 +20,28 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
       "apps/web/src/components/actions/action-creation-legal-panel",
       "apps/web/src/components/actions/action-formalities-",
       "apps/web/src/lib/actions/formalities/",
+    ],
+  },
+  {
+    name: "spogomi public",
+    requiresAuth: false,
+    specPatterns: [/^e2e\/spogomi-navigation\.(?:spec|test)\.ts$/],
+    dependencyPrefixes: [
+      "apps/web/src/app/(app)/spogomi/",
+      "apps/web/src/components/spogomi/public-",
+    ],
+  },
+  {
+    name: "spogomi authenticated",
+    requiresAuth: true,
+    specPatterns: [/^e2e\/authenticated-spogomi\.(?:spec|test)\.ts$/],
+    dependencyPrefixes: [
+      "apps/web/src/lib/spogomi/",
+      "apps/web/src/app/api/spogomi/",
+      "apps/web/src/app/api/gamification/spogomi/",
+      "apps/web/src/components/spogomi/",
+      "apps/web/src/app/(app)/spogomi/",
+      "apps/web/src/app/(app)/dashboard/spogomi/",
     ],
   },
   {
@@ -40,21 +60,28 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
     name: "authenticated campaign",
     requiresAuth: true,
     specPatterns: [
-      /^e2e\/authenticated-(?:campaign|spogomi|enterprise-organization)\.(?:spec|test)\.ts$/,
+      /^e2e\/authenticated-campaign\.(?:spec|test)\.ts$/,
     ],
     dependencyPrefixes: [
-      "apps/web/src/lib/spogomi/",
-      "apps/web/src/app/api/spogomi/",
-      "apps/web/src/app/api/gamification/spogomi/",
-      "apps/web/src/components/spogomi/",
-      "apps/web/src/app/(app)/spogomi/",
-      "apps/web/src/app/(app)/dashboard/spogomi/",
-      "apps/web/src/app/(app)/dashboard/",
-      "apps/web/src/app/(app)/sponsor-portal/",
+      "apps/web/src/app/(app)/actions/new/",
+      "apps/web/src/app/(app)/signalement/",
+    ],
+  },
+  {
+    name: "enterprise organization",
+    requiresAuth: true,
+    specPatterns: [/^e2e\/authenticated-enterprise-organization\.(?:spec|test)\.ts$/],
+    dependencyPrefixes: [
       "apps/web/src/app/api/organizations/",
       "apps/web/src/app/api/admin/organizations/",
+      "apps/web/src/app/api/reports/organization/",
       "apps/web/src/lib/organizations/",
       "apps/web/src/components/pilotage/enterprise-organization-workspace",
+      "apps/web/src/components/pilotage/organization-team-panel",
+      "apps/web/src/components/pilotage/organization-collections-panel",
+      "apps/web/src/app/(app)/dashboard/page.tsx",
+      "apps/web/src/app/(app)/sponsor-portal/page.tsx",
+      "apps/web/src/app/admin/organizations/",
     ],
   },
   {
@@ -64,8 +91,6 @@ export const CI_EXECUTABLE_PROJECTS = Object.freeze([
       /^e2e\/signalement-campaign-2\.spec\.ts$/,
     ],
     dependencyPrefixes: [
-      "apps/web/src/lib/reports/",
-      "apps/web/src/app/api/reports/",
       "apps/web/src/lib/signalements/",
       "apps/web/src/app/api/signalements/",
     ],
@@ -126,10 +151,11 @@ export const ALL_CI_E2E_PROJECTS = Object.freeze(
 );
 
 export function matchCiProjectsForFile(filePath) {
+  const isSourceTest = /\.(?:test|spec)\.[^/]+$/i.test(filePath);
   const matched = [];
   for (const project of CI_EXECUTABLE_PROJECTS) {
     const matchesSpec = project.specPatterns.some((pattern) => pattern.test(filePath));
-    const matchesDep = project.dependencyPrefixes.some((prefix) => filePath.startsWith(prefix));
+    const matchesDep = !isSourceTest && project.dependencyPrefixes.some((prefix) => filePath.startsWith(prefix));
     if (matchesSpec || matchesDep) {
       matched.push(project.name);
     }

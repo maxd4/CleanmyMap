@@ -373,6 +373,7 @@ export async function runDevServer(
 
   const url = `http://${host}:${chosenPort}`;
   console.log(`[dev] Next.js démarre sur ${url}`);
+  const webServerStartedAt = performance.now();
   const nextBin = nextBinPath ?? require.resolve("next/dist/bin/next", { paths: [webDir] });
 
   const child = spawnImpl(
@@ -414,6 +415,7 @@ export async function runDevServer(
     .then(() => waitForServerReadyImpl(chosenPort, { host, signal: readinessAbort.signal }))
     .then((result) => {
       serverReady = true;
+      consoleImpl.log(`WEB_SERVER_READY_DURATION_MS=${Math.round(performance.now() - webServerStartedAt)}`);
       return { kind: "ready", result };
     })
     .catch((error) => ({ kind: "readiness-error", error }));
