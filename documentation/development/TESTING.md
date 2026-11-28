@@ -15,11 +15,13 @@ séparément, pas des modes supplémentaires.
 Au démarrage, chaque exécution capture sa référence initiale (`HEAD`,
 `origin/main`, index, chemins tracked dirty et untracked) et l'allowlist de ses
 fichiers attribués. Référence et périmètre restent gelés jusqu'à la clôture.
-Les changements préexistants et ceux apparus ensuite sont étrangers par défaut,
-préservés et exclus ; seules les modifications du writer attribué (ChatGPT ou
-Codex) sur ses propres chemins sont incluses. Une écriture concurrente sur le
-même chemin est une collision à préserver et signaler, sans fusion ni écrasement
-silencieux.
+Un worktree dirty n'arrête pas les opérations indépendantes. Chaque commit
+contient uniquement les changements explicitement attribués et validés pour
+son lot ; les changements étrangers staged, unstaged ou untracked sont
+préservés et exclus. Plusieurs lots ne partagent un commit qu'avec attribution
+et validation explicites pour chacun. Une écriture concurrente sur le même
+chemin est une collision à préserver et signaler ; elle bloque seulement les
+opérations dépendant de ce chemin.
 
 Une évolution ultérieure de `HEAD`, `origin/main`, de l'index ou du worktree ne
 déclenche ni extension de périmètre, ni resynchronisation fonctionnelle, ni
@@ -30,10 +32,16 @@ mutable ne peut être attribuée à un SHA. Le rapport conserve tout échec obse
 sur le candidat vérifié : corriger uniquement les causes attribuables au lot,
 et signaler séparément les défauts préexistants ou étrangers.
 
-Les règles universelles R01–R12 ont une source unique. Les changements
-étrangers au lot sont préservés et exclus des nouveaux commits. Les outils de
-publication exigent une attribution explicite quand elle est contrôlable ; ils
-ne déduisent jamais l'attribution de la seule présence au démarrage. Les hooks,
+Les règles universelles R01–R12 ont une source unique dans la gouvernance
+racine. Le
+périmètre d'un commit (lot courant attribué) est distinct du périmètre d'un push
+(tous les commits locaux validés en avance sur `origin/main`, quel que soit
+leur writer). L'attribution de publication couvre explicitement les lots de
+tous ces commits ; elle ne se déduit jamais de la seule présence au démarrage.
+Avant chaque décision de publication, fetcher puis vérifier la divergence ;
+si aucun commit n'est en avance, constater la convergence sans lancer de push.
+La clôture suit validation du candidat exact, commit attribué, push des commits
+validés en avance et vérification post-fetch de la convergence. Les hooks,
 contrôles de sécurité, protections et fast-forward ne sont pas contournables.
 
 Les provenances sont distinctes et doivent être affichées : `WORKTREE_LIVE`

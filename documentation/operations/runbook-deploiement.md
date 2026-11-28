@@ -72,7 +72,7 @@ rétroactivement. Ne lancer aucune commande CLI `vercel deploy` directe pour
 contourner ce contrôle.
 
 Pour une campagne DEPLOY autorisée à publier automatiquement, fournir en plus
-la liste complète des fichiers attribués au chantier :
+la liste complète des fichiers attribués au chantier courant :
 
 ```powershell
 npm run checks:deploy -- --auto-publish `
@@ -81,12 +81,14 @@ npm run checks:deploy -- --auto-publish `
   --deployment-proof=<preuve-vercel.json>
 ```
 
-Le runner capture staged, unstaged et non suivis non ignorés dans un index
-temporaire, refuse tout fichier étranger, secret ou artefact généré, valide
-l'arbre exact, puis commit et pousse uniquement l'allowlist attribuée après
-les guards et la release gate. Un changement concurrent, une preuve manquante,
-un contrôle non vert, une divergence distante ou un échec du push bloque la
-publication. Il vérifie enfin `HEAD = origin/main` et la divergence `0/0`.
+Le runner capture les seuls fichiers attribués dans un index temporaire.
+Staged, unstaged, untracked ou ignorés hors de cette attribution restent
+préservés et exclus du commit. Un chemin attribué manquant ou généré, une
+preuve manquante, un contrôle non vert, une divergence distante incompatible ou
+un échec du push bloque la publication. Après les guards et la release gate,
+le runner valide l'arbre exact, commit le lot et pousse les commits validés en
+avance selon les règles universelles de gouvernance. Il vérifie enfin
+`HEAD = origin/main` et la divergence `0/0`.
 
 Cette preuve DEPLOY est distincte de FULL, ne couvre que la portée Web
 détectée cumulativement depuis le SHA de Production Vercel effectivement

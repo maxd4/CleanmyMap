@@ -1233,26 +1233,37 @@ test("a worktree change after validation invalidates the DEPLOY and prevents pub
   }
 });
 
-test("foreign files and secrets are not implicitly included in an automatic publication", async () => {
+test("automatic publication preserves foreign staged, unstaged, untracked, and ignored files", async () => {
   const root = publicationFixture();
   try {
     fs.writeFileSync(path.join(root, "apps", "web", "src", "page.tsx"), "export default null;\n");
+    fs.writeFileSync(path.join(root, "README.md"), "foreign unstaged\n");
+    fs.writeFileSync(path.join(root, "foreign-staged.ts"), "export const staged = true;\n");
+    execFileSync("git", ["add", "--", "foreign-staged.ts"], { cwd: root });
     fs.writeFileSync(path.join(root, "foreign.ts"), "export const foreign = true;\n");
     fs.writeFileSync(path.join(root, ".env.local"), "SUPABASE_SERVICE_ROLE_KEY=secret-fixture\n");
     const baseSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
     const proofPath = path.join(root, "vercel-proof.json");
     fs.writeFileSync(proofPath, JSON.stringify(publicationProof(baseSha)));
-    await assert.rejects(
-      runValidationMode({
-        mode: "DEPLOY",
-        autoPublish: true,
-        candidateFiles: ["apps/web/src/page.tsx"],
-        deploymentReferenceSha: baseSha,
-        deploymentProofPath: proofPath,
-      }, publicationRuntime(root, { runCheck: async () => ({ status: "PASS" }) })),
-      /SCOPE_UNRESOLVED.*(?:\.env\.local|foreign\.ts)/,
+    const result = await runValidationMode({
+      mode: "DEPLOY",
+      autoPublish: true,
+      candidateFiles: ["apps/web/src/page.tsx"],
+      deploymentReferenceSha: baseSha,
+      deploymentProofPath: proofPath,
+    }, publicationRuntime(root, { runCheck: async () => ({ status: "PASS" }) }));
+    assert.equal(result, 0);
+    const commitSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    assert.deepEqual(
+      execFileSync("git", ["diff-tree", "--no-commit-id", "--name-only", "-r", commitSha], { cwd: root, encoding: "utf8" }).trim().split(/\r?\n/),
+      ["apps/web/src/page.tsx"],
     );
-    assert.equal(execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim(), baseSha);
+    assert.equal(execFileSync("git", ["show", "HEAD:apps/web/src/page.tsx"], { cwd: root, encoding: "utf8" }), "export default null;\n");
+    assert.equal(fs.readFileSync(path.join(root, "README.md"), "utf8"), "foreign unstaged\n");
+    assert.equal(fs.readFileSync(path.join(root, "foreign-staged.ts"), "utf8"), "export const staged = true;\n");
+    assert.equal(fs.readFileSync(path.join(root, "foreign.ts"), "utf8"), "export const foreign = true;\n");
+    assert.equal(fs.readFileSync(path.join(root, ".env.local"), "utf8"), "SUPABASE_SERVICE_ROLE_KEY=secret-fixture\n");
+    assert.notEqual(commitSha, baseSha);
   } finally {
     removeFixture(root);
   }

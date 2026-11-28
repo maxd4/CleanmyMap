@@ -467,7 +467,6 @@ export async function runValidationMode(
       publicationCandidate = (runtime.captureCandidate ?? captureWorktreeCandidate)({
         repositoryRoot,
         candidateFiles: options.candidateFiles,
-        excludedFiles: options.deploymentProofPath ? [options.deploymentProofPath] : [],
       });
       process.env.GIT_INDEX_FILE = publicationCandidate.indexPath;
       publicationIndexRestored = false;
@@ -776,6 +775,7 @@ export async function runValidationMode(
           baseRef: deployScope.baseRef,
           deploymentReference: options.deploymentReferenceSha ? { sha: options.deploymentReferenceSha } : null,
           deploymentProof,
+          allowDirtyCandidate: true,
           allowedDirtyFiles: options.deploymentProofPath ? [options.deploymentProofPath] : [],
           vercelClient: runtime.vercelClient,
         });

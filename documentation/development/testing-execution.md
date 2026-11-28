@@ -408,13 +408,13 @@ npm run checks:deploy -- --auto-publish \
 
 `--auto-publish` est réservé à DEPLOY. Avant toute validation, le runner
 capture un index temporaire dérivé de `HEAD`, puis y matérialise explicitement
-les fichiers `--candidate-file`. Il compare cette liste à l'inventaire complet
-du worktree (staged, unstaged et fichiers non ignorés non suivis). Un fichier
-étranger, manquant, généré (`artifacts/`, `coverage/`, `.next/`, `dist/`,
-`build/`, rapports de test ou `.vercel/`) ou une opération Git en cours bloque
-la campagne ; aucun secret ou artefact ne peut être ajouté implicitement. Le
-fichier de preuve Vercel reste une entrée de validation, pas une partie de la
-candidate.
+les fichiers `--candidate-file`. Les modifications étrangères staged,
+unstaged, untracked ou ignorées restent hors de cet index et du commit, sans
+bloquer ce candidat indépendant. Un chemin attribué manquant ou généré
+(`artifacts/`, `coverage/`, `.next/`, `dist/`, `build/`, rapports de test ou
+`.vercel/`), ou une opération Git en cours, bloque la candidate concernée ;
+aucun secret ou artefact ne peut être ajouté implicitement. Le fichier de
+preuve Vercel reste une entrée de validation, pas une partie de la candidate.
 
 L'interface bas niveau `npm run publish:main` exige `CMM_ATTRIBUTED_FILES`, un
 tableau JSON non vide de chemins attribués. Le publisher compare ces chemins à

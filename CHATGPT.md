@@ -45,6 +45,11 @@ ChatGPT applique ces règles à toute contribution directe, aux commits créés
 via l'API GitHub et aux artefacts candidats. Une capacité technique à écrire
 ou à bypasser un ruleset ne suffit pas à autoriser l'opération : l'identité et
 la permission explicite doivent correspondre à la règle concernée selon R11.
+Le worktree partagé peut contenir des changements d'autres writers : ils
+restent hors du commit de ChatGPT sauf attribution et validation explicites.
+Avant un push, inclure dans la validation et l'attribution de publication tous
+les commits locaux en avance sur `origin/main`, indépendamment de leur auteur,
+conformément à la distinction commit/push de `AGENTS.md`.
 
 Les instructions scoped et skills précisent uniquement les opérations de leur
 domaine. Si un contrôle local n'est pas disponible, déclarer

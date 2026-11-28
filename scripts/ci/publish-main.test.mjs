@@ -123,6 +123,28 @@ test("requires explicit attribution and rejects foreign paths before push", asyn
   assert.equal(pushCalls(foreign).length, 0);
 });
 
+test("publishes validated commits from multiple attributed lots as one push range", async () => {
+  const fake = fakeGit({ changedFiles: ["AGENTS.md", "CHATGPT.md", "scripts/AGENTS.md"] });
+  const published = await publishMain({
+    runGitCommand: fake.runGitCommand,
+    attributedFiles: ["AGENTS.md", "CHATGPT.md", "scripts/AGENTS.md"],
+    sleep: async () => {},
+  });
+
+  assert.equal(published, "candidate");
+  assert.deepEqual(pushCalls(fake), [["push", "origin", "candidate:refs/heads/main"]]);
+  assert.ok(fake.calls.some((args) => args[0] === "diff" && args[2] === "base..candidate"));
+});
+
+test("records already converged refs without issuing an empty push", async () => {
+  const fake = fakeGit({ local: "base", remote: "base", parents: { base: "root" } });
+  const published = await publishMain({ runGitCommand: fake.runGitCommand, sleep: async () => {} });
+
+  assert.equal(published, "base");
+  assert.equal(pushCalls(fake).length, 0);
+  assert.equal(fake.calls.filter((args) => args[0] === "fetch").length, 1);
+});
+
 test("blocks before push when the active coverage proof is absent", async () => {
   const fake = fakeGit({
     local: "candidate",
@@ -288,34 +310,54 @@ test("captures staged, unstaged, and untracked attributed files in one exact tre
       repositoryRoot: root,
       candidateFiles: ["README.md", "staged.txt", "apps/web/src/page.tsx"],
     });
-    assert.deepEqual(candidate.worktreeFiles, ["README.md", "apps/web/src/page.tsx", "staged.txt"].sort((left, right) => left.localeCompare(right, "en")));
     const changed = execFileSync("git", ["diff", "--name-only", candidate.baseSha, candidate.candidateTreeSha], {
       cwd: root,
       encoding: "utf8",
     }).trim().split(/\r?\n/).filter(Boolean).sort((left, right) => left.localeCompare(right, "en"));
-    assert.deepEqual(changed, candidate.worktreeFiles);
+    assert.deepEqual(changed, ["README.md", "apps/web/src/page.tsx", "staged.txt"].sort((left, right) => left.localeCompare(right, "en")));
     candidate.cleanup();
   } finally {
     removePathWithRetry(root, { recursive: true });
   }
 });
 
-test("blocks foreign and generated files before creating a publication candidate", () => {
+test("excludes staged, unstaged, and untracked foreign files while preserving them", () => {
   const root = fixtureRepository();
   try {
     fs.writeFileSync(path.join(root, "apps", "web", "src", "page.tsx"), "export default null;\n");
-    fs.writeFileSync(path.join(root, "foreign.txt"), "foreign\n");
-    assert.throws(
-      () => captureWorktreeCandidate({ repositoryRoot: root, candidateFiles: ["apps/web/src/page.tsx"] }),
-      /SCOPE_UNRESOLVED.*foreign\.txt/,
-    );
-    fs.rmSync(path.join(root, "foreign.txt"));
+    fs.writeFileSync(path.join(root, "README.md"), "foreign unstaged\n");
+    fs.writeFileSync(path.join(root, "staged-foreign.txt"), "foreign staged\n");
+    execFileSync("git", ["add", "--", "staged-foreign.txt"], { cwd: root });
+    fs.writeFileSync(path.join(root, "untracked-foreign.txt"), "foreign untracked\n");
+    const candidate = captureWorktreeCandidate({
+      repositoryRoot: root,
+      candidateFiles: ["apps/web/src/page.tsx"],
+    });
+    const included = execFileSync("git", ["diff", "--name-only", candidate.baseSha, candidate.candidateTreeSha], {
+      cwd: root,
+      encoding: "utf8",
+    }).trim().split(/\r?\n/).filter(Boolean);
+    assert.deepEqual(included, ["apps/web/src/page.tsx"]);
+    assert.equal(fs.readFileSync(path.join(root, "README.md"), "utf8"), "foreign unstaged\n");
+    assert.equal(fs.readFileSync(path.join(root, "staged-foreign.txt"), "utf8"), "foreign staged\n");
+    assert.equal(fs.readFileSync(path.join(root, "untracked-foreign.txt"), "utf8"), "foreign untracked\n");
+    candidate.cleanup();
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("blocks generated candidate files without blocking unrelated dirty paths", () => {
+  const root = fixtureRepository();
+  try {
+    fs.writeFileSync(path.join(root, "README.md"), "unrelated dirty\n");
     fs.mkdirSync(path.join(root, "artifacts"), { recursive: true });
     fs.writeFileSync(path.join(root, "artifacts", "report.json"), "{}\n");
     assert.throws(
-      () => captureWorktreeCandidate({ repositoryRoot: root, candidateFiles: ["apps/web/src/page.tsx", "artifacts/report.json"] }),
+      () => captureWorktreeCandidate({ repositoryRoot: root, candidateFiles: ["artifacts/report.json"] }),
       /GENERATED_ARTIFACT/,
     );
+    assert.equal(fs.readFileSync(path.join(root, "README.md"), "utf8"), "unrelated dirty\n");
   } finally {
     removePathWithRetry(root, { recursive: true });
   }
@@ -331,6 +373,28 @@ test("commits exactly the validated tree and leaves no attributed file uncommitt
     assert.equal(execFileSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: root, encoding: "utf8" }).trim(), candidate.candidateTreeSha);
     assert.equal(execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: root, encoding: "utf8" }).trim(), "");
     assert.match(result.commitSha, /^[0-9a-f]{40}$/);
+    candidate.cleanup();
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+  }
+});
+
+test("commits attributed files without consuming another writer's staged changes", () => {
+  const root = fixtureRepository();
+  try {
+    fs.writeFileSync(path.join(root, "apps", "web", "src", "page.tsx"), "export default null;\n");
+    fs.writeFileSync(path.join(root, "foreign-staged.txt"), "preserve staged\n");
+    execFileSync("git", ["add", "--", "foreign-staged.txt"], { cwd: root });
+    fs.writeFileSync(path.join(root, "README.md"), "preserve unstaged\n");
+    fs.writeFileSync(path.join(root, "foreign-untracked.txt"), "preserve untracked\n");
+    const candidate = captureWorktreeCandidate({ repositoryRoot: root, candidateFiles: ["apps/web/src/page.tsx"] });
+    const committed = commitCandidate({ repositoryRoot: root, candidate, runPreCommit: false });
+
+    const committedPaths = execFileSync("git", ["diff-tree", "--no-commit-id", "--name-only", "-r", committed.commitSha], { cwd: root, encoding: "utf8" }).trim().split(/\r?\n/);
+    assert.deepEqual(committedPaths, ["apps/web/src/page.tsx"]);
+    assert.match(execFileSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" }), /A  foreign-staged\.txt/);
+    assert.match(execFileSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" }), / M README\.md/);
+    assert.match(execFileSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" }), /\?\? foreign-untracked\.txt/);
     candidate.cleanup();
   } finally {
     removePathWithRetry(root, { recursive: true });

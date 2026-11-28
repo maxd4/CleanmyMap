@@ -91,12 +91,6 @@ function stageCandidateIntoIndex(repositoryRoot, index, candidateFiles) {
   return { treeSha, env: index.env };
 }
 
-function compareFiles(expected, actual) {
-  const left = sortedUnique(expected);
-  const right = sortedUnique(actual);
-  return left.length === right.length && left.every((file, index) => file === right[index]);
-}
-
 function candidateFingerprint(repositoryRoot, candidateFiles) {
   const hash = crypto.createHash("sha256");
   for (const file of sortedUnique(candidateFiles)) {
@@ -114,27 +108,19 @@ function candidateFingerprint(repositoryRoot, candidateFiles) {
   return hash.digest("hex");
 }
 
-export function captureWorktreeCandidate({ repositoryRoot = process.cwd(), candidateFiles = [], excludedFiles = [] } = {}) {
+export function captureWorktreeCandidate({ repositoryRoot = process.cwd(), candidateFiles = [] } = {}) {
   assertMain((args) => runGitAt(repositoryRoot, args));
   assertNoOperationInProgress((args) => runGitAt(repositoryRoot, args, { allowFailure: true }));
 
   const worktreeFiles = inventoryWorktree(repositoryRoot);
   const attributedFiles = sortedUnique(candidateFiles);
-  const excluded = new Set(sortedUnique(excludedFiles.map((file) => path.relative(
-    repositoryRoot,
-    path.resolve(repositoryRoot, file),
-  ))));
   if (attributedFiles.length === 0) {
-    throw new Error("DEPLOY_PUBLICATION_ATTRIBUTION_REQUIRED: pass --candidate-file for every worktree change.");
+    throw new Error("DEPLOY_PUBLICATION_ATTRIBUTION_REQUIRED: pass --candidate-file for each attributed change.");
   }
-  const foreignFiles = worktreeFiles.filter((file) => !attributedFiles.includes(file) && !excluded.has(file));
   const missingFiles = attributedFiles.filter((file) => !worktreeFiles.includes(file));
   const generatedFiles = attributedFiles.filter(hasGeneratedPath);
-  if (foreignFiles.length > 0 || missingFiles.length > 0) {
-    throw new Error(
-      `DEPLOY_PUBLICATION_SCOPE_UNRESOLVED: foreign=${foreignFiles.join(",") || "none"}; `
-        + `missing=${missingFiles.join(",") || "none"}.`,
-    );
+  if (missingFiles.length > 0) {
+    throw new Error(`DEPLOY_PUBLICATION_SCOPE_UNRESOLVED: missing=${missingFiles.join(",")}.`);
   }
   if (generatedFiles.length > 0) {
     throw new Error(`DEPLOY_PUBLICATION_GENERATED_ARTIFACT: ${generatedFiles.join(", ")}`);
@@ -147,7 +133,6 @@ export function captureWorktreeCandidate({ repositoryRoot = process.cwd(), candi
       repositoryRoot,
       baseSha: gitTextAt(repositoryRoot, ["rev-parse", "HEAD"]),
       candidateFiles: attributedFiles,
-      worktreeFiles: sortedUnique(worktreeFiles),
       ignoredFiles: inventoryIgnored(repositoryRoot),
       candidateTreeSha: candidate.treeSha,
       worktreeFingerprint: candidateFingerprint(repositoryRoot, attributedFiles),
@@ -162,10 +147,8 @@ export function captureWorktreeCandidate({ repositoryRoot = process.cwd(), candi
 }
 
 export function assertWorktreeCandidateStable(candidate) {
-  const currentFiles = inventoryWorktree(candidate.repositoryRoot);
   const currentFingerprint = candidateFingerprint(candidate.repositoryRoot, candidate.candidateFiles);
-  const stable = compareFiles(candidate.worktreeFiles, currentFiles)
-    && currentFingerprint === candidate.worktreeFingerprint
+  const stable = currentFingerprint === candidate.worktreeFingerprint
     && gitTextAt(candidate.repositoryRoot, ["rev-parse", "HEAD"]) === candidate.baseSha;
   if (!stable) {
     throw new Error("DEPLOY_PUBLICATION_CANDIDATE_CHANGED: worktree, attribution or HEAD changed after validation.");
@@ -186,9 +169,7 @@ export function commitCandidate({
 } = {}) {
   if (!candidate?.candidateFiles?.length) throw new Error("DEPLOY_PUBLICATION_CANDIDATE_EMPTY");
   assertWorktreeCandidateStable(candidate);
-  const commitEnv = { ...process.env };
-  delete commitEnv.GIT_INDEX_FILE;
-  runGitAt(repositoryRoot, ["add", "--", ...candidate.candidateFiles], { env: commitEnv });
+  const commitEnv = { ...process.env, ...candidate.indexEnv, GIT_INDEX_FILE: candidate.indexPath };
   const stagedTreeSha = gitTextAt(repositoryRoot, ["write-tree"], { env: commitEnv });
   if (stagedTreeSha !== candidate.candidateTreeSha) {
     throw new Error(`DEPLOY_PUBLICATION_TREE_CHANGED: expected ${candidate.candidateTreeSha}, got ${stagedTreeSha}.`);
@@ -203,6 +184,9 @@ export function commitCandidate({
   if (committedTreeSha !== candidate.candidateTreeSha) {
     throw new Error(`DEPLOY_PUBLICATION_COMMIT_TREE_MISMATCH: expected ${candidate.candidateTreeSha}, got ${committedTreeSha}.`);
   }
+  const callerIndexEnv = { ...process.env };
+  delete callerIndexEnv.GIT_INDEX_FILE;
+  runGitAt(repositoryRoot, ["add", "--", ...candidate.candidateFiles], { env: callerIndexEnv });
   return { commitSha, treeSha: committedTreeSha, output: `${commit.stdout}${commit.stderr}` };
 }
 
