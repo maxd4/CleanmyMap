@@ -1,6 +1,6 @@
 begin;
 
-select plan(8);
+select plan(7);
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"partial-composition-test"}', true);
