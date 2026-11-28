@@ -288,12 +288,37 @@ function validateParticipantUpdate(params: {
   const collectorsCountProvenance = body.collectorsCount === null
     ? null
     : body.collectorsCountProvenance ?? currentMetadata.collectorsCountProvenance;
-  if (collectorsCountProvenance && collectorsCount === null) {
+  if (collectorsCountProvenance && collectorsCount === null && collectorsCountProvenance !== "user_unknown") {
     throw new ActionUpdateValidationError("collectorsCountProvenance", "Une provenance ne peut pas être conservée sans nombre de ramasseurs.");
   }
-  if ((collectorsCountProvenance === "participant_total_default" || collectorsCountProvenance === "historical_default_accepted") && collectorsCount !== total) {
+  if (collectorsCountProvenance === "user_unknown" && collectorsCount !== null) {
+    throw new ActionUpdateValidationError("collectorsCountProvenance", "Une valeur inconnue ne peut pas être associée à un nombre de ramasseurs.");
+  }
+  if (
+    body.collectorsCountProvenance === "historical_default_accepted" &&
+    currentMetadata.collectorsCountProvenance !== "historical_default_accepted" &&
+    collectorsCount !== total
+  ) {
+    throw new ActionUpdateValidationError("collectorsCountProvenance", "L’acceptation du total historique doit porter sur le total présent au moment du choix.");
+  }
+  if (collectorsCountProvenance === "participant_total_default" && collectorsCount !== total) {
     throw new ActionUpdateValidationError("collectorsCountProvenance", "La valeur préremplie doit correspondre au total présent.");
   }
+}
+
+function followParticipantTotalForCollectors(params: {
+  body: ActionUpdateInput;
+  currentMetadata: ActionMetadata;
+  nextActionPhase: ActionRow["action_phase"];
+}): ActionUpdateInput {
+  const { body, currentMetadata, nextActionPhase } = params;
+  if (
+    nextActionPhase !== "post_action_complete" ||
+    body.volunteersCount === undefined ||
+    body.collectorsCount !== undefined ||
+    (body.collectorsCountProvenance ?? currentMetadata.collectorsCountProvenance) !== "participant_total_default"
+  ) return body;
+  return { ...body, collectorsCount: body.volunteersCount };
 }
 
 export async function prepareActionUpdate(params: {
@@ -315,9 +340,9 @@ export async function prepareActionUpdate(params: {
     throw error;
   }
 
-  const nextActionPhase = body.actionPhase ?? current.action_phase;
-
   const currentMetadata = extractActionMetadataFromNotes(current.notes);
+  const nextActionPhase = body.actionPhase ?? current.action_phase;
+  body = followParticipantTotalForCollectors({ body, currentMetadata, nextActionPhase });
   const { submittedDrawing } = validateActionUpdateInput({ current, body, nextActionPhase, currentMetadata });
 
   const updateData = await buildActionUpdateFields({ current, body });

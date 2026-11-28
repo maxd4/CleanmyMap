@@ -107,6 +107,34 @@ describe("canonical department attribution", () => {
     });
   });
 
+  it("preserves partial typed composition and ignores divergent historical metadata on read", () => {
+    const row = buildRow({
+      volunteers_count: 26,
+      children_count: 18,
+      adult_count: null,
+      retired_count: 0,
+      notes: "[cmm-meta]{\"volunteerParticipation\":{\"childrenCount\":20,\"adultCount\":6,\"retiredCount\":0}}",
+    });
+
+    const contract = toActionContract(row as never);
+    expect(contract.metadata.volunteerParticipation).toMatchObject({
+      childrenCount: 18,
+      adultCount: null,
+      retiredCount: 0,
+      participantsCount: null,
+      effectiveVolunteerUnits: null,
+    });
+    const editor = buildActionEditorPayload(row as never);
+    expect(editor).not.toBeNull();
+    expect(editor?.volunteerParticipation).toMatchObject({
+      childrenCount: 18,
+      adultCount: null,
+      retiredCount: 0,
+      participantsCount: null,
+      effectiveVolunteerUnits: null,
+    });
+  });
+
   it("writes explicit contract values and null defaults to actions persistence", () => {
     const payload = {
       actionDate: "2026-09-12",

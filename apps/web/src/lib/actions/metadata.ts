@@ -42,7 +42,7 @@ type ActionNotesExtractionState = {
   cigaretteButtsMeasurements: ActionCigaretteButtsMeasurements | null;
   volunteerParticipation: ActionVolunteerParticipation | null;
   collectionAttributionVersion: "collectors-v1" | null;
-  collectorsCountProvenance: "participant_total_default" | "user_confirmed" | "historical_default_accepted" | null;
+  collectorsCountProvenance: "participant_total_default" | "user_confirmed" | "user_unknown" | "historical_default_accepted" | null;
   associationName: string | null;
   groupJoinEnabled: boolean;
   placeType: string | null;
@@ -197,7 +197,7 @@ function applyParsedStructuredActionNotesMeta(
   }
   if (parsed.collectorsCountProvenance === null) {
     state.collectorsCountProvenance = null;
-  } else if (parsed.collectorsCountProvenance === "participant_total_default" || parsed.collectorsCountProvenance === "user_confirmed" || parsed.collectorsCountProvenance === "historical_default_accepted") {
+  } else if (parsed.collectorsCountProvenance === "participant_total_default" || parsed.collectorsCountProvenance === "user_confirmed" || parsed.collectorsCountProvenance === "user_unknown" || parsed.collectorsCountProvenance === "historical_default_accepted") {
     state.collectorsCountProvenance = parsed.collectorsCountProvenance;
   }
   if (

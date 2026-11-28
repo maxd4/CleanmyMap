@@ -337,7 +337,13 @@ describe("volunteer participation contract", () => {
         effectiveVolunteerUnits: 16,
         effectiveVolunteerUnitsFormulaVersion: EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
       },
-    })).toMatchObject({ childrenCount: 18, adultCount: 8, retiredCount: 0, participantsCount: 26 });
+    })).toMatchObject({
+      childrenCount: 18,
+      adultCount: null,
+      retiredCount: 0,
+      participantsCount: null,
+      effectiveVolunteerUnits: null,
+    });
   });
 
   it.each([
@@ -346,7 +352,7 @@ describe("volunteer participation contract", () => {
     [null, 0, null, { childrenCount: null, adultCount: 0, retiredCount: null }],
     [null, null, 0, { childrenCount: null, adultCount: null, retiredCount: 0 }],
     [2, 3, null, { childrenCount: 2, adultCount: 3, retiredCount: null }],
-    [2, null, 3, { childrenCount: 2, adultCount: 5, retiredCount: 3 }],
+    [2, null, 3, { childrenCount: 2, adultCount: null, retiredCount: 3 }],
     [null, 2, 3, { childrenCount: null, adultCount: 2, retiredCount: 3 }],
     [2, 3, 5, { childrenCount: 2, adultCount: 3, retiredCount: 5 }],
   ])("resolves known typed categories without losing data (%s, %s, %s)", (
@@ -388,5 +394,60 @@ describe("volunteer participation contract", () => {
         effectiveVolunteerUnitsFormulaVersion: EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
       },
     })).toBeNull();
+  });
+
+  it("preserves a single known typed category without filling other categories from the total", () => {
+    expect(resolvePersistedVolunteerParticipation({
+      childrenCount: null,
+      adultCount: null,
+      retiredCount: 1,
+      volunteersCount: 15,
+      legacyParticipation: {
+        childrenCount: 2,
+        adultCount: 12,
+        retiredCount: 1,
+        participantsCount: 15,
+        effectiveVolunteerUnits: 13.5,
+        effectiveVolunteerUnitsFormulaVersion: EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
+      },
+    })).toMatchObject({
+      childrenCount: null,
+      adultCount: null,
+      retiredCount: 1,
+      participantsCount: null,
+      effectiveVolunteerUnits: null,
+    });
+  });
+
+  it("rejects divergent historical metadata when typed categories are absent", () => {
+    expect(resolvePersistedVolunteerParticipation({
+      childrenCount: null,
+      adultCount: null,
+      retiredCount: null,
+      volunteersCount: 15,
+      legacyParticipation: {
+        childrenCount: 2,
+        adultCount: 12,
+        retiredCount: 1,
+        participantsCount: 14,
+        effectiveVolunteerUnits: 13.5,
+        effectiveVolunteerUnitsFormulaVersion: EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
+      },
+    })).toBeNull();
+  });
+
+  it("rejects persisted participant totals outside the final range", () => {
+    expect(resolvePersistedVolunteerParticipation({
+      childrenCount: 0,
+      adultCount: 0,
+      retiredCount: 0,
+      volunteersCount: 0,
+    })).toBeNull();
+    expect(resolvePersistedVolunteerParticipation({
+      childrenCount: 1,
+      adultCount: 499,
+      retiredCount: 0,
+      volunteersCount: 500,
+    })).toMatchObject({ participantsCount: 500 });
   });
 });

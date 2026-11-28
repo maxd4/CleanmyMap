@@ -426,6 +426,82 @@ describe("prepareActionUpdate administrative requirements continuation", () => {
     expect(extractActionMetadataFromNotes(prepared.updateData.notes as string).collectorsCountProvenance).toBeNull();
   });
 
+  it("persists a user-cleared collector count without reclassifying it as historical", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({ departmentCode: null, departmentName: null });
+    const current = buildCurrent({}, {
+      action_phase: "post_action_complete",
+      volunteers_count: 15,
+      collectors_count: 12,
+      notes: '[cmm-meta]{"collectorsCountProvenance":"user_confirmed"}',
+    });
+    const prepared = await prepareActionUpdate({
+      current,
+      parsedBody: ({ collectorsCount: null, collectorsCountProvenance: "user_unknown" } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.collectors_count).toBeNull();
+    expect(extractActionMetadataFromNotes(prepared.updateData.notes as string).collectorsCountProvenance)
+      .toBe("user_unknown");
+  });
+
+  it("follows a proposed collector default when a partial PATCH changes the total", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({ departmentCode: null, departmentName: null });
+    const current = buildCurrent({}, {
+      action_phase: "post_action_complete",
+      volunteers_count: 10,
+      collectors_count: 10,
+      notes: '[cmm-meta]{"collectorsCountProvenance":"participant_total_default"}',
+    });
+    const prepared = await prepareActionUpdate({
+      current,
+      parsedBody: ({ volunteersCount: 12 } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData).toMatchObject({ volunteers_count: 12, collectors_count: 12 });
+    expect(extractActionMetadataFromNotes(prepared.updateData.notes as string).collectorsCountProvenance)
+      .toBe("participant_total_default");
+  });
+
+  it("keeps accepted historical collectors unchanged when the total changes", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({ departmentCode: null, departmentName: null });
+    const current = buildCurrent({}, {
+      action_phase: "post_action_complete",
+      volunteers_count: 15,
+      collectors_count: 12,
+      notes: '[cmm-meta]{"collectorsCountProvenance":"historical_default_accepted"}',
+    });
+    const prepared = await prepareActionUpdate({
+      current,
+      parsedBody: ({ volunteersCount: 16 } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.volunteers_count).toBe(16);
+    expect(prepared.updateData).not.toHaveProperty("collectors_count");
+    expect(extractActionMetadataFromNotes(prepared.updateData.notes as string).collectorsCountProvenance)
+      .toBe("historical_default_accepted");
+  });
+
+  it("does not complete a partial typed composition during an unrelated PATCH", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({ departmentCode: null, departmentName: null });
+    const current = buildCurrent({}, {
+      action_phase: "post_action_complete",
+      volunteers_count: 26,
+      children_count: 18,
+      adult_count: null,
+      retired_count: 0,
+      notes: '[cmm-meta]{"volunteerParticipation":{"childrenCount":20,"adultCount":6,"retiredCount":0}}',
+    });
+    const prepared = await prepareActionUpdate({
+      current,
+      parsedBody: ({ notes: "Inventaire archivé" } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData).not.toHaveProperty("children_count");
+    expect(prepared.updateData).not.toHaveProperty("adult_count");
+    expect(prepared.updateData).not.toHaveProperty("retired_count");
+    expect(prepared.updateData).not.toHaveProperty("volunteers_count");
+  });
+
   it("rejects a future effective date when finalizing an action", async () => {
     await expect(
       prepareActionUpdate({

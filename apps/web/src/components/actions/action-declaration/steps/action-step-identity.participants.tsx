@@ -186,8 +186,6 @@ function FinalParticipantCountInputs({
                 updateField("collectorsCount", "");
                 updateField("collectorsCountProvenance", null);
               }
-            } else if (form.collectorsCountProvenance === "historical_default_accepted") {
-              updateField("collectorsCountProvenance", "user_confirmed");
             }
           }}
         />
@@ -243,7 +241,7 @@ function FinalParticipantCountInputs({
           value={displayedCollectorsCount}
           onChange={(event) => {
             updateField("collectorsCount", event.target.value);
-            updateField("collectorsCountProvenance", event.target.value.trim() === "" ? "historical_unknown" : "user_confirmed");
+            updateField("collectorsCountProvenance", event.target.value.trim() === "" ? "user_unknown" : "user_confirmed");
           }}
         />
         {followsParticipantTotal ? (
@@ -255,7 +253,7 @@ function FinalParticipantCountInputs({
         {form.collectorsCountProvenance === "user_confirmed" ? (
           <span className="block text-xs text-emerald-900/70" role="status">Valeur confirmée.</span>
         ) : null}
-        {form.collectorsCountProvenance === "user_confirmed" || form.collectorsCountProvenance === "historical_unknown" ? (
+        {form.collectorsCountProvenance === "user_confirmed" || form.collectorsCountProvenance === "user_unknown" || form.collectorsCountProvenance === "historical_unknown" ? (
           <button
             type="button"
             className="min-h-11 text-sm font-semibold text-emerald-800 underline underline-offset-2"
@@ -264,7 +262,7 @@ function FinalParticipantCountInputs({
               updateField("collectorsCountProvenance", volunteersCount === null ? null : form.collectorsCountProvenance === "historical_unknown" ? "historical_default_accepted" : "participant_total_default");
             }}
             disabled={volunteersCount === null}
-          >{form.collectorsCountProvenance === "historical_unknown" ? "Utiliser le total présent" : "Rétablir le total prérempli"}</button>
+          >{form.collectorsCountProvenance === "historical_unknown" ? "Utiliser le total historique" : "Rétablir le total prérempli"}</button>
         ) : null}
         <span id="action-collectors-count-help" className="block text-xs text-emerald-900/60">
           Comptez les personnes qui ont ramassé, quel que soit leur âge ou besoin d’accompagnement. Laissez vide si inconnu. Exemple : 20 personnes présentes, 12 ramasseurs.

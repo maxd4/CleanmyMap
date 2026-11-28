@@ -5,7 +5,6 @@ import { resolveRouteTargetDistance } from "../../../lib/actions/route-target-di
 import type { FinalActionGeometry } from "../../../lib/actions/geometry/final-geometry";
 import type { FormState } from "./model";
 import {
-  buildActionVolunteerParticipationFromForm,
   buildVolunteerParticipationFromForm,
 } from "./payload-measurements";
 import { toOptionalNumber } from "./payload-numbers";
@@ -198,17 +197,15 @@ function buildPreparationContentFields(
 function resolvePreparationContext(
   form: FormState,
   finalGeometry: FinalActionGeometry | null,
-  declarationMode: DeclarationMode,
 ) {
   const routeTopology = resolveActionRouteTopology({
     topology: form.routeTopology,
     arrivalLocationLabel: form.arrivalLocationLabel,
     recordType: form.recordType,
   });
-  const volunteerParticipationInput =
-    declarationMode === "complete"
-      ? buildActionVolunteerParticipationFromForm(form)
-      : buildVolunteerParticipationFromForm(form);
+  // Preparation retains its own category-based forecast contract. The declared
+  // present total only governs the final participation payload.
+  const volunteerParticipationInput = buildVolunteerParticipationFromForm(form);
   const volunteerParticipation = normalizeVolunteerParticipation(volunteerParticipationInput);
   const targetSource: "derived" | "manual" = form.routeTargetDistanceKmManuallySet ? "manual" : "derived";
   const resolvedTarget = resolveRouteTargetDistance({
@@ -234,7 +231,7 @@ export function buildPreparationDataFromForm(
   }),
   declarationMode: DeclarationMode = "quick",
 ): ActionPreparationData {
-  const context = resolvePreparationContext(form, finalGeometry, declarationMode);
+  const context = resolvePreparationContext(form, finalGeometry);
   return {
     ...buildPreparationContentFields(form),
     ...buildPreparationRouteFields(

@@ -2,7 +2,7 @@ export const EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION =
   "effective-volunteer-units-v1" as const;
 
 export type VolunteerDerivedProvenance = "derived" | "historical_unknown" | null;
-export type CollectorsCountProvenance = "participant_total_default" | "user_confirmed" | "historical_default_accepted" | "historical_unknown" | null;
+export type CollectorsCountProvenance = "participant_total_default" | "user_confirmed" | "user_unknown" | "historical_default_accepted" | "historical_unknown" | null;
 export type VolunteerRecalculationStatus =
   | "recalculable"
   | "not_recalculable"
@@ -502,11 +502,26 @@ export function resolvePersistedVolunteerParticipation(params: {
   volunteersCount: number | null | undefined;
   legacyParticipation?: ActionVolunteerParticipation | null;
 }): ActionVolunteerParticipation | null {
+  const invalidPersistedCount = (value: number | null | undefined) =>
+    value !== null && value !== undefined && normalizeIntegerCount(value) === null;
+  const persistedTotal = normalizeIntegerCount(params.volunteersCount);
+  if (
+    params.volunteersCount !== null &&
+    params.volunteersCount !== undefined &&
+    !isValidVolunteerTotal(params.volunteersCount)
+  ) return null;
+
   const hasTypedValue = [
     params.childrenCount,
     params.adultCount,
     params.retiredCount,
   ].some((value) => value !== null && value !== undefined);
+  if (
+    invalidPersistedCount(params.childrenCount) ||
+    invalidPersistedCount(params.adultCount) ||
+    invalidPersistedCount(params.retiredCount)
+  ) return null;
+
   const typedParticipation = normalizePersistedVolunteerComposition({
     childrenCount: params.childrenCount,
     adultCount: params.adultCount,
@@ -514,31 +529,44 @@ export function resolvePersistedVolunteerParticipation(params: {
   });
 
   if (hasTypedValue) {
-    const persisted = resolvePersistedVolunteerComposition({
-      participation: typedParticipation,
-      volunteersCount: params.volunteersCount,
-    });
-    return persisted.children_count === null && persisted.adult_count === null && persisted.retired_count === null
-      ? null
-      : normalizePersistedVolunteerComposition({
-          childrenCount: persisted.children_count,
-          adultCount: persisted.adult_count,
-          retiredCount: persisted.retired_count,
-        });
+    if (!typedParticipation) return null;
+    const knownCategories = [
+      typedParticipation.childrenCount,
+      typedParticipation.adultCount,
+      typedParticipation.retiredCount,
+    ].filter((value): value is number => value !== null);
+    const knownCategoriesTotal = knownCategories.reduce((total, value) => total + value, 0);
+    if (persistedTotal !== null && (
+      knownCategoriesTotal > persistedTotal ||
+      (knownCategories.length === 3 && knownCategoriesTotal !== persistedTotal)
+    )) return null;
+    return typedParticipation;
   }
 
-  const legacyParticipation = params.legacyParticipation
-    ? normalizeVolunteerParticipation(params.legacyParticipation)
+  if (!params.legacyParticipation) return null;
+  const legacy = params.legacyParticipation;
+  if (
+    invalidPersistedCount(legacy.childrenCount) ||
+    invalidPersistedCount(legacy.adultCount) ||
+    invalidPersistedCount(legacy.retiredCount) ||
+    invalidPersistedCount(legacy.participantsCount)
+  ) return null;
+  const legacyParticipation = normalizeVolunteerParticipation(legacy);
+  const legacyKnownCategories = [
+    legacyParticipation.childrenCount,
+    legacyParticipation.adultCount,
+    legacyParticipation.retiredCount,
+  ].filter((value): value is number => value !== null);
+  const legacyKnownTotal = legacyKnownCategories.reduce((total, value) => total + value, 0);
+  const legacyParticipantsCount = normalizeHistoricalParticipantsCount(legacy.participantsCount);
+  if (persistedTotal !== null && (
+    legacyKnownTotal > persistedTotal ||
+    (legacyKnownCategories.length === 3 && legacyKnownTotal !== persistedTotal) ||
+    (legacyParticipantsCount !== null && legacyParticipantsCount !== persistedTotal)
+  )) return null;
+  return hasVolunteerCategoryData(legacyParticipation) ||
+    legacyParticipation.participantsCount !== null ||
+    legacyParticipation.effectiveVolunteerUnits !== null
+    ? legacyParticipation
     : null;
-  const persisted = resolvePersistedVolunteerComposition({
-    participation: legacyParticipation,
-    volunteersCount: params.volunteersCount,
-  });
-  return persisted.children_count === null && persisted.adult_count === null && persisted.retired_count === null
-    ? null
-    : normalizePersistedVolunteerComposition({
-        childrenCount: persisted.children_count,
-        adultCount: persisted.adult_count,
-        retiredCount: persisted.retired_count,
-      });
 }

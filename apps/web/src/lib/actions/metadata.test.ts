@@ -202,6 +202,14 @@ describe("action metadata notes", () => {
     expect(extractActionMetadataFromNotes("Legacy action").volunteerParticipation).toBeNull();
   });
 
+  it("round-trips an explicitly unknown collector count as distinct from historical unknown", () => {
+    const notes = appendActionMetadataToNotes("Bilan", {
+      collectorsCountProvenance: "user_unknown",
+    });
+
+    expect(extractActionMetadataFromNotes(notes).collectorsCountProvenance).toBe("user_unknown");
+  });
+
   it("keeps explicit zero and false metadata while ignoring an empty waste breakdown", () => {
     const metadata = {
       cigaretteButtsKg: 0,

@@ -148,7 +148,7 @@ export function buildCreateActionPayloadMeasurementFields(
       : form.collectorsCount.trim() === "" ? null : toOptionalNumber(form.collectorsCount) ?? null,
     collectorsCountProvenance: shouldProposeCollectorDefault
       ? "participant_total_default"
-      : form.collectorsCountProvenance === "participant_total_default" || form.collectorsCountProvenance === "user_confirmed" || form.collectorsCountProvenance === "historical_default_accepted"
+      : form.collectorsCountProvenance === "participant_total_default" || form.collectorsCountProvenance === "user_confirmed" || form.collectorsCountProvenance === "user_unknown" || form.collectorsCountProvenance === "historical_default_accepted"
       ? form.collectorsCountProvenance
       : undefined,
     ...(derivedVolunteersCount === null || derivedVolunteersCount === undefined

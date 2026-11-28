@@ -214,6 +214,54 @@ describe("final participant composition fields", () => {
     root.unmount();
   });
 
+  it("restores a cleared new-declaration count as a proposed default, not a historical acceptance", () => {
+    const { container, root } = renderParticipantFields();
+    const total = container.querySelector("#action-volunteers-count") as HTMLInputElement;
+    const collectors = container.querySelector("#action-collectors-count") as HTMLInputElement;
+
+    act(() => setControlValue(total, "15"));
+    act(() => setControlValue(collectors, ""));
+    expect(collectors.value).toBe("");
+    expect(container.textContent).not.toContain("Total historique accepté");
+
+    act(() => (Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.includes("Rétablir")) as HTMLButtonElement).click());
+    expect(collectors.value).toBe("15");
+    expect(container.textContent).toContain("Proposition à vérifier");
+    expect(container.textContent).not.toContain("Total historique accepté");
+
+    root.unmount();
+  });
+
+  it("keeps historical-default provenance when the present total changes", () => {
+    const { container, root } = renderParticipantFields({
+      initialCollectorsCount: "12",
+      initialCollectorsProvenance: "historical_default_accepted",
+      initialVolunteersCount: "15",
+    });
+    const total = container.querySelector("#action-volunteers-count") as HTMLInputElement;
+    const collectors = container.querySelector("#action-collectors-count") as HTMLInputElement;
+
+    act(() => setControlValue(total, "16"));
+    expect(collectors.value).toBe("12");
+    expect(container.textContent).toContain("Total historique accepté");
+    expect(container.textContent).not.toContain("Valeur confirmée");
+
+    root.unmount();
+  });
+
+  it("rejects a manually entered collector count above the present total without replacing it", () => {
+    const { container, root } = renderParticipantFields();
+    const total = container.querySelector("#action-volunteers-count") as HTMLInputElement;
+    const collectors = container.querySelector("#action-collectors-count") as HTMLInputElement;
+
+    act(() => setControlValue(total, "3"));
+    act(() => setControlValue(collectors, "4"));
+    expect(collectors.value).toBe("4");
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("ne peut pas dépasser le total présent");
+
+    root.unmount();
+  });
+
   it("prefills an already entered total on entering the final composition step", () => {
     const { container, root } = renderParticipantFields({ initialVolunteersCount: "15" });
     expect((container.querySelector("#action-collectors-count") as HTMLInputElement).value).toBe("15");
@@ -253,8 +301,40 @@ describe("final participant composition fields", () => {
 
     act(() => setControlValue(total, "5"));
     expect(collectors.value).toBe("2");
-    expect(container.textContent).toContain("Utiliser le total présent");
+    expect(container.textContent).toContain("Utiliser le total historique");
+    expect(container.textContent).not.toContain("Valeur confirmée.");
 
+    root.unmount();
+  });
+
+  it("preserves accepted historical provenance when the total changes", () => {
+    const { container, root } = renderParticipantFields({
+      initialVolunteersCount: "15",
+      initialCollectorsCount: "12",
+      initialCollectorsProvenance: "historical_default_accepted",
+    });
+    const total = container.querySelector("#action-volunteers-count") as HTMLInputElement;
+    const collectors = container.querySelector("#action-collectors-count") as HTMLInputElement;
+
+    act(() => setControlValue(total, "16"));
+    expect(collectors.value).toBe("12");
+    expect(container.textContent).toContain("Total historique accepté");
+    expect(container.textContent).not.toContain("Valeur confirmée.");
+    root.unmount();
+  });
+
+  it("preserves an explicitly confirmed zero when the total changes", () => {
+    const { container, root } = renderParticipantFields({
+      initialVolunteersCount: "15",
+      initialCollectorsCount: "0",
+      initialCollectorsProvenance: "user_confirmed",
+    });
+    const total = container.querySelector("#action-volunteers-count") as HTMLInputElement;
+    const collectors = container.querySelector("#action-collectors-count") as HTMLInputElement;
+
+    act(() => setControlValue(total, "16"));
+    expect(collectors.value).toBe("0");
+    expect(container.textContent).toContain("Valeur confirmée.");
     root.unmount();
   });
 

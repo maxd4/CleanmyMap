@@ -48,6 +48,12 @@ catégories sont connus :
 `adultCount = volunteersCount - childrenCount - retiredCount`.
 
 Les champs persistés restent `childrenCount`, `adultCount` et `retiredCount`.
+À la relecture, les colonnes typées connues et leurs `NULL` sont conservés tels
+quels : aucun adulte manquant n'est recalculé et une composition partielle ne
+devient pas complète. Les métadonnées historiques ne servent de repli que si
+aucune catégorie typée n'est présente ; si elles contredisent le total persisté,
+elles sont ignorées. Le calcul inverse appartient à la saisie et à la validation
+des nouvelles valeurs, pas à l'hydratation d'un historique.
 Le nombre public de participants est le total réel des personnes :
 
 `participantsCount = childrenCount + adultCount + retiredCount`.

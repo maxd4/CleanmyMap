@@ -398,6 +398,13 @@ describe("createActionSchema counts and participation", () => {
     expect(updateActionSchema.safeParse({ collectorsCount: 501 }).success).toBe(false);
   });
 
+  it("requires a bounded positive total for a final declaration", () => {
+    expect(createActionSchema.safeParse({ ...basePayload, volunteersCount: 0 }).success).toBe(false);
+    expect(createActionSchema.safeParse({ ...basePayload, volunteersCount: 501 }).success).toBe(false);
+    expect(createActionSchema.safeParse({ ...basePayload, volunteersCount: 1 }).success).toBe(true);
+    expect(createActionSchema.safeParse({ ...basePayload, volunteersCount: 500 }).success).toBe(true);
+  });
+
   it("requires a participant-derived collector default to equal the total", () => {
     expect(createActionSchema.safeParse({
       ...basePayload,
@@ -429,6 +436,21 @@ describe("createActionSchema counts and participation", () => {
       collectorsCount: 1,
       collectorsCountProvenance: "participant_total_default",
     }).success).toBe(false);
+    expect(createActionSchema.safeParse({
+      ...basePayload,
+      collectorsCount: null,
+      collectorsCountProvenance: "user_unknown",
+    }).success).toBe(true);
+    expect(createActionSchema.safeParse({
+      ...basePayload,
+      collectorsCount: 0,
+      collectorsCountProvenance: "user_unknown",
+    }).success).toBe(false);
+    expect(updateActionSchema.safeParse({
+      volunteersCount: 12,
+      collectorsCount: 8,
+      collectorsCountProvenance: "historical_default_accepted",
+    }).success).toBe(true);
   });
 
   it("requires a coherent volunteer forecast split for quick pre-actions", () => {

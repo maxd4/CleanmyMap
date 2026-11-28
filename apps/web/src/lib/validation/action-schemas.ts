@@ -80,6 +80,68 @@ function addButtsConditionIssue(value: unknown, ctx: z.RefinementCtx) {
   }
 }
 
+function addCollectorProvenanceIssues(
+  input: {
+    collectorsCount?: number | null;
+    volunteersCount?: number;
+    collectorsCountProvenance?: string;
+  },
+  ctx: z.RefinementCtx,
+  pathPrefix: Array<string | number> = [],
+  requireHistoricalAcceptanceMatch = true,
+) {
+  const countMessage = getCollectorsCountValidationMessage({
+    collectorsCount: input.collectorsCount,
+    volunteersCount: input.volunteersCount,
+  });
+  if (countMessage) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: [...pathPrefix, "collectorsCount"], message: countMessage });
+  }
+  if (input.collectorsCountProvenance === "user_unknown" && input.collectorsCount != null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [...pathPrefix, "collectorsCountProvenance"],
+      message: "Une valeur inconnue ne peut pas être associée à un nombre de ramasseurs.",
+    });
+  }
+  if (
+    input.collectorsCountProvenance === "participant_total_default" &&
+    input.collectorsCount !== input.volunteersCount
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [...pathPrefix, "collectorsCountProvenance"],
+      message: "La valeur préremplie doit correspondre au total déclaré.",
+    });
+  }
+  if (requireHistoricalAcceptanceMatch &&
+    input.collectorsCountProvenance === "historical_default_accepted" &&
+    input.collectorsCount !== input.volunteersCount
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [...pathPrefix, "collectorsCountProvenance"],
+      message: "L’acceptation du total historique doit être explicite et porter sur ce total.",
+    });
+  }
+}
+
+function addFinalParticipantTotalIssue(
+  input: { actionPhase?: string; volunteersCount?: number },
+  ctx: z.RefinementCtx,
+  path: Array<string | number> = ["volunteersCount"],
+) {
+  if (input.actionPhase === "pre_action") return;
+  const total = input.volunteersCount;
+  if (typeof total !== "number" || !Number.isInteger(total) || total < 1 || total > 500) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path,
+      message: "Renseignez un nombre total de participants entier compris entre 1 et 500.",
+    });
+  }
+}
+
 const eventTimeSchema = z
   .string()
   .trim()
@@ -248,7 +310,7 @@ const createActionLegacyBaseSchema = z.object({
   volunteerParticipation: volunteerParticipationSchema,
   volunteersCount: z.number().int().min(0).max(500).default(1),
   collectorsCount: z.number().int().min(0).max(500).nullable().optional(),
-  collectorsCountProvenance: z.enum(["participant_total_default", "user_confirmed", "historical_default_accepted"]).optional(),
+  collectorsCountProvenance: z.enum(["participant_total_default", "user_confirmed", "user_unknown", "historical_default_accepted"]).optional(),
   durationMinutes: z.number().int().min(0).max(24 * 60).default(0),
   notes: z.string().max(1000).optional(),
   manualDrawing: manualDrawingSchema.optional(),
@@ -262,6 +324,7 @@ const createActionLegacyBaseSchema = z.object({
 const createActionLegacySchema = createActionLegacyBaseSchema
   .extend({ plannerSnapshotProof: routePlannerProofSchema })
   .superRefine((value, ctx) => {
+    addFinalParticipantTotalIssue(value, ctx);
     addCompletedActionFutureDateIssue(value, ctx);
     addActionTemporalIssue(value, ctx, ["actionDate"]);
     addTemporalContractIssue(value, ctx);
@@ -269,13 +332,7 @@ const createActionLegacySchema = createActionLegacyBaseSchema
     addGpxImportIssue(value, ctx);
     addPreActionVolunteerForecastIssue(value, ctx);
     addWasteCharacterizationCoherenceIssue(value, ctx);
-    const collectorsCountMessage = getCollectorsCountValidationMessage({ collectorsCount: value.collectorsCount, volunteersCount: value.volunteersCount });
-    if (collectorsCountMessage) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCount"], message: collectorsCountMessage });
-    }
-    if ((value.collectorsCountProvenance === "participant_total_default" || value.collectorsCountProvenance === "historical_default_accepted") && value.collectorsCount !== value.volunteersCount) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCountProvenance"], message: "Une valeur préremplie doit correspondre au total déclaré." });
-    }
+    addCollectorProvenanceIssues(value, ctx);
   });
 
 const createActionContractSchema = z.object({
@@ -304,7 +361,7 @@ const createActionContractSchema = z.object({
     volunteerParticipation: volunteerParticipationSchema,
     volunteersCount: z.number().int().min(0).max(500).optional(),
     collectorsCount: z.number().int().min(0).max(500).nullable().optional(),
-    collectorsCountProvenance: z.enum(["participant_total_default", "user_confirmed", "historical_default_accepted"]).optional(),
+    collectorsCountProvenance: z.enum(["participant_total_default", "user_confirmed", "user_unknown", "historical_default_accepted"]).optional(),
     durationMinutes: z.number().int().min(0).max(24 * 60).optional(),
     notes: z.string().max(1000).optional(),
     routeStyle: z.enum(["direct", "souple"]).optional(),
@@ -323,6 +380,10 @@ const createActionContractSchema = z.object({
     visionEstimate: visionEstimateSchema.nullable().optional(),
   }),
 }).superRefine((value, ctx) => {
+  addFinalParticipantTotalIssue({
+    actionPhase: value.metadata.actionPhase,
+    volunteersCount: value.metadata.volunteersCount,
+  }, ctx, ["metadata", "volunteersCount"]);
   addCompletedActionFutureDateIssue({
     actionDate: value.dates.observedAt,
     actionTimezone: value.dates.actionTimezone,
@@ -367,6 +428,7 @@ const createActionContractSchema = z.object({
     ctx,
     ["metadata", "wasteBreakdown", "characterizationKg"],
   );
+  addCollectorProvenanceIssues(value.metadata, ctx, ["metadata"]);
 });
 
 export const createActionSchema = z
@@ -403,11 +465,5 @@ export const updateActionSchema = createActionLegacyBaseSchema
     addCompletedActionFutureDateIssue(value, ctx);
     addTemporalContractIssue(value, ctx);
     addPreActionVolunteerForecastIssue(value, ctx);
-    const collectorsCountMessage = getCollectorsCountValidationMessage({ collectorsCount: value.collectorsCount, volunteersCount: value.volunteersCount });
-    if (collectorsCountMessage) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCount"], message: collectorsCountMessage });
-    }
-    if ((value.collectorsCountProvenance === "participant_total_default" || value.collectorsCountProvenance === "historical_default_accepted") && value.collectorsCount !== undefined && value.collectorsCount !== null && value.volunteersCount !== undefined && value.collectorsCount !== value.volunteersCount) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["collectorsCountProvenance"], message: "Une valeur préremplie doit correspondre au total déclaré." });
-    }
+    addCollectorProvenanceIssues(value, ctx, [], false);
   });

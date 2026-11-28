@@ -85,7 +85,7 @@ function buildMeasurementNotesPayload(params: {
       ? nextCigaretteButtsMeasurements
       : currentMetadata.cigaretteButtsMeasurements,
     volunteerParticipation: nextVolunteerParticipation,
-    collectorsCountProvenance: body.collectorsCount === null
+    collectorsCountProvenance: body.collectorsCount === null && body.collectorsCountProvenance === undefined
       ? null
       : body.collectorsCountProvenance ?? currentMetadata.collectorsCountProvenance ?? undefined,
     collectionAttributionVersion: currentMetadata.collectionAttributionVersion ?? undefined,

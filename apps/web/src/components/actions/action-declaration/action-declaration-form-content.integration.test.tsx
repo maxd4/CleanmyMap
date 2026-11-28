@@ -44,14 +44,16 @@ vi.mock("./action-declaration-form-sections", () => ({
         <option value="association">Association</option>
       </select>
 
-      <label htmlFor="action-adult-count">Adultes</label>
+      <label htmlFor="action-volunteers-count">Nombre total de participants présents</label>
       <input
-        id="action-adult-count"
+        id="action-volunteers-count"
         type="number"
-        min={0}
+        min={1}
         max={500}
-        value={form.adultCount}
-        onChange={(event) => identity.updateField("adultCount", event.target.value)}
+        value={form.volunteersCount}
+        aria-invalid={validationIssues.some((issue) => issue.field === "volunteerParticipation") ? "true" : undefined}
+        aria-describedby={validationIssues.some((issue) => issue.field === "volunteerParticipation") ? "action-validation-error-volunteerParticipation" : undefined}
+        onChange={(event) => identity.updateField("volunteersCount", event.target.value)}
       />
       <label htmlFor="action-retired-count">Retraités</label>
       <input
@@ -243,7 +245,7 @@ describe("ActionDeclarationFormSurface native submission boundary", () => {
     const form = container.querySelector("form");
     const submit = container.querySelector('button[type="submit"]') as HTMLButtonElement;
     const organizerType = container.querySelector("#action-organizer-type") as HTMLSelectElement;
-    const adultCount = container.querySelector("#action-adult-count") as HTMLInputElement;
+    const volunteersCount = container.querySelector("#action-volunteers-count") as HTMLInputElement;
 
     expect(form?.noValidate).toBe(true);
     expect(form?.classList.contains("action-declaration-full-form")).toBe(true);
@@ -256,13 +258,13 @@ describe("ActionDeclarationFormSurface native submission boundary", () => {
 
     expect(container.querySelector("#confirmation-state")?.textContent).toBe("closed");
     expect(container.querySelector('[role="alert"]')?.textContent).toContain("Sélectionnez un type de structure");
-    expect(container.querySelector('[role="alert"]')?.textContent).toContain("nombres entiers d’adultes");
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("nombre total de participants entier");
     expect(container.querySelector('[role="alert"]')?.textContent).toContain("au moins une mesure de déchets");
     expect(container.querySelector('[role="alert"]')?.textContent).toContain("tracé manuel valide");
     expect(organizerType.getAttribute("aria-invalid")).toBe("true");
     expect(organizerType.getAttribute("aria-describedby")).toContain("action-validation-error-organizerType");
-    expect(adultCount.getAttribute("aria-invalid")).toBe("true");
-    expect(adultCount.getAttribute("aria-describedby")).toContain("action-validation-error-volunteerParticipation");
+    expect(volunteersCount.getAttribute("aria-invalid")).toBe("true");
+    expect(volunteersCount.getAttribute("aria-describedby")).toContain("action-validation-error-volunteerParticipation");
     expect(document.activeElement).toBe(organizerType);
 
     await act(async () => root.unmount());
@@ -286,7 +288,7 @@ describe("ActionDeclarationFormSurface native submission boundary", () => {
     const { container, root } = renderHarness();
     const submit = container.querySelector('button[type="submit"]') as HTMLButtonElement;
     const organizerType = container.querySelector("#action-organizer-type") as HTMLSelectElement;
-    const adultCount = container.querySelector("#action-adult-count") as HTMLInputElement;
+    const volunteersCount = container.querySelector("#action-volunteers-count") as HTMLInputElement;
     const retiredCount = container.querySelector("#action-retired-count") as HTMLInputElement;
     const childrenCount = container.querySelector("#action-children-count") as HTMLInputElement;
     const wasteKg = container.querySelector("#harvest-waste-kg") as HTMLInputElement;
@@ -299,9 +301,9 @@ describe("ActionDeclarationFormSurface native submission boundary", () => {
 
     await act(async () => {
       setControlValue(organizerType, "association");
-      setControlValue(adultCount, "12");
-      setControlValue(retiredCount, "0");
-      setControlValue(childrenCount, "0");
+      setControlValue(volunteersCount, "15");
+      setControlValue(retiredCount, "");
+      setControlValue(childrenCount, "");
       setControlValue(wasteKg, "2");
       geometry.click();
       await Promise.resolve();
@@ -323,7 +325,7 @@ describe("ActionDeclarationFormSurface native submission boundary", () => {
     const form = container.querySelector("form") as HTMLFormElement;
     const submit = container.querySelector('button[type="submit"]') as HTMLButtonElement;
     const organizerType = container.querySelector("#action-organizer-type") as HTMLSelectElement;
-    const adultCount = container.querySelector("#action-adult-count") as HTMLInputElement;
+    const volunteersCount = container.querySelector("#action-volunteers-count") as HTMLInputElement;
     const retiredCount = container.querySelector("#action-retired-count") as HTMLInputElement;
     const childrenCount = container.querySelector("#action-children-count") as HTMLInputElement;
     const wasteKg = container.querySelector("#harvest-waste-kg") as HTMLInputElement;
@@ -331,7 +333,7 @@ describe("ActionDeclarationFormSurface native submission boundary", () => {
 
     await act(async () => {
       setControlValue(organizerType, "association");
-      setControlValue(adultCount, "12");
+      setControlValue(volunteersCount, "15");
       setControlValue(retiredCount, "0");
       setControlValue(childrenCount, "0");
       setControlValue(wasteKg, "-1");

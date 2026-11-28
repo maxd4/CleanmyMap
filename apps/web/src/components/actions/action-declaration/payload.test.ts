@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildPreparationDataFromForm,
   buildCreateActionPayload,
   mergeOrganizerAccountSelection,
   parseOrganizerAccounts,
@@ -48,7 +49,7 @@ describe("action declaration payload identity and organisation", () => {
     });
   });
 
-  it("does not use an old total when final category sources are absent", () => {
+  it("uses the declared total when the final category split is unknown", () => {
     const form = buildBaseForm();
     form.volunteersCount = "7";
     form.childrenCount = "";
@@ -57,7 +58,7 @@ describe("action declaration payload identity and organisation", () => {
 
     const payload = buildPayload(form);
 
-    expect(payload.volunteersCount).toBeUndefined();
+    expect(payload.volunteersCount).toBe(7);
     expect(payload.volunteerParticipation).toEqual({
       childrenCount: null,
       adultCount: null,
@@ -65,25 +66,58 @@ describe("action declaration payload identity and organisation", () => {
     });
   });
 
-  it("uses the submitted adult category without trusting a stale total", () => {
+  it("derives adults from total 15 when both optional categories are known", () => {
     const form = buildBaseForm();
-    form.volunteersCount = "99";
+    form.volunteersCount = "15";
     form.childrenCount = "1";
-    form.retiredCount = "0";
+    form.retiredCount = "1";
     form.adultCount = "11";
 
     const payload = buildPayload(form);
 
     expect(payload.volunteerParticipation).toMatchObject({
       childrenCount: 1,
-      adultCount: 11,
-      retiredCount: 0,
+      adultCount: 13,
+      retiredCount: 1,
     });
-    expect(payload.volunteersCount).toBe(12);
+    expect(payload.volunteersCount).toBe(15);
     expect(payload.preparationData?.volunteerParticipation).toEqual({
       childrenCount: 1,
       adultCount: 11,
-      retiredCount: 0,
+      retiredCount: 1,
+    });
+  });
+
+  it("keeps adults unknown when either optional category is unknown", () => {
+    const form = buildBaseForm();
+    form.volunteersCount = "15";
+    form.childrenCount = "1";
+    form.retiredCount = "";
+    form.adultCount = "13";
+
+    const payload = buildPayload(form);
+
+    expect(payload.volunteersCount).toBe(15);
+    expect(payload.volunteerParticipation).toMatchObject({
+      childrenCount: 1,
+      adultCount: null,
+      retiredCount: null,
+    });
+  });
+
+  it("keeps preparation composition on its separate category-based contract", () => {
+    const form = buildBaseForm();
+    form.volunteersCount = "15";
+    form.childrenCount = "1";
+    form.retiredCount = "1";
+    form.adultCount = "13";
+
+    const preparation = buildPreparationDataFromForm(form);
+
+    expect(preparation.volunteerParticipation).toEqual({
+      childrenCount: 1,
+      adultCount: 13,
+      retiredCount: 1,
     });
   });
 
