@@ -62,6 +62,7 @@ if v_sqlstate is distinct from p_expected then
   raise notice 'PROOF_PHASE=personal_ai.incomplete_period SQLSTATE=% PROOF_EXPECTED_ERROR_ASSERTION=1', v_sqlstate;
 end if;
 return v_sqlstate is not distinct from p_expected;
+end;
 $$;
 with fixture as (
   select

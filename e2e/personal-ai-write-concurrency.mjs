@@ -110,10 +110,10 @@ async function main() {
   const winner = serviceSession(`select pg_advisory_lock(${barrierKey});
     select pg_advisory_xact_lock(hashtextextended('${owner}', 0));
     select pg_sleep(0.6);
-    ${saveSql(null, "CLAUDE", overlapPeriod)}
+    ${saveSql(null, "COPILOT", overlapPeriod)}
     select pg_advisory_unlock(${barrierKey});`);
   const competingOverlap = serviceSession(`do $$ begin
-    ${saveSql(null, "GEMINI", overlapPeriod).replace("select id from", "perform id from")}
+    ${saveSql(null, "PERPLEXITY", overlapPeriod).replace("select id from", "perform id from")}
   exception when exclusion_violation then
     raise notice 'PERSONAL_AI_EXPECTED_OVERLAP=23P01';
   end $$;`);
