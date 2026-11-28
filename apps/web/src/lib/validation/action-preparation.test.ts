@@ -5,12 +5,13 @@ import { createActionSchema, updateActionSchema } from "./action";
 import { basePayload } from "./tests/action-base-payload";
 
 describe("HTTP preparation data contract", () => {
-  it("accepts the new form defaults on both creation contracts", () => {
+  it("accepts preparation defaults when the final participant total is explicit", () => {
     const form = createInitialFormState("Alice");
     form.actionDate = "2026-04-22";
     form.locationLabel = "Canal Saint-Martin";
     form.organizerType = "spontaneous";
     form.organizerName = "Alice";
+    form.volunteersCount = "1";
 
     const payload = buildCreateActionPayload({
       form,
@@ -28,12 +29,21 @@ describe("HTTP preparation data contract", () => {
     expect(legacy.data.preparationData?.accessibilityStatus).toBe("not_evaluated");
     expect(legacy.data.preparationData?.preparationChecklist).toHaveLength(4);
 
-    const contract = createActionSchema.safeParse(toContractCreatePayload(payload));
+    const contractPayload = toContractCreatePayload(payload);
+    const contract = createActionSchema.safeParse(contractPayload);
     expect(contract.success).toBe(true);
     if (contract.success) {
       expect(contract.data.preparationData?.accessibilityStatus).toBe("not_evaluated");
       expect(contract.data.preparationData?.preparationChecklist).toHaveLength(4);
     }
+    expect(createActionSchema.safeParse({
+      ...contractPayload,
+      metadata: { ...contractPayload.metadata, volunteersCount: 0 },
+    }).success).toBe(false);
+    expect(createActionSchema.safeParse({
+      ...contractPayload,
+      metadata: { ...contractPayload.metadata, volunteersCount: undefined },
+    }).success).toBe(false);
   });
 
   it("accepts preparation edits and keeps old payloads compatible", () => {
