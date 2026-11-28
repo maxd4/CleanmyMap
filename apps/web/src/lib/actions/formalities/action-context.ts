@@ -57,8 +57,7 @@ export async function deriveActionFormalitiesFactsFromAction(
   const preserveLastVerifiedTerritory = Boolean(
       (!resolvedTerritory || resolvedTerritory.source === "persisted_department") &&
       previousTerritory?.jurisdictionEvidence === "metropolitan_point" &&
-      (previousWorkflow?.trace.actionLocationFingerprint === undefined ||
-        previousWorkflow.trace.actionLocationFingerprint === currentLocationFingerprint),
+      previousWorkflow?.trace.actionLocationFingerprint === currentLocationFingerprint,
   );
   const currentTerritory = preserveLastVerifiedTerritory && previousTerritory
     ? previousTerritory

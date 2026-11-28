@@ -553,6 +553,15 @@ owners sont `apps/web/src/lib/actions/formalities/` et la route
 `/api/actions/[actionId]/formalities`. Le parcours produit est décrit dans
 [`actions-new-README.md`](../pages_site/routes/02-agir/actions-new/actions-new-README.md).
 
+Lors d'une panne GEO, le territoire précédemment vérifié n'est réutilisable que
+si son empreinte de localisation est présente et correspond exactement au lieu
+persisté. Un workflow historique sans empreinte ne prouve pas que le lieu n'a
+pas changé : le territoire courant reste incertain, aucune compétence locale
+n'est réattribuée et la progression des démarches antérieures est conservée
+inactive, avec ses preuves invalidées. Elle ne peut donc satisfaire la
+qualification, la publication ou la revue associative avant confirmation du
+lieu.
+
 #### Géométries observées et promotion
 
 `ActionGeometrySource` est la provenance fine ; la projection de qualité ne

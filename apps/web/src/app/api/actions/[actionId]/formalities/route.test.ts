@@ -628,7 +628,7 @@ describe("/api/actions/:actionId/formalities", () => {
     ]));
   });
 
-  it("does not reuse territorial duties after the persisted action location changes during a geography outage", async () => {
+  it("does not reuse a legacy territory without a location fingerprint after a location change and GEO outage", async () => {
     const previousTerritory = deriveActionFormalitiesFacts({
       departmentCode: "75",
       departmentName: "Paris",
@@ -651,6 +651,8 @@ describe("/api/actions/:actionId/formalities", () => {
       qualification: qualifyActionFormalities(priorFacts),
       actionDependencies: buildFormalitiesActionDependencies(priorAction, previousTerritory),
     });
+    delete priorWorkflow.trace.actionLocationFingerprint;
+    priorWorkflow.trace.actionDependencyFingerprint = "canonical-v2:legacy-location";
     loadActionMock.mockResolvedValueOnce({
       ...priorAction,
       location_label: "Lyon",
@@ -671,9 +673,11 @@ describe("/api/actions/:actionId/formalities", () => {
     expect(body.qualification.formalities).not.toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "paris-city-public-domain-aot", requirementStatus: "required" }),
     ]));
+    expect(body.workflow.progress.find((item) => item.formalityId === "paris-city-public-domain-aot"))
+      .toMatchObject({ userStatus: "not_started", validForQualification: false });
   });
 
-  it("keeps legacy verified obligations during an outage but invalidates proofs without a location fingerprint", async () => {
+  it("does not treat legacy territory as current without a fingerprint and retains only invalid historical progress", async () => {
     const territory = deriveActionFormalitiesFacts({
       departmentCode: "75",
       departmentName: "Paris",
@@ -707,7 +711,8 @@ describe("/api/actions/:actionId/formalities", () => {
     const body = await readFormalitiesResponse(response);
 
     expect(response.status).toBe(200);
-    expect(body.qualification.formalities).toEqual(expect.arrayContaining([
+    expect(body.facts.territory).not.toHaveProperty("jurisdictionEvidence");
+    expect(body.qualification.formalities).not.toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "paris-city-public-domain-aot", requirementStatus: "required" }),
     ]));
     expect(body.workflow.progress.find((item) => item.formalityId === "paris-city-public-domain-aot"))
