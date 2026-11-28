@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAuthenticatedAccess } from "@/lib/authz";
 import { enforceServerRateLimitForAuthenticatedUser } from "@/lib/rate-limit/server";
 import { organizationReportScopeSchema } from "@/lib/organizations/contracts";
-import { OrganizationServiceError } from "@/lib/organizations/service";
+import { OrganizationServiceError, readOrganization } from "@/lib/organizations/service";
 import { loadOrganizationReport } from "@/lib/organizations/report";
 import { summarizeOrganizationReport } from "@/lib/organizations/report-summary";
 import { escapeCsvCell } from "@/lib/reports/csv";
@@ -22,6 +22,10 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return json({error:"Périmètre invalide."},400);
   try {
+    if (parsed.data.format === "csv") {
+      const workspace = await readOrganization(access.userId, parsed.data.scope.organizationId, 0);
+      if (workspace.role === "member") throw new OrganizationServiceError(403);
+    }
     const rows = await loadOrganizationReport(access.userId,parsed.data.scope,parsed.data.actionId);
     if (parsed.data.format === "summary") return json(summarizeOrganizationReport(rows));
     const columns = ["date","massKg","impactMassKg","massSource","butts","participations","durationMinutes","collectorsCount","collectorsCountProvenance","wasteCategories","wasteBreakdown","wasteMeasurementMethod"] as const;

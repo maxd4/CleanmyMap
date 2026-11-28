@@ -77,9 +77,10 @@ describe("organization invitation identity boundary", () => {
 });
 
 describe("member organization projection", () => {
-  it("serves only the team roster to an active ordinary member", async () => {
+  it("serves the scoped shared collection projection and team roster to an active member", async () => {
     mocks.rpc.mockImplementation(async (name: string) => {
       if (name === "list_my_organizations") return { data: [{ organization_id: organizationId, organization_name: "Entreprise Alpha", membership_id: "00000000-0000-4000-8000-000000000010", member_role: "member", state: "active" }], error: null };
+      if (name === "read_organization_member_collections") return { data: { ...workspace, role: "member", actions: [{ id: "00000000-0000-4000-8000-000000000051", action_date: "2026-04-03", title: "Collecte Alpha", status: "completed", action_phase: null, site_id: null, can_manage: false }], actions_has_more: false }, error: null };
       if (name === "read_organization_team_members") return { data: [{ membership_id: "00000000-0000-4000-8000-000000000011", member_role: "member", state: "active", site_id: null, is_self: true, label: "Alice", expires_at: null }], error: null };
       return { data: null, error: null };
     });
@@ -89,10 +90,23 @@ describe("member organization projection", () => {
 
     expect(result.members).toHaveLength(1);
     expect(result.role).toBe("member");
-    expect(result.actions).toEqual([]);
-    expect(result.sites).toEqual([]);
+    expect(result.actions.map((action) => action.title)).toEqual(["Collecte Alpha"]);
     expect(mocks.rpc).toHaveBeenCalledWith("read_organization_team_members", { p_org: organizationId, p_actor: "member-session-id" });
-    expect(mocks.rpc).not.toHaveBeenCalledWith("read_organization_workspace", expect.anything());
+    expect(mocks.rpc).toHaveBeenCalledWith("read_organization_member_collections", { p_org: organizationId, p_actor: "member-session-id", p_offset: 0 });
+  });
+
+  it("keeps the existing roster available while the additive member collection RPC is not yet deployed", async () => {
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "list_my_organizations") return { data: [{ organization_id: organizationId, organization_name: "Entreprise Alpha", membership_id: "00000000-0000-4000-8000-000000000010", member_role: "member", state: "active" }], error: null };
+      if (name === "read_organization_member_collections") return { data: null, error: { code: "PGRST202", message: "Could not find the function public.read_organization_member_collections" } };
+      if (name === "read_organization_team_members") return { data: [{ membership_id: "00000000-0000-4000-8000-000000000011", member_role: "member", state: "active", site_id: null, is_self: true, label: "Alice", expires_at: null }], error: null };
+      return { data: null, error: null };
+    });
+    const { readOrganization } = await import("./service");
+    const result = await readOrganization("member-session-id", organizationId, 0);
+    expect(result.collections_available).toBe(false);
+    expect(result.members.map((member) => member.label)).toEqual(["Alice"]);
+    expect(result.actions).toEqual([]);
   });
 
   it("refuses a different organization before reading its team", async () => {

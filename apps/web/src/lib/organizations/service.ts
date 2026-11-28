@@ -12,6 +12,10 @@ function check(error: { code?: string } | null) {
   if (error.code === "22023" || error.code === "23505" || error.code === "23514" || error.code === "23503") throw new OrganizationServiceError(409);
   throw new OrganizationServiceError(503);
 }
+function isPendingMemberCollectionsRpc(error: { code?: string; message?: string } | null) {
+  return Boolean(error && (error.code === "PGRST202" || error.code === "42883") &&
+    error.message?.includes("read_organization_member_collections"));
+}
 type OrganizationTeamMemberRow = {
   membership_id: string;
   member_role: string;
@@ -44,20 +48,31 @@ export async function readOrganization(actor: string, organizationId: string, of
   const membership = memberships.find((entry) => entry.organization_id === organizationId && entry.state === "active");
   if (!membership) throw new OrganizationServiceError(403);
   if (membership.member_role === "member") {
-    const { data: members, error } = await client.rpc("read_organization_team_members", { p_org: organizationId, p_actor: actor });
+    const [{ data, error }, { data: members, error: membersError }] = await Promise.all([
+      client.rpc("read_organization_member_collections", { p_org: organizationId, p_actor: actor, p_offset: offset }),
+      client.rpc("read_organization_team_members", { p_org: organizationId, p_actor: actor }),
+    ]);
+    check(membersError);
+    if (isPendingMemberCollectionsRpc(error)) {
+      return organizationWorkspaceSchema.parse({
+        id: organizationId,
+        name: membership.organization_name,
+        role: membership.member_role,
+        site_id: null,
+        members: (members ?? []).map(mapTeamMember),
+        sites: [],
+        campaigns: [],
+        actions: [],
+        actions_has_more: false,
+        link_candidates: [],
+        candidates_has_more: false,
+        collections_available: false,
+      });
+    }
     check(error);
     return organizationWorkspaceSchema.parse({
-      id: organizationId,
-      name: membership.organization_name,
-      role: membership.member_role,
-      site_id: null,
+      ...data,
       members: (members ?? []).map(mapTeamMember),
-      sites: [],
-      campaigns: [],
-      actions: [],
-      actions_has_more: false,
-      link_candidates: [],
-      candidates_has_more: false,
     });
   }
   const [{ data, error }, { data: members, error: membersError }] = await Promise.all([

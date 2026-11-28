@@ -9,7 +9,7 @@ const orgId = "00000000-0000-4000-8000-000000000001";
 const membershipId = (value: number) => `00000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
 const emptyWorkspace = (role: OrganizationWorkspace["role"] = "owner"): OrganizationWorkspace => ({
   id: orgId, name: "Alpha", role, site_id: null, members: [], sites: [], campaigns: [], actions: [],
-  actions_has_more: false, link_candidates: [], candidates_has_more: false,
+  actions_has_more: false, collections_available: true, link_candidates: [], candidates_has_more: false,
 });
 
 let root: Root;

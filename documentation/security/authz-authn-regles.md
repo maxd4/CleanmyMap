@@ -207,6 +207,10 @@ tandis que `/api/organizations` et `/api/reports/organization` revérifient la
 session, l'état de l'organisation et les permissions d'opération côté serveur.
 Les RPC restent `service_role` seulement et les projections de roster excluent
 les identifiants Clerk bruts.
+Les membres actifs reçoivent uniquement la projection partagée en lecture seule
+des collectes visibles, des sites rattachés à leur adhésion, des campagnes
+actives/terminées et du bilan agrégé. Les exports CSV détaillés restent réservés
+aux rôles responsables et sont contrôlés de nouveau côté API.
 La revue des demandes de mandat est réservée à l'administration via
 `/admin/organizations`; `GET /api/admin/organizations/bootstrap` passe par une
 RPC de file `service_role` seulement et retire l'identifiant Clerk avant de

@@ -1,6 +1,6 @@
 -- Organization isolation and lifecycle behavior executed against the replayed PostgreSQL schema.
 begin;
-select plan(72);
+select plan(80);
 select has_table('public','organizations','organization table exists');
 select has_table('public','organization_memberships','membership table exists');
 select has_table('public','action_organizations','action association table exists');
@@ -24,6 +24,8 @@ select ok(not has_function_privilege('service_role','public.organization_lock_en
 select ok(not has_function_privilege('anon','public.read_organization_team_members(uuid,text)','EXECUTE'),'anonymous cannot read a team roster');
 select ok(not has_function_privilege('authenticated','public.read_organization_team_members(uuid,text)','EXECUTE'),'browser cannot read a team roster directly');
 select ok(has_function_privilege('service_role','public.read_organization_team_members(uuid,text)','EXECUTE'),'server can read a team roster');
+select ok(not has_function_privilege('authenticated','public.read_organization_member_collections(uuid,text,integer)','EXECUTE'),'browser cannot read member collections directly');
+select ok(has_function_privilege('service_role','public.read_organization_member_collections(uuid,text,integer)','EXECUTE'),'server can read the scoped member collection projection');
 select ok(not has_function_privilege('anon','public.leave_organization(uuid,text,uuid)','EXECUTE'),'anonymous cannot leave an organization');
 select ok(not has_function_privilege('authenticated','public.leave_organization(uuid,text,uuid)','EXECUTE'),'browser cannot call the leave RPC directly');
 select ok(has_function_privilege('service_role','public.leave_organization(uuid,text,uuid)','EXECUTE'),'server can perform a session-scoped leave');
@@ -71,6 +73,12 @@ values
 reset role;
 select lives_ok($test$select public.link_organization_action((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-owner-a','00000000-0000-4000-8000-000000000141',null::uuid,'00000000-0000-4000-8000-000000000151')$test$,'Alpha owner links an action belonging to Alpha');
 select lives_ok($test$select public.link_organization_action((select id from public.organizations where partner_entry_id='test-enterprise-beta'),'clerk-owner-b','00000000-0000-4000-8000-000000000142',null::uuid,'00000000-0000-4000-8000-000000000152')$test$,'Beta owner links an action belonging to Beta');
+select lives_ok($test$insert into public.organization_memberships(organization_id,clerk_user_id,member_role,state) values((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-alpha-member','member','active')$test$,'Alpha member receives a persisted active membership');
+select is((public.read_organization_member_collections((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-alpha-member',0)->'actions'->0->>'id'),'00000000-0000-4000-8000-000000000141','active member sees its organization collection without raw identity fields');
+select is((public.read_organization_member_collections((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-alpha-member',0)->'link_candidates'),'[]'::jsonb,'member projection cannot expose organization link candidates');
+select ok((public.read_organization_member_collections((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-alpha-member',0)::text not like '%clerk-alpha-member%'),'member projection excludes raw Clerk identity');
+select is((select count(*)::integer from public.organization_report_action_ids((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-alpha-member',null,null,'2026-01-01','2027-01-01',10)),1,'active member can read its own organization report aggregate scope');
+select throws_ok($test$select public.read_organization_member_collections((select id from public.organizations where partner_entry_id='test-enterprise-beta'),'clerk-alpha-member',0)$test$,'42501','scope unavailable','Alpha member cannot read Beta collections');
 select throws_ok($test$select public.link_organization_action((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-owner-a','00000000-0000-4000-8000-000000000142',null::uuid,'00000000-0000-4000-8000-000000000153')$test$,'42501','action unavailable','Alpha cannot attach Beta action');
 select is((select count(*)::integer from public.organization_report_action_ids((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-owner-a',null,null,'2026-01-01','2027-01-01',10)),1,'Alpha report scope includes only its own action');
 select is((select count(*)::integer from public.organization_report_action_ids((select id from public.organizations where partner_entry_id='test-enterprise-beta'),'clerk-owner-b',null,null,'2026-01-01','2027-01-01',10)),1,'Beta report scope includes only its own action');

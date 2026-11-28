@@ -4,12 +4,16 @@ const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccess: vi.fn(),
   rateLimit: vi.fn(),
   loadOrganizationReport: vi.fn(),
+  readOrganization: vi.fn(),
 }));
 
 vi.mock("@/lib/authz", () => ({ requireAuthenticatedAccess: mocks.requireAuthenticatedAccess }));
 vi.mock("@/lib/rate-limit/server", () => ({ enforceServerRateLimitForAuthenticatedUser: mocks.rateLimit }));
 vi.mock("@/lib/organizations/report", () => ({ loadOrganizationReport: mocks.loadOrganizationReport }));
-vi.mock("@/lib/organizations/service", () => ({ OrganizationServiceError: class OrganizationServiceError extends Error { constructor(public status: number) { super(); } } }));
+vi.mock("@/lib/organizations/service", () => ({
+  OrganizationServiceError: class OrganizationServiceError extends Error { constructor(public status: number) { super(); } },
+  readOrganization: mocks.readOrganization,
+}));
 
 const scope = {
   organizationId: "00000000-0000-4000-8000-000000000001", siteId: null, campaignId: null,
@@ -20,6 +24,7 @@ beforeEach(() => {
   mocks.requireAuthenticatedAccess.mockResolvedValue({ ok: true, userId: "clerk-session-user" });
   mocks.rateLimit.mockResolvedValue(null);
   mocks.loadOrganizationReport.mockResolvedValue([{ date: "2026-06-01", massKg: 0, impactMassKg: null, massSource: null, butts: null, participations: 0, durationMinutes: null }]);
+  mocks.readOrganization.mockResolvedValue({ role: "owner" });
 });
 
 afterEach(() => vi.clearAllMocks());
@@ -76,6 +81,18 @@ describe("POST /api/reports/organization", () => {
     expect(response.headers.get("content-type")).toContain("text/csv");
     expect(csv.split("\r\n")[0]).toBe("date,massKg,impactMassKg,massSource,butts,participations,durationMinutes,collectorsCount,collectorsCountProvenance,wasteCategories,wasteBreakdown,wasteMeasurementMethod");
     expect(csv).not.toContain("clerk-session-user");
+  });
+
+  it("allows members to read collective aggregates but refuses detailed CSV exports", async () => {
+    mocks.readOrganization.mockResolvedValueOnce({ role: "member" });
+    const { POST } = await import("./route");
+    const response = await POST(new Request("https://example.test/api/reports/organization", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ scope, format: "csv" }),
+    }));
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "Périmètre non autorisé." });
+    expect(mocks.loadOrganizationReport).not.toHaveBeenCalled();
   });
 
   it("preserves no-store on rate-limit and scope errors", async () => {

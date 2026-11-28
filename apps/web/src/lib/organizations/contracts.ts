@@ -47,6 +47,7 @@ export const organizationWorkspaceSchema = z.object({
   sites: z.array(z.object({ id: uuid, name: z.string(), archived_at: z.string().nullable() })).max(101),
   campaigns: z.array(z.object({ id: uuid, title: z.string(), starts_on: date, ends_on: date, target_actions: z.number().int().nullable(), state: z.enum(["draft", "active", "completed", "archived"]), completed_actions: z.number().int().nonnegative() })).max(101),
   actions: z.array(action.extend({ site_id: uuid.nullable(), can_manage: z.boolean() })).max(100),
+  collections_available: z.boolean().default(true),
   actions_has_more: z.boolean(),
   link_candidates: z.array(action).max(100),
   candidates_has_more: z.boolean(),

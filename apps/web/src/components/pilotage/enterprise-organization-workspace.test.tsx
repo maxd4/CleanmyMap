@@ -80,6 +80,43 @@ describe("enterprise organization workspace roster", () => {
     expect(host.textContent).not.toContain("Transférer la responsabilité");
   });
 
+  it("shows shared organization collections and aggregate reports to a member without mutation or detailed export controls", async () => {
+    apiWorkspace = {
+      ...workspace("member", orgId, "Entreprise Alpha", true),
+      actions: [{ id: "00000000-0000-4000-8000-000000000051", action_date: "2026-04-03", title: "Collecte Alpha", status: "completed", action_phase: null, site_id: null, can_manage: false }],
+    };
+    await renderWorkspace();
+
+    expect(host.textContent).toContain("Collectes de l’organisation");
+    expect(host.textContent).toContain("Collecte Alpha");
+    expect(host.textContent).toContain("Bilan privé");
+    expect(host.textContent).toContain("Les exports détaillés sont réservés");
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Préparer une collecte")).toBe(false);
+    expect([...host.querySelectorAll("button")].find((button) => button.textContent === "Exporter CSV")?.disabled).toBe(true);
+  });
+
+  it("supports keyboard tabs and clears organization-scoped report state when switching organizations", async () => {
+    apiWorkspace = workspace("owner", orgId, "Entreprise Alpha", true);
+    await renderWorkspace();
+    const tabs = [...host.querySelectorAll('[role="tab"]')] as HTMLButtonElement[];
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["Équipe", "Collectes", "Établissements", "Campagnes", "Bilans RSE"]);
+    await act(async () => {
+      tabs[0]?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    });
+    expect(host.querySelector('[role="tablist"] [aria-selected="true"]')?.textContent).toBe("Collectes");
+    await act(async () => { tabs[4]?.click(); });
+    const from = host.querySelector('input[type="date"]') as HTMLInputElement;
+    const setInput = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    setInput?.call(from, "2026-01-01");
+    await act(async () => { from.dispatchEvent(new Event("input", { bubbles: true })); });
+    const organization = host.querySelector("select") as HTMLSelectElement;
+    const setSelect = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
+    setSelect?.call(organization, betaId);
+    await act(async () => { organization.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 15)); });
+    expect(host.querySelector('[role="tablist"]')).toBeNull();
+    expect(host.querySelector('input[type="date"]')).toBeNull();
+  });
+
   it("offers onboarding for an empty membership list and reports a safe membership lookup failure", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ memberships: [] }), { status: 200 })));
     await renderWorkspace();

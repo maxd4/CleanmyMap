@@ -215,7 +215,9 @@ comme scope. Voir le contrat [`Organisations entreprise — CURRENT`](../enterpr
 
 Cette intégration reste séparée du générateur PDF multi-actions décrit dans ce
 document : ses scopes PDF acceptés ne comprennent pas encore les organisations.
-Le bilan privé d'organisation ne génère ni PDF ni historique privé.
+Le bilan organisationnel expose actuellement un agrégat privé; les membres
+actifs peuvent le consulter, tandis que le CSV détaillé est réservé aux rôles
+responsables. Il ne génère ni PDF, ni historique privé, ni lien de partage.
 
 Le modèle relationnel canonique est :
 

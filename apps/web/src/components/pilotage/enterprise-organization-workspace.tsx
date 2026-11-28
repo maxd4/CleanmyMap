@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { OrganizationTeamPanel } from "@/components/pilotage/organization-team-panel";
+import { OrganizationCollectionsPanel } from "@/components/pilotage/organization-collections-panel";
 import { organizationMembershipListSchema, organizationWorkspaceSchema, type OrganizationMembership, type OrganizationWorkspace } from "@/lib/organizations/contracts";
 
 async function json(url: string, init?: RequestInit) {
@@ -41,6 +41,7 @@ export function EnterpriseOrganizationWorkspace({locale="fr"}:{locale?:"fr"|"en"
   const [actionId,setActionId]=useState("");
   const [metrics,setMetrics]=useState<Record<string,unknown>|null>(null);
   const reportScopeRef=useRef("");
+  const [activeTab,setActiveTab]=useState<"team"|"collections"|"sites"|"campaigns"|"reports">("team");
 
   useEffect(()=>{
     const controller=new AbortController();
@@ -92,36 +93,47 @@ export function EnterpriseOrganizationWorkspace({locale="fr"}:{locale?:"fr"|"en"
       <p>{ui.rights}</p>
       {loading?<p role="status">{ui.loading}</p>:memberships.length===0?<p>{ui.empty} <a href="/partners/onboarding">{ui.onboarding}</a>.</p>:null}
       {memberships.filter(m=>m.state==="pending").map(m=><div key={m.membership_id}><p>{m.organization_name} : {ui.invitation} ({roleLabels[m.member_role]})</p><button disabled={busy} onClick={()=>void mutate(m.organization_id,{operation:"accept",membershipId:m.membership_id})}>{ui.accept}</button>{" · "}<button disabled={busy} onClick={()=>void mutate(m.organization_id,{operation:"decline",membershipId:m.membership_id})}>{ui.decline}</button></div>)}
-      <label>{ui.organization} <select disabled={busy} value={selected} onChange={e=>{reportScopeRef.current="";setWorkspace(null);setMetrics(null);setSiteId("");setCampaignId("");setActionId("");setOffset(0);setSelected(e.target.value);}}><option value="">{ui.select}</option>{memberships.filter(m=>m.state==="active").map(m=><option key={m.organization_id} value={m.organization_id}>{m.organization_name}</option>)}</select></label>
+      <label>{ui.organization} <select disabled={busy} value={selected} onChange={e=>{reportScopeRef.current="";setWorkspace(null);setMetrics(null);setSiteId("");setSiteEditId("");setSiteName("");setCampaignTitle("");setCampaignId("");setTarget("");setFrom("");setTo("");setActionId("");setOffset(0);setActiveTab("team");setSelected(e.target.value);}}><option value="">{ui.select}</option>{memberships.filter(m=>m.state==="active").map(m=><option key={m.organization_id} value={m.organization_id}>{m.organization_name}</option>)}</select></label>
       <button disabled={busy} onClick={()=>{reportScopeRef.current="";setWorkspace(null);setRefresh(v=>v+1);}}>{ui.refresh}</button>
       {error?<p role="alert">{error}</p>:null}
     </CmmCard>
     {workspace&&workspace.id===selected&&workspaceScope===`${selected}|${offset}|${refresh}`?<><CmmCard className="space-y-3"><h2 className="font-bold">{workspace.name}</h2><p>{roleLabels[workspace.role]}</p></CmmCard>
-      <OrganizationTeamPanel workspace={workspace} locale={locale} busy={busy} onMutate={(organizationId,command)=>void mutate(organizationId,command)} />
+      <div role="tablist" aria-label={isEn?"Organization workspace":"Espace organisation"} className="flex flex-wrap gap-2">
+        {([ ["team",isEn?"Team":"Équipe"], ["collections",isEn?"Collections":"Collectes"], ["sites",isEn?"Locations":"Établissements"], ["campaigns",isEn?"Campaigns":"Campagnes"], ["reports",isEn?"Impact reports":"Bilans RSE"] ] as const).map(([id,label])=><button key={id} type="button" role="tab" id={`enterprise-tab-${id}`} aria-controls={`enterprise-panel-${id}`} aria-selected={activeTab===id} tabIndex={activeTab===id?0:-1} onClick={()=>setActiveTab(id)} onKeyDown={event=>{if(event.key!=="ArrowRight"&&event.key!=="ArrowLeft")return;event.preventDefault();const next=["team","collections","sites","campaigns","reports"] as const;const index=next.indexOf(id);const target=next[(index+(event.key==="ArrowRight"?1:next.length-1))%next.length];setActiveTab(target);event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`#enterprise-tab-${target}`)?.focus();}}>{label}</button>)}
+      </div>
+      <section role="tabpanel" id="enterprise-panel-team" aria-labelledby="enterprise-tab-team" hidden={activeTab!=="team"}>
+        <OrganizationTeamPanel workspace={workspace} locale={locale} busy={busy} onMutate={(organizationId,command)=>void mutate(organizationId,command)} />
+      </section>
+      <section role="tabpanel" id="enterprise-panel-sites" aria-labelledby="enterprise-tab-sites" hidden={activeTab!=="sites"}>
       {workspace.role==="owner"||workspace.role==="manager"?<form onSubmit={e=>{e.preventDefault();void mutate(selected,{operation:"site",siteId:null,name:siteName,archive:false});}}><label>{ui.newSite} <input value={siteName} required maxLength={120} onChange={e=>setSiteName(e.target.value)}/></label><button disabled={busy}>{ui.add}</button></form>:null}
       <ul>{workspace.sites.map(s=><li key={s.id}>{s.name}{s.archived_at?" (archivé)":""}</li>)}</ul>
       {workspace.role==="owner"||workspace.role==="manager"?<div className="flex flex-wrap items-end gap-2"><label>{ui.site} <select value={siteEditId} onChange={e=>setSiteEditId(e.target.value)}><option value="">{ui.choose}</option>{workspace.sites.filter(s=>!s.archived_at).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><label>{ui.rename} <input value={siteName} maxLength={120} onChange={e=>setSiteName(e.target.value)}/></label><button disabled={busy||!siteEditId||!siteName.trim()} onClick={()=>void mutate(selected,{operation:"site",siteId:siteEditId,name:siteName,archive:false})}>{ui.rename}</button><button disabled={busy||!siteEditId} onClick={()=>void mutate(selected,{operation:"site",siteId:siteEditId,name:workspace.sites.find(site=>site.id===siteEditId)?.name??ui.newSite,archive:true})}>{ui.archive}</button></div>:null}
-    {workspace.role!=="member"?<><CmmCard className="space-y-3"><h2 className="font-bold">{ui.actions}</h2><CmmButton href="/actions/new?tab=before">{ui.prepare}</CmmButton>
-      <ul>{workspace.actions.map(a=><li key={a.id}>{a.action_date} · {a.title} · {a.status}{a.can_manage?<> · <a href="/actions/history">Historique</a></>:null}</li>)}</ul>
-      {!workspace.actions.length?<p>{ui.noActions}</p>:null}
-      <button disabled={busy||offset===0} onClick={()=>{setWorkspace(null);setOffset(v=>Math.max(0,v-100));}}>{ui.previous}</button>{" · "}<button disabled={busy||!workspace.actions_has_more} onClick={()=>{setWorkspace(null);setOffset(v=>v+100);}}>{ui.next}</button>
+      </section>
+      <section role="tabpanel" id="enterprise-panel-collections" aria-labelledby="enterprise-tab-collections" hidden={activeTab!=="collections"}>
+    <OrganizationCollectionsPanel workspace={workspace} locale={locale} busy={busy} offset={offset} onPage={(direction)=>{setWorkspace(null);setOffset(value=>direction==="previous"?Math.max(0,value-100):value+100);}} />
+    {workspace.role!=="member"?<CmmCard className="space-y-3">
       <form onSubmit={e=>{e.preventDefault();void mutate(selected,{operation:"link_action",actionId,siteId:workspace.role==="site_manager"?workspace.site_id:siteId||null});}}>
       <label>{ui.eligibleAction} <select required value={actionId} onChange={e=>setActionId(e.target.value)}><option value="">{ui.choose}</option>{workspace.link_candidates.map(a=><option key={a.id} value={a.id}>{a.title} ({a.action_date})</option>)}</select></label>
       {workspace.role!=="site_manager"?<label>{ui.site} <select value={siteId} onChange={e=>{reportScopeRef.current="";setMetrics(null);setSiteId(e.target.value);}}><option value="">{ui.central}</option>{workspace.sites.filter(s=>!s.archived_at).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>:null}
       <button disabled={busy||!actionId}>{ui.link}</button></form>{workspace.candidates_has_more?<p>{ui.partial}</p>:null}
-    </CmmCard></>:null}
+    </CmmCard>:null}
+      </section>
+      <section role="tabpanel" id="enterprise-panel-campaigns" aria-labelledby="enterprise-tab-campaigns" hidden={activeTab!=="campaigns"}>
     {workspace.role!=="site_manager"?<CmmCard className="space-y-3"><h2 className="font-bold">{ui.campaigns}</h2>
-      <ul>{workspace.campaigns.map(c=><li key={c.id}>{c.title} · {c.starts_on} / {c.ends_on} · {c.completed_actions} {ui.actionsCount}{c.target_actions!==null?" / "+c.target_actions+" "+ui.target:""} · {c.state}{c.state==="draft"?<button disabled={busy} onClick={()=>void mutate(selected,{operation:"campaign",campaignId:c.id,title:c.title,startsOn:c.starts_on,endsOn:c.ends_on,targetActions:c.target_actions,state:"active"})}>{ui.activate}</button>:c.state==="active"?<button disabled={busy} onClick={()=>void mutate(selected,{operation:"campaign",campaignId:c.id,title:c.title,startsOn:c.starts_on,endsOn:c.ends_on,targetActions:c.target_actions,state:"completed"})}>{ui.complete}</button>:c.state==="completed"?<button disabled={busy} onClick={()=>void mutate(selected,{operation:"campaign",campaignId:c.id,title:c.title,startsOn:c.starts_on,endsOn:c.ends_on,targetActions:c.target_actions,state:"archived"})}>{ui.archiveCampaign}</button>:null}</li>)}</ul>
-      <form onSubmit={e=>{e.preventDefault();void mutate(selected,{operation:"campaign",campaignId:null,title:campaignTitle,startsOn:from,endsOn:to,targetActions:target?Number(target):null,state:"draft"});}}><label>{ui.campaignName} <input value={campaignTitle} required maxLength={120} onChange={e=>setCampaignTitle(e.target.value)}/></label><label>{ui.target} <input type="number" min="1" max="10000" value={target} onChange={e=>setTarget(e.target.value)}/></label><p>{ui.periodHint}</p><button disabled={busy||!from||!to}>{ui.createDraft}</button></form>
+      <ul>{workspace.campaigns.map(c=><li key={c.id}>{c.title} · {c.starts_on} / {c.ends_on} · {c.completed_actions} {ui.actionsCount}{c.target_actions!==null?" / "+c.target_actions+" "+ui.target:""} · {c.state}{workspace.role!=="member"&&c.state==="draft"?<button disabled={busy} onClick={()=>void mutate(selected,{operation:"campaign",campaignId:c.id,title:c.title,startsOn:c.starts_on,endsOn:c.ends_on,targetActions:c.target_actions,state:"active"})}>{ui.activate}</button>:workspace.role!=="member"&&c.state==="active"?<button disabled={busy} onClick={()=>void mutate(selected,{operation:"campaign",campaignId:c.id,title:c.title,startsOn:c.starts_on,endsOn:c.ends_on,targetActions:c.target_actions,state:"completed"})}>{ui.complete}</button>:workspace.role!=="member"&&c.state==="completed"?<button disabled={busy} onClick={()=>void mutate(selected,{operation:"campaign",campaignId:c.id,title:c.title,startsOn:c.starts_on,endsOn:c.ends_on,targetActions:c.target_actions,state:"archived"})}>{ui.archiveCampaign}</button>:null}</li>)}</ul>
+      {workspace.role!=="member"?<form onSubmit={e=>{e.preventDefault();void mutate(selected,{operation:"campaign",campaignId:null,title:campaignTitle,startsOn:from,endsOn:to,targetActions:target?Number(target):null,state:"draft"});}}><label>{ui.campaignName} <input value={campaignTitle} required maxLength={120} onChange={e=>setCampaignTitle(e.target.value)}/></label><label>{ui.target} <input type="number" min="1" max="10000" value={target} onChange={e=>setTarget(e.target.value)}/></label><p>{ui.periodHint}</p><button disabled={busy||!from||!to}>{ui.createDraft}</button></form>:null}
       <label>{ui.campaigns} <select value={campaignId} onChange={e=>{reportScopeRef.current="";setMetrics(null);setCampaignId(e.target.value);}}><option value="">{ui.all}</option>{workspace.campaigns.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}</select></label>
-      <form className="flex flex-wrap items-end gap-2" onSubmit={e=>{e.preventDefault();void mutate(selected,{operation:"campaign_action",campaignId,actionId,remove:false});}}><label>{ui.eligibleAction} <select required value={actionId} onChange={e=>setActionId(e.target.value)}><option value="">{ui.choose}</option>{workspace.actions.map(a=><option key={a.id} value={a.id}>{a.title}</option>)}</select></label><button disabled={busy||!campaignId||!actionId}>{ui.addCampaignAction}</button></form>
+      {workspace.role!=="member"?<form className="flex flex-wrap items-end gap-2" onSubmit={e=>{e.preventDefault();void mutate(selected,{operation:"campaign_action",campaignId,actionId,remove:false});}}><label>{ui.eligibleAction} <select required value={actionId} onChange={e=>setActionId(e.target.value)}><option value="">{ui.choose}</option>{workspace.actions.map(a=><option key={a.id} value={a.id}>{a.title}</option>)}</select></label><button disabled={busy||!campaignId||!actionId}>{ui.addCampaignAction}</button></form>:null}
       {workspace.campaigns.length===101?<p>{ui.partial}</p>:null}
     </CmmCard>:null}
+      </section>
+      <section role="tabpanel" id="enterprise-panel-reports" aria-labelledby="enterprise-tab-reports" hidden={activeTab!=="reports"}>
     <CmmCard className="space-y-3"><h2 className="font-bold">{ui.report}</h2><p>{ui.completedOnly}</p>
       {workspace.role!=="site_manager"?<label>{ui.siteReport} <select value={siteId} onChange={e=>{reportScopeRef.current="";setMetrics(null);setSiteId(e.target.value);}}><option value="">{ui.allSites}</option>{workspace.sites.filter(s=>!s.archived_at).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>:null}
       <label>{ui.from} <input type="date" value={from} onChange={e=>{reportScopeRef.current="";setMetrics(null);setFrom(e.target.value);}}/></label><label>{ui.to} <input type="date" value={to} onChange={e=>{reportScopeRef.current="";setMetrics(null);setTo(e.target.value);}}/></label>
-      <button disabled={busy||!from||!to} onClick={()=>void report("summary")}>{ui.calculate}</button>{" · "}<button disabled={busy||!from||!to} onClick={()=>void report("csv")}>{ui.export}</button>
+      <button disabled={busy||!from||!to} onClick={()=>void report("summary")}>{ui.calculate}</button>{" · "}<button disabled={busy||!from||!to||workspace.role==="member"} onClick={()=>void report("csv")}>{ui.export}</button>{workspace.role==="member"?<p>{isEn?"Detailed exports are reserved for organization managers.":"Les exports détaillés sont réservés aux responsables d’organisation."}</p>:null}
       {metrics?<dl>{Object.entries(metrics).map(([key,val])=><div key={key}><dt>{({actions:ui.actionsCount,massKg:ui.weight,butts:ui.butts,participations:ui.participations,durationMinutes:ui.duration} as Record<string,string>)[key]??key}</dt><dd>{typeof val==="number"?val:val&&typeof val==="object"&&"value" in val&&"known" in val&&"total" in val?String(val.value??ui.unknown)+" ("+String(val.known)+"/"+String(val.total)+")":ui.unknown}</dd></div>)}</dl>:null}
-    </CmmCard></>:null}
+    </CmmCard>
+      </section></>:null}
   </div>;
 }
