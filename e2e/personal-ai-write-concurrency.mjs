@@ -16,7 +16,7 @@ const cleanup = `begin; set local role postgres; delete from public.personal_ai_
 function declaration(chatbot, period) {
   return JSON.stringify({
     normalizationVersion: "personal-ai-declaration-v1",
-    provider: "OPENAI",
+    provider: { CHATGPT: "OPENAI", CLAUDE: "ANTHROPIC", GEMINI: "GOOGLE" }[chatbot] ?? "OTHER",
     source: "MANUAL",
     sourceVersion: null,
     provenance: "USER_DECLARED",
@@ -118,7 +118,9 @@ async function main() {
     raise notice 'PERSONAL_AI_EXPECTED_OVERLAP=23P01';
   end $$;`);
   const overlapResults = await concurrentPair(winner, competingOverlap);
+  currentPhase = "CONCURRENT_OVERLAP_SETTLEMENT";
   assert.equal(overlapResults.filter((result) => result.status === "fulfilled").length, 2, "overlap contender must report the expected SQL conflict without deadlock");
+  currentPhase = "CONCURRENT_OVERLAP_REJECTION";
   assert.match(overlapResults.map((result) => result.value.stdout + result.value.stderr).join("\n"), /PERSONAL_AI_EXPECTED_OVERLAP=23P01/);
 
   currentPhase = "VERIFY_FINAL_STATE";

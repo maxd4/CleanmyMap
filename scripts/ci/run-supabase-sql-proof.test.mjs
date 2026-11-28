@@ -507,6 +507,24 @@ test("proof attestation maps verified and failed executions to explicit statuses
   );
   assert.equal(incompleteRecord.status, "INTEGRATION_PROOF");
   assert.equal(incompleteRecord.outcome, "FAIL");
+
+  const expectedErrorMismatch = { path: "personal-ai.pgtap.sql", category: "PGTAP", status: "NOT_RUN", outcome: "NOT_RUN" };
+  assert.throws(
+    () => attestProofResult(expectedErrorMismatch, {
+      code: 1,
+      output: "NOTICE: PROOF_PHASE=personal_ai.incomplete_period SQLSTATE=23P01 PROOF_EXPECTED_ERROR_ASSERTION=1\nnot ok 61 - private test label\nResult: FAIL",
+    }, () => ({ unreachable: true })),
+    /category=ASSERTION_FAILED; origin=PGTAP_ASSERTION; sqlstate=23P01; phase=personal_ai\.incomplete_period/,
+  );
+  assert.deepEqual(expectedErrorMismatch.failure, {
+    category: "ASSERTION_FAILED",
+    origin: "PGTAP_ASSERTION",
+    sqlstate: "23P01",
+    phase: "personal_ai.incomplete_period",
+    expectedErrorAssertion: true,
+    failedAssertions: [61],
+  });
+  assert.doesNotMatch(JSON.stringify(expectedErrorMismatch), /private test label/);
 });
 
 test("proof diagnostics classify only observed causes and ignore ambiguous SQL line numbers", () => {
@@ -649,6 +667,10 @@ test("proof failure excerpts are bounded and redact sensitive values", () => {
   const structured = sanitizeProofFailureExcerpt("PROOF_PHASE=spogomi.requalification ERROR: 23514: private fixture detail\nDETAIL: clerk_id=private");
   assert.match(structured, /PROOF_PHASE=spogomi\.requalification SQLSTATE=23514/);
   assert.doesNotMatch(structured, /private fixture|clerk_id/);
+  assert.match(
+    sanitizeProofFailureExcerpt("NOTICE: PROOF_PHASE=personal_ai.incomplete_period SQLSTATE=23P01 PROOF_EXPECTED_ERROR_ASSERTION=1 private fixture"),
+    /PROOF_PHASE=personal_ai\.incomplete_period SQLSTATE=23P01 PROOF_EXPECTED_ERROR_ASSERTION=1/,
+  );
   const constraint = sanitizeProofFailureExcerpt("PROOF_PHASE=spogomi.grant SQLSTATE=23514 PROOF_CONSTRAINT=spogomi_event_reviewers_role_check\nDETAIL: clerk_id=private");
   assert.match(constraint, /PROOF_PHASE=spogomi\.grant SQLSTATE=23514 PROOF_CONSTRAINT=spogomi_event_reviewers_role_check/);
   assert.doesNotMatch(constraint, /clerk_id|private/);

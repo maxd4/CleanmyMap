@@ -397,8 +397,9 @@ begin
        and clerk_id = v_user_a
        and role = 'referee'
        and revoked_at is null
+       and division_id is null
   ) then
-    raise exception 'referee capability row not created in spogomi_event_reviewers';
+    raise exception 'event-scoped referee capability row not created for mixed edition';
   end if;
 
   -- Prepare user_b in practical_pending and user_c in theory_qualified on casual

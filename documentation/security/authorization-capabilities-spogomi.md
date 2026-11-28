@@ -9,6 +9,11 @@ Clerk global supplémentaire. `action_organizers` prouve le scope
 organisateur/coorganisateur ; `spogomi_event_reviewers` porte les habilitations
 `observer` et `referee`, chacune contrainte par `event_id`, révocable et auditée
 dans `spogomi_event_access_audit`.
+Ces capacités restent événementielles : `division_id` est nullable sur les
+nouvelles habilitations, et aucun identifiant de division ne doit être deviné
+pour une édition mixte. Une capacité d’arbitre ne donne accès au périmètre que
+si la qualification reste valide dans chaque division concernée ; les lignes
+historiques gardent leur provenance éventuelle sans limiter ce contrôle.
 
 Une nouvelle attribution événementielle doit en plus référencer une candidature
 `spogomi_referee_applications` à l’état `habilitated`. Cet état exige la preuve

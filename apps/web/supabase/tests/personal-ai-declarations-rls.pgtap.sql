@@ -43,6 +43,26 @@ language sql security definer set search_path = pg_catalog, public
 as $$ select * from public.set_personal_ai_declaration_status_for_owner(
   coalesce(nullif(auth.jwt() ->> 'sub', ''), 'user-a'), p_id, p_status
 ) $$;
+create function pg_temp.personal_ai_expect_sqlstate(p_statement text, p_expected text)
+returns boolean
+language plpgsql
+security invoker
+set search_path = pg_catalog, public
+as $$
+declare
+  v_sqlstate text;
+begin
+  begin
+    execute p_statement;
+    v_sqlstate := '00000';
+  exception when others then
+    get stacked diagnostics v_sqlstate = returned_sqlstate;
+  end;
+if v_sqlstate is distinct from p_expected then
+  raise notice 'PROOF_PHASE=personal_ai.incomplete_period SQLSTATE=% PROOF_EXPECTED_ERROR_ASSERTION=1', v_sqlstate;
+end if;
+return v_sqlstate is not distinct from p_expected;
+$$;
 with fixture as (
   select
     jsonb_build_object(
@@ -248,7 +268,7 @@ select throws_ok($$
   )))
 $$, null, null, 'a half-known period is rejected by the table contract');
 select is((select count(*)::integer from public.personal_ai_declarations where owner_clerk_id = 'user-a' and source_identity_hash = repeat('8', 64)), 0, 'a half-known period does not persist');
-select throws_ok($$
+select ok(pg_temp.personal_ai_expect_sqlstate($statement$
   select * from pg_temp.personal_ai_save_test(
     null,
     jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'),
@@ -256,7 +276,7 @@ select throws_ok($$
     '{"version":"personal-ai-chat-usage-v1","sourceKind":"SELF_REPORTED_CHAT_USAGE","chatbot":"CHATGPT","chatbotLabel":null,"accessMode":"FREE","frequency":"UNKNOWN","exchanges":null,"questionCharacters":null,"answerCharacters":null,"imageUse":null,"audioUse":null}'::jsonb,
     '{"physicalTotals":{},"methodologyTrace":{}}'::jsonb, 'personal-ai-v1', '{}'
   ), null, 'user-a-isolated-period-check'
-$$, '23514', null, 'a quick scenario still requires a complete period');
+$statement$, '23514'), 'a quick scenario still requires a complete period');
 select lives_ok($$
   select * from pg_temp.personal_ai_confirm_test(jsonb_build_array(jsonb_build_object(
     'declaration', jsonb_set(jsonb_set((select declaration from public.personal_ai_declarations where id = '10000000-0000-4000-8000-000000000001'), '{provider}', '"OPENAI"'::jsonb), '{access}', '"UNKNOWN"'::jsonb) || jsonb_build_object('periodStartUtc', '2026-03-01T00:00:00.000Z', 'periodEndUtc', '2026-04-01T00:00:00.000Z'),

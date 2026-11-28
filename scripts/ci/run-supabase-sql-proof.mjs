@@ -149,6 +149,12 @@ function proofRoutine(value) {
   return routine ? { routine } : {};
 }
 
+function proofExpectedErrorAssertion(value) {
+  return /\bPROOF_EXPECTED_ERROR_ASSERTION=1\b/i.test(String(value ?? ""))
+    ? { expectedErrorAssertion: true }
+    : {};
+}
+
 export function sanitizeProofFailureExcerpt(output) {
   const lines = String(output ?? "")
     .split(/\r?\n/u)
@@ -161,6 +167,8 @@ export function sanitizeProofFailureExcerpt(output) {
     const constraint = line.match(/\bPROOF_CONSTRAINT=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
     const errorCode = line.match(/\bPROOF_ERROR_CODE=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
     const routine = line.match(/\bPROOF_ROUTINE=([a-z0-9_.-]{1,64})\b/i)?.[1]?.toLowerCase();
+    const expectedErrorAssertion = /\bPROOF_EXPECTED_ERROR_ASSERTION=1\b/i.test(line);
+    if (phase && sqlstate && expectedErrorAssertion) return `PROOF_PHASE=${phase} SQLSTATE=${sqlstate} PROOF_EXPECTED_ERROR_ASSERTION=1`;
     if (phase && sqlstate && constraint && errorCode && routine) return `PROOF_PHASE=${phase} SQLSTATE=${sqlstate} PROOF_CONSTRAINT=${constraint} PROOF_ERROR_CODE=${errorCode} PROOF_ROUTINE=${routine}`;
     if (phase && sqlstate && constraint) return `PROOF_PHASE=${phase} SQLSTATE=${sqlstate} PROOF_CONSTRAINT=${constraint}`;
     if (phase && sqlstate && errorCode) return `PROOF_PHASE=${phase} SQLSTATE=${sqlstate} PROOF_ERROR_CODE=${errorCode}`;
@@ -418,6 +426,9 @@ export function classifyProofFailure({ output = "", code = null, signal = null, 
   } else if (/\bfixture (?:is )?(?:invalid|malformed)\b/i.test(text)) {
     category = "FIXTURE_INVALID";
     origin = "FIXTURE_DIAGNOSTIC";
+  } else if (/\bPROOF_EXPECTED_ERROR_ASSERTION=1\b/i.test(text)) {
+    category = "ASSERTION_FAILED";
+    origin = "PGTAP_ASSERTION";
   } else if (sqlstate === "42501" || /\bpermission denied\b/i.test(text)) {
     category = "PRIVILEGE_ERROR";
     origin = "POSTGRESQL";
@@ -580,7 +591,7 @@ export function attestProofResult(record, result, validate) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
     const failure = classifyProofFailure({ ...result, diagnostic: sanitizeProofFailureExcerpt(result.output) });
-    record.failure = { ...failure, ...proofPhase(result.output), ...proofConstraint(result.output), ...proofErrorCode(result.output), ...proofRoutine(result.output), ...(record.category === "PGTAP" ? pgTapFailureAssertions(result.output) : {}) };
+    record.failure = { ...failure, ...proofPhase(result.output), ...proofConstraint(result.output), ...proofErrorCode(result.output), ...proofRoutine(result.output), ...proofExpectedErrorAssertion(result.output), ...(record.category === "PGTAP" ? pgTapFailureAssertions(result.output) : {}) };
     if (record.category === "PGTAP") record.counts = pgTapCounts(result.output, record.expectedAssertions ?? null);
     const phase = proofPhase(result.output).phase;
     record.reason = `step=${record.category ?? "SQL_PROOF"}; command exited with ${result.code}${result.signal ? ` (${result.signal})` : ""}${result.timedOut ? "; timeout=true" : ""}${result.outputTruncated ? "; output_truncated=true" : ""}; category=${failure.category}; origin=${failure.origin}${failure.sqlstate ? `; sqlstate=${failure.sqlstate}` : ""}${phase ? `; phase=${phase}` : ""}; diagnostic=${sanitizeProofFailureExcerpt(result.output)}`;
@@ -594,7 +605,7 @@ export function attestProofResult(record, result, validate) {
     record.status = "INTEGRATION_PROOF";
     record.outcome = "FAIL";
     const diagnostic = error instanceof Error ? error.message : String(error);
-    record.failure = { ...classifyProofFailure({ ...result, diagnostic }), ...proofPhase(`${result.output}\n${diagnostic}`), ...proofConstraint(`${result.output}\n${diagnostic}`), ...proofErrorCode(`${result.output}\n${diagnostic}`), ...proofRoutine(`${result.output}\n${diagnostic}`), ...(record.category === "PGTAP" ? pgTapFailureAssertions(result.output) : {}) };
+    record.failure = { ...classifyProofFailure({ ...result, diagnostic }), ...proofPhase(`${result.output}\n${diagnostic}`), ...proofConstraint(`${result.output}\n${diagnostic}`), ...proofErrorCode(`${result.output}\n${diagnostic}`), ...proofRoutine(`${result.output}\n${diagnostic}`), ...proofExpectedErrorAssertion(`${result.output}\n${diagnostic}`), ...(record.category === "PGTAP" ? pgTapFailureAssertions(result.output) : {}) };
     if (record.category === "PGTAP") record.counts = pgTapCounts(result.output, record.expectedAssertions ?? null);
     record.reason = `step=${record.category ?? "SQL_PROOF"}; category=${record.failure.category}; origin=${record.failure.origin}${record.failure.sqlstate ? `; sqlstate=${record.failure.sqlstate}` : ""}${record.failure.phase ? `; phase=${record.failure.phase}` : ""}; diagnostic=${sanitizeProofFailureExcerpt(`${result.output}\n${diagnostic}`)}`;
     throw new Error(record.reason);
