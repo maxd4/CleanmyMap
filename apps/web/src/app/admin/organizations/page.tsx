@@ -4,6 +4,7 @@ import { getServerLocale } from "@/lib/server-preferences";
 import { PageHeader } from "@/components/ui/page-header";
 import { OrganizationBootstrapReviewPanel } from "./organization-bootstrap-review-panel";
 
+// Justification: cette page dynamique privée renouvelle l'autorisation admin à chaque requête.
 export const dynamic = "force-dynamic";
 
 export const metadata = {

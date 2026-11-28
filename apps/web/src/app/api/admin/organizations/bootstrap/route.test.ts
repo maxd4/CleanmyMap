@@ -83,6 +83,24 @@ describe("admin organization bootstrap mandate boundary", () => {
     expect(JSON.stringify(await providerFailure.json())).not.toContain("provider detail");
   });
 
+  it("keeps the private queue no-store when rate limited", async () => {
+    mocks.rateLimit.mockResolvedValueOnce(new Response("slow down", { status: 429 }));
+    const { GET } = await import("./route");
+    const response = await GET(new Request("https://example.test/api/admin/organizations/bootstrap"));
+    expect(response.status).toBe(429);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("returns an empty queue when the RPC has no rows", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: null });
+    const { GET } = await import("./route");
+    const response = await GET(new Request("https://example.test/api/admin/organizations/bootstrap"));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ applications: [], hasMore: false });
+    expect(mocks.getUserList).not.toHaveBeenCalled();
+  });
+
   it("rejects a mismatch between the accepted application identity and actual organizer", async () => {
     mocks.from.mockImplementation((table: string) => ({
       select: () => ({ eq: () => ({ maybeSingle: async () => ({
@@ -96,6 +114,27 @@ describe("admin organization bootstrap mandate boundary", () => {
     expect(response.status).toBe(409);
     expect(mocks.getUser).not.toHaveBeenCalled();
     expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects an organizer directory result that differs from the reviewed reference", async () => {
+    mocks.resolveActionOrganizer.mockResolvedValueOnce({ organizerId: "different-ref" });
+    const { POST } = await import("./route");
+    const response = await POST(new Request("https://example.test/api/admin/organizations/bootstrap", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestBody),
+    }));
+    expect(response.status).toBe(409);
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("maps unexpected organizer resolution failures to a safe unavailable response", async () => {
+    mocks.resolveActionOrganizer.mockRejectedValueOnce(new Error("private organizer lookup detail"));
+    const { POST } = await import("./route");
+    const response = await POST(new Request("https://example.test/api/admin/organizations/bootstrap", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestBody),
+    }));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "Activation non aboutie." });
   });
 
   it("bootstraps only after exact mandate, organizer and submitting-account checks", async () => {

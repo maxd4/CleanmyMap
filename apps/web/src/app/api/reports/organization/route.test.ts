@@ -44,6 +44,16 @@ describe("POST /api/reports/organization", () => {
     expect(mocks.loadOrganizationReport).not.toHaveBeenCalled();
   });
 
+  it("rejects malformed JSON before resolving an organization scope", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(new Request("https://example.test/api/reports/organization", {
+      method: "POST", headers: { "content-type": "application/json" }, body: "{",
+    }));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "Périmètre invalide." });
+    expect(mocks.loadOrganizationReport).not.toHaveBeenCalled();
+  });
+
   it("returns only the bounded canonical aggregate under the session identity", async () => {
     const { POST } = await import("./route");
     const response = await POST(new Request("https://example.test/api/reports/organization", {
