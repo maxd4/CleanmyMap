@@ -51,9 +51,10 @@ set search_path = pg_catalog, public
 as $$
 declare
   v_sqlstate text;
+  v_result record;
 begin
   begin
-    execute p_statement;
+    execute p_statement into v_result;
     v_sqlstate := '00000';
   exception when others then
     get stacked diagnostics v_sqlstate = returned_sqlstate;
