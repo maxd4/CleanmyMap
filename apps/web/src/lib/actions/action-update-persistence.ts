@@ -283,7 +283,12 @@ function validateParticipantUpdate(params: {
   if (collectorsCount != null && total != null && collectorsCount > total) {
     throw new ActionUpdateValidationError("collectorsCount", "Les personnes ayant ramassé ne peuvent pas dépasser les personnes présentes.");
   }
-  const collectorsCountProvenance = body.collectorsCountProvenance ?? currentMetadata.collectorsCountProvenance;
+  const collectorsCountProvenance = body.collectorsCount === null
+    ? null
+    : body.collectorsCountProvenance ?? currentMetadata.collectorsCountProvenance;
+  if (collectorsCountProvenance && collectorsCount === null) {
+    throw new ActionUpdateValidationError("collectorsCountProvenance", "Une provenance ne peut pas être conservée sans nombre de ramasseurs.");
+  }
   if (collectorsCountProvenance === "participant_total_default" && collectorsCount !== total) {
     throw new ActionUpdateValidationError("collectorsCountProvenance", "La valeur préremplie doit correspondre au total présent.");
   }

@@ -24,6 +24,23 @@ describe("collection attribution version persistence", () => {
       .toBe("participant_total_default");
   });
 
+  it("clears collector provenance when the collector count is explicitly cleared", () => {
+    const existing = extractActionMetadataFromNotes(buildPersistedNotes({
+      notes: "Bilan",
+      collectorsCount: 12,
+      collectorsCountProvenance: "user_confirmed",
+    }));
+    const updated = buildActionUpdateNotes({
+      body: { collectorsCount: null },
+      currentMetadata: existing,
+      hasButtsMeasurementUpdate: false,
+      nextCigaretteButtsMeasurements: null,
+      nextVolunteerParticipation: null,
+    });
+
+    expect(extractActionMetadataFromNotes(updated).collectorsCountProvenance).toBeNull();
+  });
+
   it("keeps collectors-v1 through creation, edit, reopen, save, and backup note restoration", () => {
     const created = buildPersistedNotes({ notes: "Création", collectorsCount: 12 });
     const reopened = extractActionMetadataFromNotes(created);

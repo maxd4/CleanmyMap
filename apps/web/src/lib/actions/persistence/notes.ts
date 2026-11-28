@@ -13,7 +13,7 @@ import {
   type ActionVolunteerParticipation,
 } from "@/lib/actions/volunteer-participation";
 
-type PersistedActionNotesPayload = Partial<Pick<
+type PersistedActionNotesPayload = Partial<Omit<Pick<
   CreateActionPayload,
   | "notes"
   | "submissionMode"
@@ -38,8 +38,8 @@ type PersistedActionNotesPayload = Partial<Pick<
    | "cigaretteButtsLots"
   | "volunteerParticipation"
   | "collectorsCount"
-  | "collectorsCountProvenance"
->> & {
+>, "collectorsCountProvenance">> & {
+  collectorsCountProvenance?: CreateActionPayload["collectorsCountProvenance"] | null;
   collectionAttributionVersion?: "collectors-v1";
   photos?: Array<
     Pick<

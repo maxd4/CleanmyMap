@@ -503,7 +503,7 @@ export function resolvePersistedVolunteerParticipation(params: {
       participation: typedParticipation,
       volunteersCount: params.volunteersCount,
     });
-    return persisted.children_count === null
+    return persisted.children_count === null && persisted.adult_count === null && persisted.retired_count === null
       ? null
       : normalizePersistedVolunteerComposition({
           childrenCount: persisted.children_count,
@@ -519,7 +519,7 @@ export function resolvePersistedVolunteerParticipation(params: {
     participation: legacyParticipation,
     volunteersCount: params.volunteersCount,
   });
-  return persisted.children_count === null
+  return persisted.children_count === null && persisted.adult_count === null && persisted.retired_count === null
     ? null
     : normalizePersistedVolunteerComposition({
         childrenCount: persisted.children_count,

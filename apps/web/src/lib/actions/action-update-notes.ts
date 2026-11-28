@@ -85,7 +85,9 @@ function buildMeasurementNotesPayload(params: {
       ? nextCigaretteButtsMeasurements
       : currentMetadata.cigaretteButtsMeasurements,
     volunteerParticipation: nextVolunteerParticipation,
-    collectorsCountProvenance: body.collectorsCountProvenance ?? currentMetadata.collectorsCountProvenance ?? undefined,
+    collectorsCountProvenance: body.collectorsCount === null
+      ? null
+      : body.collectorsCountProvenance ?? currentMetadata.collectorsCountProvenance ?? undefined,
     collectionAttributionVersion: currentMetadata.collectionAttributionVersion ?? undefined,
     cigaretteButtsMassKg: hasButtsMeasurementUpdate
       ? nextCigaretteButtsMeasurements?.cigaretteButtsMassKg
@@ -156,7 +158,9 @@ export function buildActionUpdateNotes(params: {
         ? nextCigaretteButtsMeasurements
         : undefined,
     persistVolunteerParticipationMetadata:
-      persistedVolunteerComposition.children_count === null,
+      persistedVolunteerComposition.children_count === null &&
+      persistedVolunteerComposition.adult_count === null &&
+      persistedVolunteerComposition.retired_count === null,
   });
 }
 

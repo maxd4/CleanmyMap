@@ -402,6 +402,30 @@ describe("prepareActionUpdate administrative requirements continuation", () => {
     ).toBeNull();
   });
 
+  it("rejects collector provenance without a persisted collector count", async () => {
+    await expect(prepareActionUpdate({
+      current: buildCurrent({}, { collectors_count: null, action_phase: "post_action_complete" }),
+      parsedBody: ({ collectorsCountProvenance: "user_confirmed" } as unknown as ActionUpdateInput),
+    })).rejects.toMatchObject({ field: "collectorsCountProvenance" });
+  });
+
+  it("clears collector count and provenance together", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({ departmentCode: null, departmentName: null });
+    const current = buildCurrent({}, {
+      action_phase: "post_action_complete",
+      volunteers_count: 10,
+      collectors_count: 5,
+      notes: '[cmm-meta]{"collectorsCountProvenance":"user_confirmed"}',
+    });
+    const prepared = await prepareActionUpdate({
+      current,
+      parsedBody: ({ collectorsCount: null } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.collectors_count).toBeNull();
+    expect(extractActionMetadataFromNotes(prepared.updateData.notes as string).collectorsCountProvenance).toBeNull();
+  });
+
   it("rejects a future effective date when finalizing an action", async () => {
     await expect(
       prepareActionUpdate({

@@ -322,6 +322,39 @@ describe("volunteer participation contract", () => {
     })).toMatchObject({ childrenCount: 18, adultCount: 8, retiredCount: 0, participantsCount: 26 });
   });
 
+  it.each([
+    [null, null, null, { childrenCount: 7, adultCount: 1, retiredCount: 2 }],
+    [0, null, null, { childrenCount: 0, adultCount: null, retiredCount: null }],
+    [null, 0, null, { childrenCount: null, adultCount: 0, retiredCount: null }],
+    [null, null, 0, { childrenCount: null, adultCount: null, retiredCount: 0 }],
+    [2, 3, null, { childrenCount: 2, adultCount: 3, retiredCount: null }],
+    [2, null, 3, { childrenCount: 2, adultCount: 5, retiredCount: 3 }],
+    [null, 2, 3, { childrenCount: null, adultCount: 2, retiredCount: 3 }],
+    [2, 3, 5, { childrenCount: 2, adultCount: 3, retiredCount: 5 }],
+  ])("resolves known typed categories without losing data (%s, %s, %s)", (
+    childrenCount,
+    adultCount,
+    retiredCount,
+    expected,
+  ) => {
+    const result = resolvePersistedVolunteerParticipation({
+      childrenCount,
+      adultCount,
+      retiredCount,
+      volunteersCount: 10,
+      legacyParticipation: {
+        childrenCount: 7,
+        adultCount: 1,
+        retiredCount: 2,
+        participantsCount: 10,
+        effectiveVolunteerUnits: 6,
+        effectiveVolunteerUnitsFormulaVersion: EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
+      },
+    });
+
+    expect(result).toMatchObject(expected);
+  });
+
   it("does not hide invalid typed columns behind historical metadata", () => {
     expect(resolvePersistedVolunteerParticipation({
       childrenCount: 18,

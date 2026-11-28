@@ -449,3 +449,19 @@ restent dans `app_notifications`, de type `community`, avec déduplication par
 Les informations publiques de préparation restent déclaratives : état non évalué, conditions renseignées, obstacles identifiés ou à confirmer. Un itinéraire alternatif ne peut référencer qu'une version déjà présente dans l'historique du parcours. Les demandes individuelles sont conservées dans `action_accessibility_support_requests`, accessibles par les routes serveur après vérification de l'inscription finale confirmée ou du rôle d'organisateur canonique. Aucun diagnostic, commentaire libre, géolocalisation ni présence automatique n'est enregistré. Le suivi manuel (arrivée, point intermédiaire, départ) est possible uniquement avec consentement dédié; l'effacement automatique intervient au plus tard 90 jours après l'action.
 
 Les rapports n'infèrent aucune certification, présence ou partenariat à partir d'une demande. Les personnes présentes, les ramasseurs, les mesures individuelles et leurs moyennes restent des notions distinctes; `effective-volunteer-units-v1` n'est pas modifié.
+
+La composition démographique finale est stockée par catégorie dans
+`children_count`, `adult_count` et `retired_count`. Chaque catégorie est
+indépendamment inconnue (`NULL`) ou observée, y compris zéro. Toute catégorie
+connue exige un total de participants ; la somme des catégories connues ne peut
+pas le dépasser et, lorsque les trois sont connues, leur somme doit lui être
+égale. Lorsque les nombres d'enfants et de retraités sont tous deux connus,
+le nombre d'adultes peut être déterminé comme leur résiduel du total. Les
+métadonnées historiques restent un fallback uniquement lorsque les trois
+colonnes typées sont absentes ; une catégorie typée connue interdit le recours
+à une composition historique divergente.
+
+`collectors_count` reste distinct du total de personnes présentes. Sa
+provenance (`participant_total_default` ou `user_confirmed`) est conservée
+avec la mesure ; effacer le nombre efface aussi cette provenance. Les valeurs
+nulles ne sont pas converties en zéro.

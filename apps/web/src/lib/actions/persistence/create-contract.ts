@@ -392,7 +392,9 @@ function buildActionInsertRecord(
       { ...persistedPayload, manualDrawing: params.finalDrawing ?? undefined },
       {
         persistVolunteerParticipationMetadata:
-          persistedVolunteerComposition.children_count === null,
+          persistedVolunteerComposition.children_count === null &&
+          persistedVolunteerComposition.adult_count === null &&
+          persistedVolunteerComposition.retired_count === null,
       },
     ),
     status: params.status ?? "pending",

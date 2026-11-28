@@ -24,7 +24,7 @@ export type ActionNotesMeta = {
   cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements;
   volunteerParticipation?: ActionVolunteerParticipation;
   collectionAttributionVersion?: "collectors-v1";
-  collectorsCountProvenance?: Exclude<CollectorsCountProvenance, "historical_unknown" | null>;
+  collectorsCountProvenance?: Exclude<CollectorsCountProvenance, "historical_unknown"> | null;
   associationName?: string;
   groupJoinEnabled?: boolean;
   placeType?: string;
@@ -38,11 +38,12 @@ export type ActionNotesMeta = {
 
 export type ActionInputMetadata = Omit<
   ActionNotesMeta,
-  "cigaretteButtsMeasurements" | "volunteerParticipation" | "visionEstimate"
+  "cigaretteButtsMeasurements" | "volunteerParticipation" | "visionEstimate" | "collectorsCountProvenance"
 > & {
   cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
   volunteerParticipation?: ActionVolunteerParticipation | null;
   visionEstimate?: ActionVisionEstimate | null;
+  collectorsCountProvenance?: Exclude<CollectorsCountProvenance, "historical_unknown"> | null;
 };
 
 function hasNonEmptyText(value: string | null | undefined): value is string {
@@ -118,7 +119,7 @@ function buildStructuredMetadataPayload(metadata: ActionInputMetadata): Partial<
     ...(metadata.collectionAttributionVersion === "collectors-v1"
       ? { collectionAttributionVersion: metadata.collectionAttributionVersion }
       : {}),
-    ...(metadata.collectorsCountProvenance
+    ...(metadata.collectorsCountProvenance !== undefined
       ? { collectorsCountProvenance: metadata.collectorsCountProvenance }
       : {}),
     ...(metadata.associationName?.trim() ? { associationName: metadata.associationName.trim() } : {}),

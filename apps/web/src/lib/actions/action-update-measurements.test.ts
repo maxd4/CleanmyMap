@@ -10,6 +10,7 @@ import { extractActionMetadataFromNotes } from "./metadata";
 import { buildActionUpdateNotes } from "./action-update-notes";
 import { buildPersistedNotes } from "./persistence/notes";
 import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import { normalizeVolunteerParticipation } from "./volunteer-participation";
 
 function buildCurrent(notes: string | null): ActionRow {
   return {
@@ -77,6 +78,38 @@ function updateMeasurements(
 }
 
 describe("buildActionUpdateMeasurements cigarette-butt provenance", () => {
+  it("keeps unknown typed demographic categories instead of restoring divergent notes on update", () => {
+    const historicalNotes = buildPersistedNotes({
+      notes: "Action",
+      volunteerParticipation: normalizeVolunteerParticipation({
+        childrenCount: 2,
+        adultCount: 5,
+        retiredCount: 3,
+      }),
+    });
+    const current = {
+      ...buildCurrent(historicalNotes),
+      volunteers_count: 10,
+      children_count: 4,
+      adult_count: null,
+      retired_count: null,
+    } as ActionRow;
+
+    const result = updateMeasurements(current, { volunteersCount: 12 });
+
+    expect(result.updateData).toMatchObject({
+      volunteers_count: 12,
+      children_count: 4,
+      adult_count: null,
+      retired_count: null,
+    });
+    expect(result.nextVolunteerParticipation).toMatchObject({
+      childrenCount: 4,
+      adultCount: null,
+      retiredCount: null,
+    });
+  });
+
   it("replaces, reprojects, and aggregates explicit lots without double counting", () => {
     const initial = normalizeCigaretteButtsMeasurements({
       cigaretteButtsLots: [

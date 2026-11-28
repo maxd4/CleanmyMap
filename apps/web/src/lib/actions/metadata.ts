@@ -195,7 +195,9 @@ function applyParsedStructuredActionNotesMeta(
   if (parsed.collectionAttributionVersion === "collectors-v1") {
     state.collectionAttributionVersion = parsed.collectionAttributionVersion;
   }
-  if (parsed.collectorsCountProvenance === "participant_total_default" || parsed.collectorsCountProvenance === "user_confirmed") {
+  if (parsed.collectorsCountProvenance === null) {
+    state.collectorsCountProvenance = null;
+  } else if (parsed.collectorsCountProvenance === "participant_total_default" || parsed.collectorsCountProvenance === "user_confirmed") {
     state.collectorsCountProvenance = parsed.collectorsCountProvenance;
   }
   if (
