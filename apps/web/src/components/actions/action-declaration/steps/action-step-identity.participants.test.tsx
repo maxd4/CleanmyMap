@@ -1,11 +1,33 @@
 /** @vitest-environment jsdom */
 
 import { act, useState } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createRoot, type Root } from "react-dom/client";
 import { createInitialFormState } from "../payload";
 import type { FormState } from "../model";
+
+type ParticipantPickerTestProps = {
+  title?: string;
+  onChange: (next: string[]) => void;
+  onRoleSelectionsChange?: (next: Record<string, string[]>) => void;
+  readOnly?: boolean;
+};
+
+vi.mock("../../action-participant-picker", () => ({
+  ActionParticipantPicker: (props: ParticipantPickerTestProps) => {
+    const picker = props.title === "Comptes coorganisateurs" ? "organizer" : "participant";
+    return (
+      <section data-testid={`${picker}-picker`} data-read-only={String(props.readOnly ?? false)}>
+        <button type="button" data-testid={`${picker}-select`} onClick={() => props.onChange(["member-2"])}>Sélectionner</button>
+        {props.onRoleSelectionsChange ? (
+          <button type="button" data-testid="role-change" onClick={() => props.onRoleSelectionsChange?.({ "member-2": ["group_lead", "group_lead"] })}>Attribuer un rôle</button>
+        ) : null}
+      </section>
+    );
+  },
+}));
+
 import { ActionParticipantSection } from "./action-step-identity.participants";
 
 function ControlledParticipantFields({ hasAttemptedSubmit = false, initialCollectorsCount = "", initialCollectorsProvenance = null, initialVolunteersCount = "" }: { hasAttemptedSubmit?: boolean; initialCollectorsCount?: string; initialCollectorsProvenance?: FormState["collectorsCountProvenance"]; initialVolunteersCount?: string }) {
@@ -57,6 +79,43 @@ function ParticipantLifecycleHarness() {
         isActionMode
         hasAttemptedSubmit={hasAttemptedSubmit}
         formIdentityKey={formIdentityKey}
+      />
+    </>
+  );
+}
+
+function PreparationParticipantHarness() {
+  const [form, setForm] = useState(() => createInitialFormState("Alice", "action"));
+  const updateField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+    setForm((previous) => ({ ...previous, [key]: value }));
+  };
+  return (
+    <>
+      <output data-testid="action-context-value">{form.actionContext}</output>
+      <ActionParticipantSection form={form} updateField={updateField} userId="user-1" variant="compact" isActionMode />
+    </>
+  );
+}
+
+function SupportingParticipantHarness({ participantReadOnly = false, isActionMode = true }: { participantReadOnly?: boolean; isActionMode?: boolean }) {
+  const [form, setForm] = useState(() => createInitialFormState("Alice", "action"));
+  const updateField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+    setForm((previous) => ({ ...previous, [key]: value }));
+  };
+  return (
+    <>
+      <output data-testid="organizer-accounts">{form.organizerAccounts}</output>
+      <output data-testid="participant-accounts">{form.participantAccounts.join(",")}</output>
+      <output data-testid="field-role-selections">{JSON.stringify(form.fieldRoleSelections)}</output>
+      <ActionParticipantSection
+        form={form}
+        updateField={updateField}
+        userId="user-1"
+        variant="supporting"
+        isActionMode={isActionMode}
+        supportingFull
+        participantReadOnly={participantReadOnly}
+        participantTitle="Collaborateurs"
       />
     </>
   );
@@ -283,6 +342,62 @@ describe("final participant composition fields", () => {
     expect((container.querySelector("#action-volunteers-count") as HTMLInputElement).value).toBe("");
     expect((container.querySelector("#action-collectors-count") as HTMLInputElement).value).toBe("");
     root.unmount();
+  });
+});
+
+describe("preparation and supporting participant sections", () => {
+  it("updates preparation totals, categories and the school context", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => root.render(<PreparationParticipantHarness />));
+
+    act(() => setControlValue(container.querySelector("#action-volunteers-count") as HTMLInputElement, "15"));
+    act(() => setControlValue(container.querySelector("#action-children-count") as HTMLInputElement, "1"));
+    act(() => setControlValue(container.querySelector("#action-retired-count") as HTMLInputElement, "1"));
+    expect(container.textContent).toContain("13 adultes calculés automatiquement");
+
+    const context = container.querySelector("#action-context") as HTMLSelectElement;
+    act(() => {
+      context.value = "school";
+      context.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(container.querySelector('[data-testid="action-context-value"]')?.textContent).toBe("school");
+    expect(container.textContent).toContain("Parcours école");
+    root.unmount();
+  });
+
+  it("maps organizer selections and normalized field roles into their form fields", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => root.render(<SupportingParticipantHarness />));
+
+    act(() => (container.querySelector('[data-testid="organizer-select"]') as HTMLButtonElement).click());
+    act(() => (container.querySelector('[data-testid="role-change"]') as HTMLButtonElement).click());
+    act(() => (container.querySelector('[data-testid="participant-select"]') as HTMLButtonElement).click());
+
+    expect(container.querySelector('[data-testid="organizer-accounts"]')?.textContent).toBe("member-2");
+    expect(container.querySelector('[data-testid="participant-accounts"]')?.textContent).toBe("member-2");
+    expect(container.querySelector('[data-testid="field-role-selections"]')?.textContent).toBe('{"member-2":["group_lead"]}');
+    root.unmount();
+  });
+
+  it("keeps read-only participant accounts unchanged and hides supporting accounts outside action mode", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => root.render(<SupportingParticipantHarness participantReadOnly />));
+    expect(container.querySelector('[data-testid="participant-picker"]')?.getAttribute("data-read-only")).toBe("true");
+    act(() => (container.querySelector('[data-testid="participant-select"]') as HTMLButtonElement).click());
+    expect(container.querySelector('[data-testid="participant-accounts"]')?.textContent).toBe("");
+    root.unmount();
+
+    const hidden = renderToStaticMarkup(<ActionParticipantSection
+      form={createInitialFormState("Alice", "action")}
+      updateField={() => undefined}
+      userId="user-1"
+      variant="supporting"
+      isActionMode={false}
+    />);
+    expect(hidden).toBe("");
   });
 });
 

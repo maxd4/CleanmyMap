@@ -16,6 +16,62 @@ function measurementPayload(
 }
 
 describe("getActionMeasurementValidationIssues", () => {
+  it("maps every invalid mass field and deduplicates repeated cigarette-count aliases", () => {
+    const issues = getActionMeasurementValidationIssues(measurementPayload({
+      wasteKg: -0.1,
+      wasteBreakdown: {
+        recyclablesKg: -0.1,
+        glassKg: -0.1,
+        householdWasteKg: -0.1,
+        otherWasteKg: -0.1,
+        characterizationKg: { plastic: -0.1 },
+      },
+      cigaretteButtsMeasurements: {
+        cigaretteButtsCount: -1,
+        cigaretteButtsMassKg: -0.1,
+        cigaretteButtsVolumeLiters: -0.1,
+      },
+      cigaretteButts: -1,
+      cigaretteButtsCount: -1,
+      cigaretteButtsKg: -0.1,
+      cigaretteButtsMassKg: -0.1,
+      cigaretteButtsVolumeLiters: -0.1,
+      wasteMeasurementMethod: "invalid" as CreateActionPayload["wasteMeasurementMethod"],
+    } as Partial<CreateActionPayload>));
+
+    expect(issues.map(({ field }) => field).sort()).toEqual([
+      "wasteKg",
+      "wasteRecyclablesKg",
+      "wasteGlassKg",
+      "wasteHouseholdKg",
+      "wasteOtherKg",
+      "wasteCharacterizationKg",
+      "cigaretteButtsCount",
+      "wasteMegotsKg",
+      "cigaretteButtsVolumeLiters",
+    ].sort());
+    expect(issues.filter(({ field }) => field === "cigaretteButtsCount")).toHaveLength(1);
+  });
+
+  it("maps characterization category failures and total-mass coherence to their accessible message", () => {
+    const invalidCategory = getActionMeasurementValidationIssues(measurementPayload({
+      wasteBreakdown: { characterizationKg: { unknown_slug: 1 } as Record<string, number> },
+    }));
+    const incoherentTotal = getActionMeasurementValidationIssues(measurementPayload({
+      wasteKg: 1,
+      wasteBreakdown: { characterizationKg: { plastic: 1.2 } },
+    }));
+
+    expect(invalidCategory).toContainEqual(expect.objectContaining({
+      field: "wasteCharacterizationKg",
+      message: "La catégorie de caractérisation sélectionnée n’est pas autorisée.",
+    }));
+    expect(incoherentTotal).toContainEqual(expect.objectContaining({
+      field: "wasteCharacterizationKg",
+      message: "La somme des masses caractérisées ne peut pas dépasser la masse totale collectée.",
+    }));
+  });
+
   it.each([-0.1, 0.05, 100_000.1])("maps invalid characterization mass %s to the accessible field", (value) => {
     expect(getActionMeasurementValidationIssues(measurementPayload({
       wasteBreakdown: { characterizationKg: { plastic: value } },

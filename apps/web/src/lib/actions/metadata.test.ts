@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   appendActionMetadataToNotes,
+  deriveActionTitleFromMetadata,
   extractActionMetadataFromNotes,
   setActionGroupJoinEnabledInNotes,
 } from "./metadata";
@@ -11,6 +12,22 @@ import {
 } from "@/lib/waste/cigarette-butts";
 
 describe("action metadata notes", () => {
+  it("derives a title from the first available non-blank source", () => {
+    expect(deriveActionTitleFromMetadata({
+      associationName: "  Association  ",
+      actorName: "Organisateur",
+      locationLabel: "Parc",
+    })).toBe("Association");
+    expect(deriveActionTitleFromMetadata({
+      associationName: "  ",
+      actorName: "  Organisateur  ",
+      locationLabel: "Parc",
+    })).toBe("Organisateur");
+    expect(deriveActionTitleFromMetadata({ locationLabel: "  Parc  " })).toBe("Parc");
+    expect(deriveActionTitleFromMetadata({ fallback: "Action importée" })).toBe("Action importée");
+    expect(deriveActionTitleFromMetadata({})).toBe("Action sans structure");
+  });
+
   it("appends and extracts submission mode and waste breakdown", () => {
     const notes = appendActionMetadataToNotes("Observation terrain", {
       submissionMode: "complete",
