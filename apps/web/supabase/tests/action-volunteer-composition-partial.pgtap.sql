@@ -1,6 +1,6 @@
 begin;
 
-select plan(7);
+select plan(8);
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"partial-composition-test"}', true);
@@ -61,7 +61,7 @@ select ok(pg_temp.reject_incoherent_complete_composition(), 'a complete composit
 
 reset role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"partial-composition-rpc-test"}', true);
-create function pg_temp.accepts_coherent_partial_composition_in_rpc() returns boolean
+create function pg_temp.persists_coherent_partial_composition_in_rpc() returns boolean
 language plpgsql as $$
 begin
   begin
@@ -70,7 +70,7 @@ begin
         'created_by_clerk_id', 'partial-composition-rpc-test',
         'client_request_id', null,
         'action_date', current_date + 1,
-        'location_label', null,
+        'location_label', 'RPC partial composition',
         'volunteers_count', 10,
         'children_count', 3,
         'adult_count', null,
@@ -82,16 +82,23 @@ begin
       '[]'::jsonb,
       'partial-composition-rpc-test', null, null, false
     );
+    return exists (
+      select 1 from public.actions
+       where created_by_clerk_id = 'partial-composition-rpc-test'
+         and location_label = 'RPC partial composition'
+         and volunteers_count = 10
+         and children_count = 3
+         and adult_count is null
+         and retired_count = 2
+    );
   exception
-    when not_null_violation then return true;
-    when sqlstate '22023' then return false;
+    when others then return false;
   end;
-  return false;
 end;
 $$;
 
-select ok(pg_temp.accepts_coherent_partial_composition_in_rpc(),
-  'legacy creation RPC passes coherent partial categories to the database insert');
+select ok(pg_temp.persists_coherent_partial_composition_in_rpc(),
+  'legacy creation RPC persists coherent partial categories without filling unknown values');
 
 create function pg_temp.reject_incoherent_rpc_composition() returns boolean
 language plpgsql as $$
