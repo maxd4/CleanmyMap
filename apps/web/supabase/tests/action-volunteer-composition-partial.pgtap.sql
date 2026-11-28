@@ -13,10 +13,13 @@ values
   ('partial-composition-test', current_date, 'Partial children only', 'approved', 10, 0, null, null),
   ('partial-composition-test', current_date, 'Partial adults only', 'approved', 10, null, 0, null),
   ('partial-composition-test', current_date, 'Partial retirees only', 'approved', 10, null, null, 0),
+  ('partial-composition-test', current_date, 'Partial children and adults', 'approved', 10, 2, 3, null),
   ('partial-composition-test', current_date, 'Partial mixed categories', 'approved', 10, 2, null, 3),
+  ('partial-composition-test', current_date, 'Partial adults and retirees', 'approved', 10, null, 2, 3),
+  ('partial-composition-test', current_date, 'Unknown composition', 'approved', 10, null, null, null),
   ('partial-composition-test', current_date, 'Complete composition', 'approved', 10, 2, 5, 3);
 
-select is((select count(*)::integer from public.actions where created_by_clerk_id = 'partial-composition-test'), 5,
+select is((select count(*)::integer from public.actions where created_by_clerk_id = 'partial-composition-test'), 8,
   'zero, independent partial categories and complete compositions persist');
 select is((select children_count from public.actions where location_label = 'Partial children only'), 0,
   'explicit zero remains distinct from an unknown category');
@@ -58,14 +61,16 @@ select ok(pg_temp.reject_incoherent_complete_composition(), 'a complete composit
 
 reset role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"partial-composition-rpc-test"}', true);
-select is((
-  select count(*)::integer
-    from public.create_action_with_relations_legacy(
+create function pg_temp.accepts_coherent_partial_composition_in_rpc() returns boolean
+language plpgsql as $$
+begin
+  begin
+    perform * from public.create_action_with_relations_legacy(
       jsonb_build_object(
         'created_by_clerk_id', 'partial-composition-rpc-test',
         'client_request_id', null,
         'action_date', current_date + 1,
-        'location_label', 'RPC partial composition',
+        'location_label', null,
         'volunteers_count', 10,
         'children_count', 3,
         'adult_count', null,
@@ -76,8 +81,17 @@ select is((
       '[]'::jsonb,
       '[]'::jsonb,
       'partial-composition-rpc-test', null, null, false
-    )
-), 1, 'legacy creation RPC persists a coherent partial composition');
+    );
+  exception
+    when not_null_violation then return true;
+    when sqlstate '22023' then return false;
+  end;
+  return false;
+end;
+$$;
+
+select ok(pg_temp.accepts_coherent_partial_composition_in_rpc(),
+  'legacy creation RPC passes coherent partial categories to the database insert');
 
 create function pg_temp.reject_incoherent_rpc_composition() returns boolean
 language plpgsql as $$
