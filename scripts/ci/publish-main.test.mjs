@@ -11,6 +11,7 @@ import {
   publishMain as publishMainImpl,
   validatePushBypassAcknowledgement,
 } from "./publish-main.mjs";
+import { verifyGitHubPushAuthorization } from "./github-push-authorization.mjs";
 import { removePathWithRetry } from "./validation-evidence.mjs";
 
 function fixtureRepository() {
@@ -34,6 +35,7 @@ function fakeGit({
   onPush,
   changedFiles = ["AGENTS.md"],
   commitFiles = {},
+  pushDestinations = ["https://github.com/maxd4/CleanMyMap.git"],
 } = {}) {
   const calls = [];
   const state = { local, branch: local, remote };
@@ -41,6 +43,7 @@ function fakeGit({
   let headReads = 0;
   let branchReads = 0;
   let pushIndex = 0;
+  let pushDestinationReads = 0;
 
   const isAncestor = (ancestor, descendant) => {
     const visited = new Set();
@@ -56,7 +59,11 @@ function fakeGit({
   const runGitCommand = (args) => {
     calls.push(args);
     if (args[0] === "branch") return { status: 0, stdout: "main\n", stderr: "" };
-    if (args[0] === "remote" && args[1] === "get-url") return { status: 0, stdout: "https://github.com/maxd4/CleanmyMap.git\n", stderr: "" };
+    if (args[0] === "remote" && args[1] === "get-url" && args[2] === "--push" && args[3] === "--all" && args[4] === "origin") {
+      pushDestinationReads += 1;
+      const destinations = typeof pushDestinations === "function" ? pushDestinations(pushDestinationReads) : pushDestinations;
+      return { status: 0, stdout: `${destinations.join("\n")}\n`, stderr: "" };
+    }
     if (args[0] === "rev-parse" && args[1] === "--verify") return { status: 1, stdout: "", stderr: "" };
     if (args[0] === "fetch") return { status: 0, stdout: "", stderr: "" };
     if (args[0] === "rev-parse" && args[1] === "HEAD") {
@@ -142,6 +149,46 @@ test("requires explicit attribution for every commit and rejects foreign commit 
   const foreign = fakeGit({ commitFiles: { candidate: ["AGENTS.md", "foreign.txt"] } });
   await assert.rejects(publishMainImpl({ runGitCommand: foreign.runGitCommand, attributedCommits: [{ commitSha: "candidate", files: ["AGENTS.md"] }] }), /PUBLISH_FOREIGN_COMMIT_PATHS.*foreign.txt/);
   assert.equal(pushCalls(foreign).length, 0);
+});
+
+test("authenticates the effective push URL instead of the fetch URL", async () => {
+  const fake = fakeGit({ pushDestinations: ["https://github.com/another-owner/another-repo.git"] });
+  await assert.rejects(publishMainImpl({
+    runGitCommand: fake.runGitCommand,
+    attributedCommits: [{ commitSha: "candidate", files: ["AGENTS.md"] }],
+    verifyAuthorization: verifyGitHubPushAuthorization,
+    sleep: async () => {},
+  }), /PUBLISH_AUTH_REMOTE_UNSUPPORTED/);
+  assert.ok(fake.calls.some((args) => args.join(" ") === "remote get-url --push --all origin"));
+  assert.equal(pushCalls(fake).length, 0);
+});
+
+test("blocks if the effective push destination changes during authorization", async () => {
+  const fake = fakeGit({
+    pushDestinations: (read) => [read === 1
+      ? "https://github.com/maxd4/CleanMyMap.git"
+      : "https://github.com/another-owner/another-repo.git"],
+  });
+  await assert.rejects(publishMain({
+    runGitCommand: fake.runGitCommand,
+  }), /PUBLISH_PUSH_DESTINATION_CHANGED/);
+  assert.equal(pushCalls(fake).length, 0);
+});
+
+test("refuses multiple effective push destinations before authorization or push", async () => {
+  const fake = fakeGit({
+    pushDestinations: [
+      "https://github.com/maxd4/CleanMyMap.git",
+      "https://github.com/mirror/CleanMyMap.git",
+    ],
+  });
+  let authorizationCalls = 0;
+  await assert.rejects(publishMain({
+    runGitCommand: fake.runGitCommand,
+    verifyAuthorization: async () => { authorizationCalls += 1; },
+  }), /PUBLISH_PUSH_DESTINATION_AMBIGUOUS/);
+  assert.equal(authorizationCalls, 0);
+  assert.equal(pushCalls(fake).length, 0);
 });
 
 test("publishes validated commits from multiple attributed lots as one push range", async () => {
@@ -270,9 +317,9 @@ test("accepts only the configured main update bypass and still verifies converge
   const published = await publishMain({
     runGitCommand: fake.runGitCommand,
     sleep: async () => {},
-    verifyAuthorization: async ({ remoteUrl, targetRef }) => {
+    verifyAuthorization: async ({ pushUrl, targetRef }) => {
       authorizationCalls += 1;
-      assert.equal(remoteUrl, "https://github.com/maxd4/CleanmyMap.git");
+      assert.equal(pushUrl, "https://github.com/maxd4/CleanMyMap.git");
       assert.equal(targetRef, "refs/heads/main");
     },
   });

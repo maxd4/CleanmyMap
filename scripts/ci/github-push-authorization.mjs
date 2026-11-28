@@ -5,6 +5,8 @@ const REPOSITORY = "maxd4/CleanmyMap";
 const TARGET_REF = "refs/heads/main";
 const API_ROOT = "https://api.github.com";
 const REQUIRED_EFFECTIVE_RULES = Object.freeze(["update", "deletion", "non_fast_forward"]);
+const MAX_EFFECTIVE_RULE_PAGES = 20;
+const EFFECTIVE_RULES_PER_PAGE = 100;
 
 function authorizationError(code) {
   throw new Error(code);
@@ -92,6 +94,17 @@ async function githubGet(path, token, fetchImpl) {
   }
 }
 
+async function githubGetAll(path, token, fetchImpl) {
+  const entries = [];
+  for (let page = 1; page <= MAX_EFFECTIVE_RULE_PAGES; page += 1) {
+    const result = await githubGet(`${path}?per_page=${EFFECTIVE_RULES_PER_PAGE}&page=${page}`, token, fetchImpl);
+    if (!Array.isArray(result)) authorizationError("PUBLISH_AUTH_RULES_UNVERIFIED");
+    entries.push(...result);
+    if (result.length < EFFECTIVE_RULES_PER_PAGE) return entries;
+  }
+  authorizationError("PUBLISH_AUTH_RULES_PAGINATION_LIMIT");
+}
+
 function hasRequiredRule(rules, type) {
   return Array.isArray(rules) && rules.some((rule) => rule?.type === type);
 }
@@ -122,36 +135,44 @@ export function validateGitHubPushAuthorization({
     .filter((ruleset) => Number.isInteger(ruleset?.id))
     .map((ruleset) => [ruleset.id, ruleset]));
   const effectiveSources = new Map(REQUIRED_EFFECTIVE_RULES.map((type) => [type, new Set()]));
+  const effectiveRulesBySource = new Map();
   for (const rule of effectiveRules) {
-    if (!effectiveSources.has(rule?.type)) continue;
-    if (!Number.isInteger(rule.ruleset_id)) authorizationError("PUBLISH_AUTH_EFFECTIVE_RULE_SOURCE_UNVERIFIED");
-    effectiveSources.get(rule.type).add(rule.ruleset_id);
+    if (typeof rule?.type !== "string" || !Number.isInteger(rule.ruleset_id)) {
+      authorizationError("PUBLISH_AUTH_EFFECTIVE_RULE_SOURCE_UNVERIFIED");
+    }
+    const sourceRules = effectiveRulesBySource.get(rule.ruleset_id) ?? new Set();
+    sourceRules.add(rule.type);
+    effectiveRulesBySource.set(rule.ruleset_id, sourceRules);
+    if (effectiveSources.has(rule.type)) effectiveSources.get(rule.type).add(rule.ruleset_id);
   }
 
   for (const type of REQUIRED_EFFECTIVE_RULES) {
     if (effectiveSources.get(type).size === 0) authorizationError(`PUBLISH_AUTH_REQUIRED_RULE_MISSING:${type}`);
   }
 
-  for (const [type, sourceIds] of effectiveSources) {
-    for (const id of sourceIds) {
-      const ruleset = rulesetById.get(id);
-      if (!ruleset || ruleset.enforcement !== "active" || ruleset.target !== "branch"
-        || !hasRequiredRule(ruleset.rules, type)) {
-        authorizationError(`PUBLISH_AUTH_RULESET_UNVERIFIED:${type}:${id}`);
+  for (const [id, effectiveTypes] of effectiveRulesBySource) {
+    const ruleset = rulesetById.get(id);
+    if (!ruleset || ruleset.enforcement !== "active" || ruleset.target !== "branch"
+      || !Array.isArray(ruleset.rules)
+      || [...effectiveTypes].some((type) => !hasRequiredRule(ruleset.rules, type))) {
+      authorizationError(`PUBLISH_AUTH_RULESET_UNVERIFIED:${[...effectiveTypes].join(",")}:${id}`);
+    }
+    if (effectiveTypes.has("update")) {
+      if (ruleset.rules.length !== 1
+        || ruleset.rules[0]?.type !== "update"
+        || ruleset.current_user_can_bypass !== "always"
+        || !Array.isArray(ruleset.bypass_actors)
+        || !ruleset.bypass_actors.some((actor) => Number.isInteger(actor?.actor_id)
+          && typeof actor.actor_type === "string"
+          && actor.bypass_mode === "always")) {
+        authorizationError(`PUBLISH_AUTH_UPDATE_BYPASS_UNAUTHORIZED:${id}`);
       }
-      if (type === "update") {
-        if (ruleset.rules.length !== 1
-          || ruleset.rules[0]?.type !== "update"
-          || ruleset.current_user_can_bypass !== "always"
-          || !Array.isArray(ruleset.bypass_actors)
-          || !ruleset.bypass_actors.some((actor) => Number.isInteger(actor?.actor_id)
-            && typeof actor.actor_type === "string"
-            && actor.bypass_mode === "always")) {
-          authorizationError(`PUBLISH_AUTH_UPDATE_BYPASS_UNAUTHORIZED:${id}`);
-        }
-      } else if (ruleset.current_user_can_bypass !== "never") {
-        authorizationError(`PUBLISH_AUTH_PROTECTION_BYPASS_AVAILABLE:${type}:${id}`);
+    } else if (ruleset.current_user_can_bypass !== "never") {
+      const protectedTypes = [...effectiveTypes].filter((type) => REQUIRED_EFFECTIVE_RULES.includes(type));
+      if (protectedTypes.length > 0) {
+        authorizationError(`PUBLISH_AUTH_PROTECTION_BYPASS_AVAILABLE:${protectedTypes.join(",")}:${id}`);
       }
+      authorizationError(`PUBLISH_AUTH_UNEXPECTED_BYPASS_AVAILABLE:${id}`);
     }
   }
 
@@ -159,11 +180,11 @@ export function validateGitHubPushAuthorization({
 }
 
 export async function verifyGitHubPushAuthorization({
-  remoteUrl,
+  pushUrl,
   readCredential = readGitHubPushCredential,
   fetchImpl = globalThis.fetch,
 } = {}) {
-  const credential = readCredential(remoteUrl);
+  const credential = readCredential(pushUrl);
   if (!credential || typeof credential.token !== "string" || credential.token.length === 0) {
     authorizationError("PUBLISH_AUTH_CREDENTIAL_UNAVAILABLE");
   }
@@ -183,12 +204,10 @@ export async function verifyGitHubPushAuthorization({
     token,
     fetchImpl,
   );
-  const effectiveRules = await githubGet(`/repos/${REPOSITORY}/rules/branches/main`, token, fetchImpl);
+  const effectiveRules = await githubGetAll(`/repos/${REPOSITORY}/rules/branches/main`, token, fetchImpl);
   if (!Array.isArray(effectiveRules)) authorizationError("PUBLISH_AUTH_RULES_UNVERIFIED");
 
-  const rulesetIds = [...new Set(effectiveRules
-    .filter((rule) => REQUIRED_EFFECTIVE_RULES.includes(rule?.type))
-    .map((rule) => rule.ruleset_id))];
+  const rulesetIds = [...new Set(effectiveRules.map((rule) => rule?.ruleset_id))];
   if (rulesetIds.some((id) => !Number.isInteger(id))) authorizationError("PUBLISH_AUTH_EFFECTIVE_RULE_SOURCE_UNVERIFIED");
   const rulesets = await Promise.all(rulesetIds.map((id) => githubGet(
     `/repos/${REPOSITORY}/rulesets/${id}?includes_parents=true`,

@@ -36,6 +36,7 @@ function rulesets(overrides = {}) {
       current_user_can_bypass: "never",
       ...overrides.protections,
     },
+    ...(overrides.additional ?? []),
   ];
 }
 
@@ -77,18 +78,33 @@ test("requires active deletion and non-fast-forward rules without a bypass for t
   }), /PUBLISH_AUTH_PROTECTION_BYPASS_AVAILABLE/);
 });
 
+test("rejects an additional effective ruleset that gives the publisher an unrelated bypass", () => {
+  const additional = {
+    id: 319001,
+    target: "branch",
+    enforcement: "active",
+    rules: [{ type: "required_status_checks" }],
+    bypass_actors: [{ actor_type: "RepositoryRole", actor_id: 5, bypass_mode: "always" }],
+    current_user_can_bypass: "always",
+  };
+  assert.throws(() => validate({
+    effectiveRules: [...effectiveRules, { type: "required_status_checks", ruleset_id: additional.id }],
+    rulesets: rulesets({ additional: [additional] }),
+  }), /PUBLISH_AUTH_UNEXPECTED_BYPASS_AVAILABLE:319001/);
+});
+
 test("uses the Git push credential for identity, permission, effective rules, and ruleset authorization", async () => {
   const requests = [];
   const responses = new Map([
     ["/user", identity],
     ["/repos/maxd4/CleanmyMap", repository],
     ["/repos/maxd4/CleanmyMap/collaborators/maxd4/permission", permission],
-    ["/repos/maxd4/CleanmyMap/rules/branches/main", effectiveRules],
+    ["/repos/maxd4/CleanmyMap/rules/branches/main?per_page=100&page=1", effectiveRules],
     ["/repos/maxd4/CleanmyMap/rulesets/25034548?includes_parents=true", rulesets()[0]],
     ["/repos/maxd4/CleanmyMap/rulesets/23565928?includes_parents=true", rulesets()[1]],
   ]);
   const result = await verifyGitHubPushAuthorization({
-    remoteUrl: "https://github.com/maxd4/CleanmyMap.git",
+    pushUrl: "https://github.com/maxd4/CleanmyMap.git",
     readCredential: (url) => {
       assert.equal(url, "https://github.com/maxd4/CleanmyMap.git");
       return { username: "maxd4", token: "test-token-never-log" };
@@ -104,7 +120,47 @@ test("uses the Git push credential for identity, permission, effective rules, an
   assert.equal(result.login, "maxd4");
   assert.equal(requests.length, 6);
   assert.ok(requests.every((request) => request.authorization === "Bearer test-token-never-log"));
-  assert.ok(requests.some((request) => request.url.endsWith("/rules/branches/main")));
+  assert.ok(requests.some((request) => request.url.endsWith("/rules/branches/main?per_page=100&page=1")));
+});
+
+test("fetches every effective ruleset source and rejects an additional bypass before authorization", async () => {
+  const extraRuleset = {
+    id: 319001,
+    target: "branch",
+    enforcement: "active",
+    rules: [{ type: "required_status_checks" }],
+    bypass_actors: [{ actor_type: "RepositoryRole", actor_id: 5, bypass_mode: "always" }],
+    current_user_can_bypass: "always",
+  };
+  const firstPage = [
+    ...effectiveRules,
+    ...Array.from({ length: 97 }, () => ({ type: "deletion", ruleset_id: 23565928 })),
+  ];
+  const secondPage = [{ type: "required_status_checks", ruleset_id: extraRuleset.id }];
+  const requests = [];
+  const responses = new Map([
+    ["/user", identity],
+    ["/repos/maxd4/CleanmyMap", repository],
+    ["/repos/maxd4/CleanmyMap/collaborators/maxd4/permission", permission],
+    ["/repos/maxd4/CleanmyMap/rules/branches/main?per_page=100&page=1", firstPage],
+    ["/repos/maxd4/CleanmyMap/rules/branches/main?per_page=100&page=2", secondPage],
+    ["/repos/maxd4/CleanmyMap/rulesets/25034548?includes_parents=true", rulesets()[0]],
+    ["/repos/maxd4/CleanmyMap/rulesets/23565928?includes_parents=true", rulesets()[1]],
+    ["/repos/maxd4/CleanmyMap/rulesets/319001?includes_parents=true", extraRuleset],
+  ]);
+  await assert.rejects(verifyGitHubPushAuthorization({
+    pushUrl: "https://github.com/maxd4/CleanmyMap.git",
+    readCredential: () => ({ username: "maxd4", token: "test-token" }),
+    fetchImpl: async (url) => {
+      const path = new URL(url).pathname + new URL(url).search;
+      requests.push(path);
+      return responses.has(path)
+        ? { ok: true, status: 200, json: async () => responses.get(path) }
+        : { ok: false, status: 404, json: async () => ({}) };
+    },
+  }), /PUBLISH_AUTH_UNEXPECTED_BYPASS_AVAILABLE:319001/);
+  assert.ok(requests.some((path) => path.endsWith("/rules/branches/main?per_page=100&page=2")));
+  assert.ok(requests.some((path) => path.endsWith("/rulesets/319001?includes_parents=true")));
 });
 
 test("reads Git's HTTPS authorization header without exposing or substituting its identity", () => {
@@ -135,7 +191,7 @@ test("resolves the configured Git credential helper and fails closed for unsuppo
 
 test("refuses an API identity different from the Git credential username", async () => {
   await assert.rejects(verifyGitHubPushAuthorization({
-    remoteUrl: "https://github.com/maxd4/CleanmyMap.git",
+    pushUrl: "https://github.com/maxd4/CleanmyMap.git",
     readCredential: () => ({ username: "other-user", token: "test-token" }),
     fetchImpl: async () => ({ ok: true, status: 200, json: async () => identity }),
   }), /PUBLISH_AUTH_IDENTITY_MISMATCH/);

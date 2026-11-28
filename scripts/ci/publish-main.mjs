@@ -239,6 +239,18 @@ function waitMs(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+function resolveSinglePushDestination(runGitCommand) {
+  const result = runGitCommand(["remote", "get-url", "--push", "--all", "origin"]);
+  if (result.status !== 0) {
+    throw new Error(`PUBLISH_PUSH_DESTINATION_UNVERIFIED: cannot resolve origin push destinations: ${(result.stderr || result.stdout).trim()}`);
+  }
+  const destinations = result.stdout.split(/\r?\n/).map((url) => url.trim()).filter(Boolean);
+  if (destinations.length !== 1) {
+    throw new Error(`PUBLISH_PUSH_DESTINATION_AMBIGUOUS: expected exactly one origin push destination, found ${destinations.length}.`);
+  }
+  return destinations[0];
+}
+
 function runPublicationCoverageGate({ candidateSha, baseRef, runGitCommand }) {
   const changedFiles = baseRef
     ? gitText(runGitCommand, ["diff", "--name-only", baseRef, candidateSha]).split(/\r?\n/).filter(Boolean)
@@ -373,9 +385,12 @@ export async function publishMain({
       coverageGate({ candidateSha, baseRef: remoteSha, runGitCommand });
       log(`Coverage publication gate passed for candidate ${candidateSha}.`);
     }
-    const remoteUrl = gitText(runGitCommand, ["remote", "get-url", "origin"]);
-    await verifyAuthorization({ remoteUrl, candidateSha, remoteSha, targetRef: "refs/heads/main" });
+    const pushUrl = resolveSinglePushDestination(runGitCommand);
+    await verifyAuthorization({ pushUrl, candidateSha, remoteSha, targetRef: "refs/heads/main" });
     assertCandidateIsCurrent(runGitCommand, candidateSha, "after GitHub authorization verification");
+    if (resolveSinglePushDestination(runGitCommand) !== pushUrl) {
+      throw new Error("PUBLISH_PUSH_DESTINATION_CHANGED: origin push destination changed during authorization verification.");
+    }
     const push = runGitCommand(["push", "origin", `${candidateSha}:refs/heads/main`]);
     const pushOutput = `${push.stdout ?? ""}\n${push.stderr ?? ""}`;
     const authorizedUpdateBypass = validatePushBypassAcknowledgement(pushOutput);
