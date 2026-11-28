@@ -1,6 +1,6 @@
 -- Organization isolation and lifecycle behavior executed against the replayed PostgreSQL schema.
 begin;
-select plan(66);
+select plan(72);
 select has_table('public','organizations','organization table exists');
 select has_table('public','organization_memberships','membership table exists');
 select has_table('public','action_organizations','action association table exists');
@@ -97,5 +97,13 @@ select throws_ok($test$select public.leave_organization((select id from public.o
 select lives_ok($test$select public.mutate_organization_membership((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-owner-a','transfer_owner',(select id from public.organization_memberships where clerk_user_id='clerk-successor'),null::text,null::text,null::uuid,'00000000-0000-4000-8000-000000000123')$test$,'owner can atomically transfer responsibility to an active manager');
 select is((select member_role from public.organization_memberships where clerk_user_id='clerk-owner-a'),'manager','former owner becomes a manager after transfer');
 select is((select member_role from public.organization_memberships where clerk_user_id='clerk-successor'),'owner','successor becomes the organization owner');
+update public.organizations set disabled_at=now() where partner_entry_id='test-enterprise-alpha';
+select is((select count(*)::integer from public.list_my_organizations('clerk-successor')),0,'disabled organization is absent from the active membership listing');
+select throws_ok($test$select * from public.read_organization_workspace((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-successor',0)$test$,'42501','scope unavailable','disabled organization blocks workspace reads');
+select throws_ok($test$select public.mutate_organization_membership((select id from public.organizations where partner_entry_id='test-enterprise-alpha'),'clerk-successor','invite',null::uuid,'clerk-new-member','member',null::uuid,'00000000-0000-4000-8000-000000000171')$test$,'42501','organization unavailable','disabled organization blocks membership mutations');
+update public.partner_onboarding_requests set status='rejected' where id='00000000-0000-4000-8000-000000000102';
+select is((select count(*)::integer from public.list_my_organizations('clerk-owner-b')),0,'revoked mandate removes the organization from its owner listing');
+select throws_ok($test$select * from public.read_organization_workspace((select id from public.organizations where partner_entry_id='test-enterprise-beta'),'clerk-owner-b',0)$test$,'42501','scope unavailable','revoked mandate blocks workspace reads');
+select is((select count(*)::integer from public.list_my_organizations('clerk-member-c')),0,'revoked membership cannot be listed after a member leaves');
 select * from finish();
 rollback;
