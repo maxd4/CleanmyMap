@@ -91,6 +91,8 @@ commit;
   await run(`
 begin;
 set local role postgres;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"external-sync-concurrency-applied-actions"}', true);
+select set_config('request.jwt.claim.role', 'service_role', true);
 insert into public.actions(id, created_by_clerk_id, action_date, location_label, status, action_phase, organizer_type, organizer_id, organizer_name)
 values ('${actionAppliedRace}'::uuid, 'sync-conc-apply', current_date + 10, 'Race Original', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A'),
        ('${actionAppliedOrder}'::uuid, 'sync-conc-apply', current_date + 11, 'Order Original', 'pending', 'pre_action', 'association', '${orgA}', 'Sync Conc Org A');

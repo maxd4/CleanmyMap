@@ -180,6 +180,8 @@ begin
 
   -- Suppressing a rejected synced action keeps status='rejected' without fabricating cancelled_from_status
   set local role postgres;
+  perform set_config('request.jwt.claims', '{"role":"service_role","sub":"pgtap-engine-state"}', true);
+  perform set_config('request.jwt.claim.role', 'service_role', true);
   insert into public.actions (
     id, created_by_clerk_id, organizer_id, organizer_type, action_date,
     action_phase, status, published_at, location_label, moderation_visibility
@@ -230,6 +232,8 @@ begin
     v_tomb_rev jsonb;
   begin
     set local role postgres;
+    perform set_config('request.jwt.claims', '{"role":"service_role","sub":"pgtap-engine-state"}', true);
+    perform set_config('request.jwt.claim.role', 'service_role', true);
     insert into public.profiles (id, display_name, handle)
     values ('user-org-a', 'Org A User', 'org-a-user')
     on conflict (id) do nothing;
@@ -390,7 +394,7 @@ end $$;
 select is((select value from engine_state_results where key = 'applied_without_consent'), 'mandate_revoked', 'mark applied fails closed without consent');
 select is((select value from engine_state_results where key = 'applied_with_consent'), 'applied', 'mark applied succeeds with active consented mandate');
 select is((select value from engine_state_results where key = 'applied_old_revision'), 'stale_revision', 'older observed source revision cannot replace applied snapshot');
-select is((select value from engine_state_results where key = 'applied_old_snapshot_preserved'), '{"v":1}', 'stale source event leaves prior applied snapshot intact');
+select is((select value::jsonb from engine_state_results where key = 'applied_old_snapshot_preserved'), '{"v":1}'::jsonb, 'stale source event leaves prior applied snapshot intact');
 select is((select value from engine_state_results where key = 'applied_retry'), 'applied', 'same applied source revision is accepted idempotently');
 select is((select value from engine_state_results where key = 'applied_retry_timestamp_stable'), 'true', 'idempotent applied retry preserves applied_at');
 select is((select value from engine_state_results where key = 'cross_org_proposal'), 'proposal_organizer_conflict', 'cross-organization proposal overwrite is rejected');
