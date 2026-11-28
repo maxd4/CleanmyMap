@@ -56,4 +56,17 @@ describe("organization collection panel", () => {
     expect(html).toContain("siteId=site-assigned");
     expect(html).not.toContain("siteId=site-other");
   });
+
+  it("offers audited detach only when both the role and action rights allow it", () => {
+    const manager = { ...base, role: "manager" as const, actions: [{ ...action, can_manage: true }] };
+    const html = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={manager} siteId={null} locale="fr" busy={false} offset={0} onPage={() => undefined} onUnlinkAction={() => undefined} />);
+    expect(html).toContain("Retirer de l’organisation");
+    expect(html).toContain("/actions/new?tab=before&amp;duplicateFrom=00000000-0000-4000-8000-000000000051&amp;organizationId=00000000-0000-4000-8000-000000000001");
+
+    const noActionRights = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={{ ...manager, actions: [{ ...action, can_manage: false }] }} siteId={null} locale="fr" busy={false} offset={0} onPage={() => undefined} onUnlinkAction={() => undefined} />);
+    expect(noActionRights).not.toContain("Retirer de l’organisation");
+
+    const member = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={{ ...base, actions: [{ ...action, can_manage: true }] }} siteId={null} locale="fr" busy={false} offset={0} onPage={() => undefined} onUnlinkAction={() => undefined} />);
+    expect(member).not.toContain("Retirer de l’organisation");
+  });
 });

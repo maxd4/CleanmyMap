@@ -121,7 +121,7 @@ function validateVolunteerForecastForm(form: FormState): BeforeValidationIssue[]
 function resolveOrganizationLinkFromLocation(): CreateActionPayload["organizationLink"] {
   if (typeof window === "undefined") return undefined;
   const params = new URLSearchParams(window.location.search);
-  if (params.has("actionId") || params.has("duplicateFrom")) return undefined;
+  if (params.has("actionId")) return undefined;
   const organizationId = params.get("organizationId") ?? "";
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   if (!uuid.test(organizationId)) return undefined;

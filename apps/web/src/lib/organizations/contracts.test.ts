@@ -23,6 +23,10 @@ describe("organization command boundary", () => {
     expect(organizationCommandSchema.safeParse({ ...base, operation: "transfer_owner", membershipId: "00000000-0000-4000-8000-000000000003" }).success).toBe(true);
     expect(organizationCommandSchema.safeParse({ ...base, operation: "transfer_owner", membershipId: "not-a-membership" }).success).toBe(false);
   });
+  it("accepts an organization detach command only with a scoped action and site", () => {
+    expect(organizationCommandSchema.safeParse({ ...base, operation: "unlink_action", actionId: "00000000-0000-4000-8000-000000000003", siteId: null }).success).toBe(true);
+    expect(organizationCommandSchema.safeParse({ ...base, operation: "unlink_action", actionId: "bad", siteId: null }).success).toBe(false);
+  });
   it("rejects impossible dates and inverted periods", () => {
     const scope = { organizationId, siteId: null, campaignId: null, from: "2026-02-30", to: "2026-03-05" };
     expect(organizationReportScopeSchema.safeParse(scope).success).toBe(false);

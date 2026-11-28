@@ -122,6 +122,13 @@ export async function mutateOrganization(actor: string, command: OrganizationCom
     check(error);
     return;
   }
+  if (command.operation === "unlink_action") {
+    const { data: enabled, error: capabilityError } = await client.rpc("organization_action_detach_enabled");
+    if (capabilityError || enabled !== true) throw new OrganizationServiceError(503);
+    const { error } = await client.rpc("unlink_organization_action", { ...common, p_action: command.actionId, p_site: command.siteId });
+    check(error);
+    return;
+  }
   if (command.operation === "campaign") {
     const { error } = await client.rpc("mutate_organization_campaign", { ...common, p_campaign: command.campaignId, p_title: command.title, p_start: command.startsOn, p_end: command.endsOn, p_target: command.targetActions, p_state: command.state });
     check(error);

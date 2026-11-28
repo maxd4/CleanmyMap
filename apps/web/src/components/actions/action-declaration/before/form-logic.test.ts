@@ -140,7 +140,7 @@ describe("pre-action temporal validation", () => {
 });
 
 describe("pre-action identity payload", () => {
-  it("carries a valid organization handoff but never inherits it during duplication", () => {
+  it("carries an explicit organization handoff, including enterprise duplication, but not action editing", () => {
     const organizationId = "00000000-0000-4000-8000-000000000001";
     const siteId = "00000000-0000-4000-8000-000000000002";
     try {
@@ -149,6 +149,14 @@ describe("pre-action identity payload", () => {
         .toEqual({ organizationId, siteId });
 
       vi.stubGlobal("window", { location: { search: `?organizationId=${organizationId}&duplicateFrom=source-action` } });
+      expect(buildBeforeActionPayload({ form: buildValidPreActionForm(), userMetadata: { userId: "creator" } }).organizationLink)
+        .toEqual({ organizationId, siteId: null });
+
+      vi.stubGlobal("window", { location: { search: "?duplicateFrom=source-action" } });
+      expect(buildBeforeActionPayload({ form: buildValidPreActionForm(), userMetadata: { userId: "creator" } }).organizationLink)
+        .toBeUndefined();
+
+      vi.stubGlobal("window", { location: { search: `?actionId=source-action&organizationId=${organizationId}` } });
       expect(buildBeforeActionPayload({ form: buildValidPreActionForm(), userMetadata: { userId: "creator" } }).organizationLink)
         .toBeUndefined();
     } finally {

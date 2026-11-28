@@ -19,6 +19,7 @@ export const organizationCommandSchema = z.discriminatedUnion("operation", [
   z.object({ ...base, operation: z.literal("leave") }).strict(),
   z.object({ ...base, operation: z.literal("site"), siteId: uuid.nullable(), name: orgName, archive: z.boolean() }).strict(),
   z.object({ ...base, operation: z.literal("link_action"), actionId: uuid, siteId: uuid.nullable() }).strict(),
+  z.object({ ...base, operation: z.literal("unlink_action"), actionId: uuid, siteId: uuid.nullable() }).strict(),
   z.object({ ...base, operation: z.literal("campaign"), campaignId: uuid.nullable(), title: orgName, startsOn: date, endsOn: date, targetActions: z.number().int().min(1).max(10000).nullable(), state: z.enum(["draft", "active", "completed", "archived"]) }).strict(),
   z.object({ ...base, operation: z.literal("campaign_action"), campaignId: uuid, actionId: uuid, remove: z.boolean() }).strict(),
 ]).superRefine((value, ctx) => {

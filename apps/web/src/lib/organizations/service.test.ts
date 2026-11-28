@@ -17,6 +17,7 @@ const workspace = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.rpc.mockImplementation(async (name: string) => {
+    if (name === "organization_action_detach_enabled") return { data: true, error: null };
     if (name === "list_my_organizations") return { data: [{ organization_id: organizationId, organization_name: "Entreprise Alpha", membership_id: "00000000-0000-4000-8000-000000000010", member_role: "owner", state: "active" }], error: null };
     if (name === "read_organization_workspace") return { data: workspace, error: null };
     if (name === "read_organization_team_members") return { data: [], error: null };
@@ -164,6 +165,7 @@ describe("organization mutation RPC routing", () => {
     { operation: "leave" },
     { operation: "site", siteId: null, name: "Siège", archive: false },
     { operation: "link_action", actionId: "00000000-0000-4000-8000-000000000030", siteId: null },
+    { operation: "unlink_action", actionId: "00000000-0000-4000-8000-000000000031", siteId: "00000000-0000-4000-8000-000000000032" },
     { operation: "campaign", campaignId: null, title: "Campagne", startsOn: "2026-01-01", endsOn: "2026-12-31", targetActions: null, state: "draft" },
     { operation: "campaign_action", campaignId: "00000000-0000-4000-8000-000000000040", actionId: "00000000-0000-4000-8000-000000000030", remove: true },
   ] as const;
@@ -174,6 +176,7 @@ describe("organization mutation RPC routing", () => {
     const rpcName = specific.operation === "leave" ? "leave_organization"
       : specific.operation === "site" ? "mutate_organization_site"
         : specific.operation === "link_action" ? "link_organization_action"
+        : specific.operation === "unlink_action" ? "unlink_organization_action"
           : specific.operation === "campaign" ? "mutate_organization_campaign"
             : specific.operation === "campaign_action" ? "link_organization_campaign_action"
               : "mutate_organization_membership";
@@ -186,5 +189,16 @@ describe("organization mutation RPC routing", () => {
       mocks.rpc.mockResolvedValueOnce({ data: null, error: { code } });
       await expect(mutateOrganization("owner-session-id", organizationCommandSchema.parse({ organizationId, requestId, operation: "accept", membershipId: "00000000-0000-4000-8000-000000000010" }))).rejects.toMatchObject({ status });
     }
+  });
+
+  it("fails closed before detach when its migration capability is unavailable", async () => {
+    mocks.rpc.mockImplementation(async (name: string) => name === "organization_action_detach_enabled"
+      ? { data: null, error: { code: "42883" } }
+      : { data: null, error: null });
+    const { mutateOrganization } = await import("./service");
+    await expect(mutateOrganization("owner-session-id", organizationCommandSchema.parse({
+      organizationId, requestId, operation: "unlink_action", actionId: "00000000-0000-4000-8000-000000000031", siteId: null,
+    }))).rejects.toMatchObject({ status: 503 });
+    expect(mocks.rpc).not.toHaveBeenCalledWith("unlink_organization_action", expect.anything());
   });
 });
