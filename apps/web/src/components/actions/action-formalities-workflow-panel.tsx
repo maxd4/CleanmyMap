@@ -68,6 +68,7 @@ function useActionFormalitiesData({
   const [data, setData] = useState<ActionFormalitiesResponse | null>(null);
   const [facts, setFacts] = useState<ActionFormalitiesFacts | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fetchAttempt, setFetchAttempt] = useState(0);
 
   useEffect(() => {
     if (!actionId) {
@@ -102,9 +103,14 @@ function useActionFormalitiesData({
     return () => {
       active = false;
     };
-  }, [actionId, draftData, notifyReadiness]);
+  }, [actionId, draftData, fetchAttempt, notifyReadiness]);
 
-  return { data, setData, facts, setFacts, error, setError };
+  const retry = useCallback(() => {
+    setError(null);
+    setFetchAttempt((attempt) => attempt + 1);
+  }, []);
+
+  return { data, setData, facts, setFacts, error, setError, retry };
 }
 
 function useActionFormalitiesReadiness(
@@ -212,7 +218,7 @@ function ActionFormalitiesWorkflowPanelRuntime({
 
   const notifyReadiness = useActionFormalitiesReadiness(onReadinessChange);
 
-  const { data, setData, facts, setFacts, error, setError } = useActionFormalitiesData({
+  const { data, setData, facts, setFacts, error, setError, retry } = useActionFormalitiesData({
     actionId,
     draftData,
     notifyReadiness,
@@ -240,7 +246,7 @@ function ActionFormalitiesWorkflowPanelRuntime({
     return <p className="text-sm leading-6 text-emerald-950">Renseignez le lieu pour obtenir une qualification indicative. Elle sera recalculée et conservée après l&apos;enregistrement.</p>;
   }
   const isLoading = !visibleData || visibleData.actionId !== (actionId ?? "draft");
-  if (error && isLoading) return <p className="text-sm text-rose-700">{error}</p>;
+  if (error && isLoading) return <div role="alert" className="space-y-2 text-sm text-rose-700"><p>{error}</p><CmmButton size="sm" onClick={retry}>Réessayer la qualification</CmmButton></div>;
   if (isLoading) return <p className="text-sm text-emerald-900">Qualification en cours…</p>;
   if (!visibleData || !visibleFacts) return null;
 

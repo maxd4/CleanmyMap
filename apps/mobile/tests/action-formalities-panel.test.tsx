@@ -12,8 +12,10 @@ const mocks = vi.hoisted(() => ({
   updateFormality: vi.fn(),
   updateFacts: vi.fn(),
   openURL: vi.fn(),
+  auth: { isLoaded: true, isSignedIn: true, userId: 'user-a' as string | null },
 }))
 
+vi.mock('@clerk/expo', () => ({ useAuth: () => mocks.auth }))
 vi.mock('react-native', () => ({ ...commonNativeComponents(), Linking: { openURL: mocks.openURL } }))
 vi.mock('../features/actions/mobile-actions-service', () => ({
   loadMobileActionFormalities: mocks.loadFormalities,
@@ -86,11 +88,81 @@ function findButton(renderer: TestRenderer.ReactTestRenderer, label: string) {
 
 describe('ActionFormalitiesPanel', () => {
   beforeEach(() => {
+    mocks.auth.userId = 'user-a'
     mocks.loadFormalities.mockReset().mockResolvedValue(qualificationResponse)
     mocks.loadContacts.mockReset().mockResolvedValue(contactResponse)
     mocks.updateFormality.mockReset().mockResolvedValue(qualificationResponse)
     mocks.updateFacts.mockReset().mockResolvedValue(qualificationResponse)
     mocks.openURL.mockReset().mockResolvedValue(undefined)
+  })
+
+  it('ignores a qualification response after the panel switches to another action', async () => {
+    let resolveOld!: (value: MobileActionFormalities) => void
+    mocks.loadFormalities.mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve }))
+      .mockResolvedValueOnce({ ...qualificationResponse, actionId: 'action-2', actionData: { ...qualificationResponse.actionData, title: 'Nouvelle action' } })
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => { renderer = TestRenderer.create(<ActionFormalitiesPanel actionId="action-1" />) })
+    await act(async () => { renderer.update(<ActionFormalitiesPanel actionId="action-2" />) })
+    expect(textContent(renderer)).toContain('Nouvelle action')
+    await act(async () => { resolveOld(qualificationResponse) })
+    expect(textContent(renderer)).toContain('Nouvelle action')
+    expect(textContent(renderer)).not.toContain('Action test')
+  })
+
+  it('invalidates pending qualification and contact reads when the Clerk identity changes', async () => {
+    let resolveOldQualification!: (value: MobileActionFormalities) => void
+    mocks.loadFormalities.mockImplementationOnce(() => new Promise(resolve => { resolveOldQualification = resolve }))
+      .mockResolvedValueOnce({ ...qualificationResponse, actionData: { ...qualificationResponse.actionData, title: 'Session actuelle' } })
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => { renderer = TestRenderer.create(<ActionFormalitiesPanel actionId="action-1" />) })
+    mocks.auth.userId = 'user-b'
+    await act(async () => { renderer.update(<ActionFormalitiesPanel actionId="action-1" />) })
+    await act(async () => { resolveOldQualification(qualificationResponse) })
+    expect(textContent(renderer)).toContain('Session actuelle')
+    expect(textContent(renderer)).not.toContain('Action test')
+
+    let resolveOldContacts!: (value: MobileActionFormalitiesContacts) => void
+    mocks.loadContacts.mockImplementationOnce(() => new Promise(resolve => { resolveOldContacts = resolve }))
+    await act(async () => { callTestHandler(findButton(renderer, 'Rechercher les contacts'), 'onPress') })
+    mocks.auth.userId = 'user-c'
+    mocks.loadFormalities.mockResolvedValueOnce(qualificationResponse)
+    await act(async () => { renderer.update(<ActionFormalitiesPanel actionId="action-1" />) })
+    await act(async () => { resolveOldContacts(contactResponse) })
+    expect(textContent(renderer)).not.toContain('Service de propreté')
+  })
+
+  it('serializes fact qualification and workflow mutations', async () => {
+    let resolveFacts!: (value: MobileActionFormalities) => void
+    mocks.updateFacts.mockImplementationOnce(() => new Promise(resolve => { resolveFacts = resolve }))
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => { renderer = TestRenderer.create(<ActionFormalitiesPanel actionId="action-1" />) })
+    const roadway = renderer.root.findAll(node => typeof node.props.onPress === 'function').find(node => node.props.accessibilityLabel === 'Activité sur la voie publique : Non')
+    const declareSent = findButton(renderer, 'Déclarer l’envoi')
+    await act(async () => {
+      callTestHandler(roadway, 'onPress')
+      callTestHandler(roadway, 'onPress')
+      callTestHandler(declareSent, 'onPress')
+    })
+    expect(mocks.updateFacts).toHaveBeenCalledTimes(1)
+    expect(mocks.updateFormality).not.toHaveBeenCalled()
+    await act(async () => { resolveFacts(qualificationResponse) })
+  })
+
+  it('cycles place and manager facts through every supported value using the shared qualification call', async () => {
+    mocks.updateFacts.mockImplementation(async (_actionId: string, facts: MobileActionFormalities['facts']) => ({ ...qualificationResponse, facts }))
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => { renderer = TestRenderer.create(<ActionFormalitiesPanel actionId="action-1" />) })
+    for (const expected of ['lieu privé', 'à préciser', 'domaine public']) {
+      const place = renderer.root.findAll(node => typeof node.props.onPress === 'function').find(node => String(node.props.accessibilityLabel ?? '').startsWith('Type de lieu :'))
+      await act(async () => { callTestHandler(place, 'onPress') })
+      expect(textContent(renderer)).toContain(`Lieu : ${expected}`)
+    }
+    for (const expected of ['État', 'SNCF', 'HAROPA', 'Autre gestionnaire public', 'Gestionnaire privé', 'À préciser', 'Ville de Paris']) {
+      const manager = renderer.root.findAll(node => typeof node.props.onPress === 'function').find(node => String(node.props.accessibilityLabel ?? '').startsWith('Gestionnaire :'))
+      await act(async () => { callTestHandler(manager, 'onPress') })
+      expect(textContent(renderer)).toContain(`Gestionnaire : ${expected}`)
+    }
+    expect(mocks.updateFacts).toHaveBeenCalledTimes(10)
   })
 
   it('keeps required rules visible, groups the same recipient and reveals details without losing the selected need', async () => {
@@ -122,6 +194,35 @@ describe('ActionFormalitiesPanel', () => {
     expect(content).toContain('SINOE Déchets')
     expect(content).toContain('confirmer la reprise')
     expect(content).toContain('Communes à compléter : 75056.')
+  })
+
+  it('recovers from contact provider failure and reports an empty retry without inventing contacts', async () => {
+    mocks.loadContacts.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({
+      ...contactResponse,
+      status: 'complete',
+      coverage: { status: 'resolved_point', communeCodes: ['75056'] },
+      unresolvedCommuneCodes: [],
+      contacts: [],
+      resources: [],
+    })
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => { renderer = TestRenderer.create(<ActionFormalitiesPanel actionId="action-1" />) })
+    await act(async () => { callTestHandler(findButton(renderer, 'Rechercher les contacts'), 'onPress') })
+    expect(textContent(renderer)).toContain('Annuaire indisponible')
+    await act(async () => { callTestHandler(findButton(renderer, 'Réessayer'), 'onPress') })
+    expect(textContent(renderer)).toContain('Aucun service trouvé pour cette recherche.')
+    expect(textContent(renderer)).not.toContain('Service de propreté')
+  })
+
+  it('announces a failed attempt to open an official contact link', async () => {
+    mocks.openURL.mockRejectedValueOnce(new Error('link unavailable'))
+    let renderer!: TestRenderer.ReactTestRenderer
+    await act(async () => { renderer = TestRenderer.create(<ActionFormalitiesPanel actionId="action-1" />) })
+    await act(async () => { callTestHandler(findButton(renderer, 'Rechercher les contacts'), 'onPress') })
+    await act(async () => { callTestHandler(findButton(renderer, 'Service de propreté'), 'onPress') })
+    const link = renderer.root.findAll(node => typeof node.props.onPress === 'function').find(node => node.props.accessibilityRole === 'link' && node.props.accessibilityLabel === 'Fiche officielle du service')
+    await act(async () => { callTestHandler(link, 'onPress') })
+    expect(textContent(renderer)).toContain('Impossible d’ouvrir ce lien.')
   })
 
   it('keeps contact discovery available without optional needs and recalculates facts through the shared API', async () => {
