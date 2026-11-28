@@ -1,6 +1,6 @@
 begin;
 
-select plan(7);
+select plan(9);
 
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"partial-composition-test"}', true);
@@ -25,6 +25,18 @@ select is((select children_count from public.actions where location_label = 'Par
   'explicit zero remains distinct from an unknown category');
 select is((select adult_count from public.actions where location_label = 'Partial mixed categories'), null::integer,
   'an unknown category remains NULL when other categories are known');
+
+update public.actions
+   set children_count = 4,
+       retired_count = 3
+ where location_label = 'Partial mixed categories';
+select ok(exists (
+  select 1 from public.actions
+   where location_label = 'Partial mixed categories'
+     and children_count = 4
+     and adult_count is null
+     and retired_count = 3
+), 'a coherent partial composition update persists without filling the unknown category');
 
 create function pg_temp.reject_incoherent_partial_composition() returns boolean
 language plpgsql as $$
@@ -56,8 +68,23 @@ begin
 end;
 $$;
 
+create function pg_temp.reject_incoherent_partial_update() returns boolean
+language plpgsql as $$
+begin
+  begin
+    update public.actions
+       set children_count = 8
+     where location_label = 'Partial mixed categories';
+  exception when check_violation then
+    return true;
+  end;
+  return false;
+end;
+$$;
+
 select ok(pg_temp.reject_incoherent_partial_composition(), 'known partial categories cannot exceed the declared total');
 select ok(pg_temp.reject_incoherent_complete_composition(), 'a complete composition must equal the declared total');
+select ok(pg_temp.reject_incoherent_partial_update(), 'an incoherent partial composition update is rejected');
 
 reset role;
 select set_config('request.jwt.claims', '{"role":"service_role","sub":"partial-composition-rpc-test"}', true);
