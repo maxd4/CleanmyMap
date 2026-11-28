@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -33,6 +33,7 @@ function fakeGit({
   onHeadRead,
   onPush,
   changedFiles = ["AGENTS.md"],
+  commitFiles = {},
 } = {}) {
   const calls = [];
   const state = { local, branch: local, remote };
@@ -73,7 +74,26 @@ function fakeGit({
     if (args[0] === "merge-base" && args[1] === "--is-ancestor") {
       return { status: isAncestor(args[2], args[3]) ? 0 : 1, stdout: "", stderr: "" };
     }
-    if (args[0] === "diff" && args[1] === "--name-only") return { status: 0, stdout: `${changedFiles.join("\n")}\n`, stderr: "" };
+    if (args[0] === "rev-list" && args[1] === "--reverse") {
+      const [base, tip] = args[2].split("..");
+      const commits = [];
+      let current = tip;
+      while (current && current !== base) {
+        commits.unshift(current);
+        current = graph.get(current);
+      }
+      return { status: current === base ? 0 : 1, stdout: `${commits.join("\n")}\n`, stderr: "" };
+    }
+    if (args[0] === "rev-list" && args[1] === "--parents") {
+      const sha = args.at(-1);
+      const parent = graph.get(sha);
+      return { status: 0, stdout: `${sha}${parent ? ` ${parent}` : ""}\n`, stderr: "" };
+    }
+    if (args[0] === "diff-tree") {
+      const sha = args.at(-2);
+      const paths = commitFiles[sha] ?? changedFiles;
+      return { status: 0, stdout: `${paths.join("\0")}\0`, stderr: "" };
+    }
     if (args[0] === "merge" && args[1] === "--ff-only") {
       state.local = state.remote;
       state.branch = state.remote;
@@ -93,7 +113,7 @@ function fakeGit({
 }
 
 function publishMain(options = {}) {
-  return publishMainImpl({ attributedFiles: ["AGENTS.md"], verifyAuthorization: async () => ({ login: "publisher" }), ...options });
+  return publishMainImpl({ attributedCommits: [{ commitSha: "candidate", files: ["AGENTS.md"] }], verifyAuthorization: async () => ({ login: "publisher" }), ...options });
 }
 
 function pushCalls(fake) {
@@ -116,25 +136,88 @@ test("publishes exactly the immutable candidate SHA with an explicit refspec", a
   assert.equal(fake.calls.some((args) => ["reset", "stash", "clean"].includes(args[0])), false);
 });
 
-test("requires explicit attribution and rejects foreign paths before push", async () => {
+test("requires explicit attribution for every commit and rejects foreign commit paths before push", async () => {
   const noAllowlist = fakeGit();
   await assert.rejects(publishMainImpl({ runGitCommand: noAllowlist.runGitCommand }), /PUBLISH_ATTRIBUTION_REQUIRED/);
-  const foreign = fakeGit({ changedFiles: ["AGENTS.md", "foreign.txt"] });
-  await assert.rejects(publishMainImpl({ runGitCommand: foreign.runGitCommand, attributedFiles: ["AGENTS.md"] }), /PUBLISH_FOREIGN_PATHS.*foreign.txt/);
+  const foreign = fakeGit({ commitFiles: { candidate: ["AGENTS.md", "foreign.txt"] } });
+  await assert.rejects(publishMainImpl({ runGitCommand: foreign.runGitCommand, attributedCommits: [{ commitSha: "candidate", files: ["AGENTS.md"] }] }), /PUBLISH_FOREIGN_COMMIT_PATHS.*foreign.txt/);
   assert.equal(pushCalls(foreign).length, 0);
 });
 
 test("publishes validated commits from multiple attributed lots as one push range", async () => {
-  const fake = fakeGit({ changedFiles: ["AGENTS.md", "CHATGPT.md", "scripts/AGENTS.md"] });
+  const fake = fakeGit({ parents: { first: "base", second: "first", candidate: "second" }, changedFiles: [], commitFiles: { first: ["AGENTS.md"], second: ["CHATGPT.md"], candidate: ["scripts/AGENTS.md"] } });
   const published = await publishMain({
     runGitCommand: fake.runGitCommand,
-    attributedFiles: ["AGENTS.md", "CHATGPT.md", "scripts/AGENTS.md"],
+    attributedCommits: [
+      { commitSha: "first", files: ["AGENTS.md"] },
+      { commitSha: "second", files: ["CHATGPT.md"] },
+      { commitSha: "candidate", files: ["scripts/AGENTS.md"] },
+    ],
     sleep: async () => {},
   });
 
   assert.equal(published, "candidate");
   assert.deepEqual(pushCalls(fake), [["push", "origin", "candidate:refs/heads/main"]]);
-  assert.ok(fake.calls.some((args) => args[0] === "diff" && args[2] === "base..candidate"));
+  assert.equal(fake.calls.filter((args) => args[0] === "diff-tree").length, 3);
+});
+
+test("inspects every real commit so a foreign add-then-delete cannot disappear from the net diff", async () => {
+  const root = fixtureRepository();
+  const bare = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-publish-origin-"));
+  const origin = path.join(bare, "origin.git");
+  const git = (args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+  try {
+    execFileSync("git", ["init", "--bare", "--initial-branch=main", "--quiet", origin]);
+    git(["remote", "add", "origin", origin]);
+    git(["push", "--quiet", "-u", "origin", "main"]);
+    const remoteSha = git(["rev-parse", "HEAD"]);
+    fs.writeFileSync(path.join(root, "lot-a.md"), "lot a\n");
+    git(["add", "--", "lot-a.md"]);
+    git(["commit", "--quiet", "-m", "lot A"]);
+    const lotASha = git(["rev-parse", "HEAD"]);
+    fs.writeFileSync(path.join(root, "foreign.txt"), "temporary foreign change\n");
+    git(["add", "--", "foreign.txt"]);
+    git(["commit", "--quiet", "-m", "foreign add"]);
+    const foreignAddSha = git(["rev-parse", "HEAD"]);
+    fs.rmSync(path.join(root, "foreign.txt"));
+    fs.writeFileSync(path.join(root, "lot-b.md"), "lot b\n");
+    git(["add", "--", "lot-b.md"]);
+    git(["add", "-u", "--", "foreign.txt"]);
+    git(["commit", "--quiet", "-m", "lot B and foreign revert"]);
+    const lotBSha = git(["rev-parse", "HEAD"]);
+    assert.equal(git(["diff", "--name-only", `${remoteSha}..${lotBSha}`]).includes("foreign.txt"), false);
+
+    const runGitCommand = (args) => {
+      const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
+      return { status: result.status ?? 1, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
+    };
+    const incomplete = [
+      { commitSha: lotASha, files: ["lot-a.md"] },
+      { commitSha: lotBSha, files: ["lot-b.md", "foreign.txt"] },
+    ];
+    await assert.rejects(publishMainImpl({
+      runGitCommand,
+      attributedCommits: incomplete,
+      verifyAuthorization: async () => ({ login: "publisher" }),
+      sleep: async () => {},
+    }), new RegExp(`PUBLISH_COMMIT_ATTRIBUTION_REQUIRED.*${foreignAddSha}`));
+    assert.equal(git(["rev-parse", "origin/main"]), remoteSha);
+
+    const published = await publishMainImpl({
+      runGitCommand,
+      attributedCommits: [
+        ...incomplete,
+        { commitSha: foreignAddSha, files: ["foreign.txt"] },
+      ],
+      verifyAuthorization: async () => ({ login: "publisher" }),
+      sleep: async () => {},
+    });
+    assert.equal(published, lotBSha);
+    assert.equal(git(["rev-parse", "origin/main"]), lotBSha);
+  } finally {
+    removePathWithRetry(root, { recursive: true });
+    removePathWithRetry(bare, { recursive: true });
+  }
 });
 
 test("records already converged refs without issuing an empty push", async () => {

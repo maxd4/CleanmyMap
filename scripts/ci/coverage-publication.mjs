@@ -59,6 +59,7 @@ const WEB_COVERAGE_CONTROL_FILES = Object.freeze(new Set([
   ".github/workflows/ci.yml",
   "scripts/ci/detect-scope.mjs",
   "scripts/ci/github-push-authorization.mjs",
+  "scripts/ci/publish-commit-attribution.mjs",
   "scripts/ci/publish-main.mjs",
   "scripts/ci/pre_push_guard.ps1",
 ]));

@@ -34,7 +34,7 @@ import {
   runCommandWithTimeout,
 } from "./validation-process.mjs";
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const options = {
     mode: "FAST",
     candidateScope: "WORKTREE",
@@ -45,6 +45,7 @@ function parseArgs(argv) {
     deploymentProofPath: "",
     autoPublish: false,
     candidateFiles: [],
+    publishAttributions: [],
     commitMessage: "",
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -86,6 +87,16 @@ function parseArgs(argv) {
       index += 1;
     } else if (arg.startsWith("--candidate-file=")) {
       options.candidateFiles.push(arg.slice("--candidate-file=".length));
+    } else if (arg === "--publish-attribution" && next) {
+      const separator = next.indexOf("=");
+      if (separator <= 0 || separator === next.length - 1) throw new Error("--publish-attribution must be <commit-sha>=<path>.");
+      options.publishAttributions.push({ commitSha: next.slice(0, separator), files: [next.slice(separator + 1)] });
+      index += 1;
+    } else if (arg.startsWith("--publish-attribution=")) {
+      const value = arg.slice("--publish-attribution=".length);
+      const separator = value.indexOf("=");
+      if (separator <= 0 || separator === value.length - 1) throw new Error("--publish-attribution must be <commit-sha>=<path>.");
+      options.publishAttributions.push({ commitSha: value.slice(0, separator), files: [value.slice(separator + 1)] });
     } else if (arg === "--commit-message" && next) {
       options.commitMessage = next;
       index += 1;
@@ -446,6 +457,7 @@ export async function runValidationMode(
   options = parseArgs(process.argv.slice(2)),
   runtime = {},
 ) {
+  options = { ...options, publishAttributions: options.publishAttributions ?? [] };
   const repositoryRoot = runtime.repositoryRoot ?? process.cwd();
   if (options.autoPublish && options.mode !== "DEPLOY") {
     throw new Error("--auto-publish is only supported with --mode DEPLOY.");
@@ -837,7 +849,10 @@ export async function runValidationMode(
         });
         const publishedSha = await (runtime.publishMain ?? publishMain)({
           expectedRemoteSha: finalScope.publicationBaseSha,
-          attributedFiles: finalScope.changedFiles,
+          attributedCommits: [
+            ...options.publishAttributions,
+            { commitSha: committed.commitSha, files: publicationCandidate.candidateFiles },
+          ],
         });
         log(`PUBLISHED_MAIN_SHA: ${publishedSha}`);
         log(`PUBLISHED_TREE_SHA: ${finalTreeSha}`);

@@ -399,6 +399,14 @@ test("an active Web policy requires proof when the classifier or gate changes", 
   assert.deepEqual(result.requirements.map(({ scope }) => scope), ["web"]);
 });
 
+test("an active Web policy requires proof when the per-commit publication attribution guard changes", () => {
+  const result = getCoveragePublicationRequirements({
+    changedFiles: ["scripts/ci/publish-commit-attribution.mjs"],
+    policy: enforcedWebPolicy(),
+  });
+  assert.deepEqual(result.requirements.map(({ scope }) => scope), ["web"]);
+});
+
 test("a renamed Web Vitest configuration change requires Web publication proof", () => {
   const result = getCoveragePublicationRequirements({
     changedFiles: ["apps/web/vitest.config.mts"],

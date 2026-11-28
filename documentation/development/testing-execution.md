@@ -401,6 +401,7 @@ workflow explicite ajoute une attribution complète des fichiers du chantier :
 ```bash
 npm run checks:deploy -- --auto-publish \
   --candidate-file=<chemin-1> --candidate-file=<chemin-2> \
+  --publish-attribution=<sha-commit-local>=<chemin-attribue> \
   --deployment-ref=<sha-production-verifie> \
   --deployment-proof=<preuve-vercel.json> \
   --commit-message="feat(scope): publish validated candidate"
@@ -408,7 +409,14 @@ npm run checks:deploy -- --auto-publish \
 
 `--auto-publish` est réservé à DEPLOY. Avant toute validation, le runner
 capture un index temporaire dérivé de `HEAD`, puis y matérialise explicitement
-les fichiers `--candidate-file`. Les modifications étrangères staged,
+les fichiers `--candidate-file`, qui attribuent le seul commit que ce run crée.
+Chaque commit antérieur à publier doit être attribué explicitement par SHA avec
+une option répétée `--publish-attribution=<sha-commit>=<chemin>` ; plusieurs
+chemins d'un même commit peuvent être déclarés séparément. Le publisher
+énumère tous les commits de `origin/main..HEAD` et compare chacun de leurs
+chemins modifiés à son attribution, même si un changement est annulé ensuite.
+Le scope cumulatif depuis Production Vercel reste celui des validations ; il
+n'accorde aucune attribution aux commits publiés. Les modifications étrangères staged,
 unstaged, untracked ou ignorées restent hors de cet index et du commit, sans
 bloquer ce candidat indépendant. Un chemin attribué manquant ou généré
 (`artifacts/`, `coverage/`, `.next/`, `dist/`, `build/`, rapports de test ou
@@ -416,10 +424,11 @@ bloquer ce candidat indépendant. Un chemin attribué manquant ou généré
 aucun secret ou artefact ne peut être ajouté implicitement. Le fichier de
 preuve Vercel reste une entrée de validation, pas une partie de la candidate.
 
-L'interface bas niveau `npm run publish:main` exige `CMM_ATTRIBUTED_FILES`, un
-tableau JSON non vide de chemins attribués. Le publisher compare ces chemins à
-tous les fichiers du range distant/local juste avant le push ; un chemin
-étranger ou une comparaison impossible arrête la publication.
+L'interface bas niveau `npm run publish:main` exige `CMM_ATTRIBUTED_COMMITS`,
+un tableau JSON d'objets `{ "commitSha": "<sha>", "files": ["<chemin>"] }`.
+Chaque commit de la plage doit avoir une attribution non vide et chaque chemin
+modifié doit appartenir à ses lots attribués ; une attribution manquante,
+étrangère à la plage ou une comparaison impossible arrête la publication.
 
 La preuve Vercel doit identifier le commit Git de la dernière Production
 effectivement vérifiée et contenir `provider=vercel`, `projectName=web`,

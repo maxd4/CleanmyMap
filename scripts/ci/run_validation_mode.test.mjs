@@ -7,6 +7,7 @@ import { test } from "node:test";
 
 import {
   classifyValidationResult,
+  parseArgs,
   runCheck,
   runChecksWithScheduler,
   runValidationMode,
@@ -21,6 +22,32 @@ import {
   resolveWindowsSystemExecutable,
   runCommandWithTimeout,
 } from "./validation-process.mjs";
+
+test("parses commit-scoped publication attribution independently from candidate and Vercel scope files", () => {
+  assert.deepEqual(parseArgs([
+    "--mode", "DEPLOY",
+    "--candidate-file", "current-lot.ts",
+    "--changed-file", "production-diff.ts",
+    "--publish-attribution", "abc123=prior-lot.ts",
+    "--publish-attribution=abc123=second-prior-file.ts",
+  ]), {
+    mode: "DEPLOY",
+    candidateScope: "WORKTREE",
+    changedFiles: ["production-diff.ts"],
+    maxParallel: 2,
+    baseRef: "",
+    deploymentReferenceSha: "",
+    deploymentProofPath: "",
+    autoPublish: false,
+    candidateFiles: ["current-lot.ts"],
+    publishAttributions: [
+      { commitSha: "abc123", files: ["prior-lot.ts"] },
+      { commitSha: "abc123", files: ["second-prior-file.ts"] },
+    ],
+    commitMessage: "",
+  });
+  assert.throws(() => parseArgs(["--publish-attribution", "missing-separator"]), /<commit-sha>=<path>/);
+});
 
 test("resolves npm through Node and npm-cli.js on Windows", () => {
   const command = resolveValidationCommand(
@@ -1076,7 +1103,7 @@ function publicationRuntime(root, { runCheck, publishMain = async () => "publish
   };
 }
 
-async function runAutoPublicationFixture({ runCheck, createRunCheck, publishMain, releaseGate, commitCandidate: commitCandidateImpl, productionLag = false, log } = {}) {
+async function runAutoPublicationFixture({ runCheck, createRunCheck, publishMain, releaseGate, coverageGate, commitCandidate: commitCandidateImpl, productionLag = false, log } = {}) {
   const root = publicationFixture();
   const productionSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
   if (productionLag) {
@@ -1102,6 +1129,7 @@ async function runAutoPublicationFixture({ runCheck, createRunCheck, publishMain
     runCheck: effectiveRunCheck,
     publishMain,
     releaseGate,
+    coverageGate,
     commitCandidate: commitCandidateImpl,
     log,
   }));
@@ -1111,16 +1139,27 @@ async function runAutoPublicationFixture({ runCheck, createRunCheck, publishMain
 test("publishes a candidate based on origin/main when Production Vercel is older", async () => {
   let releaseBaseSha = "";
   let publishBaseSha = "";
+  let publishAttributions = [];
+  let coverageChangedFiles = [];
   const fixture = await runAutoPublicationFixture({
     productionLag: true,
     releaseGate: async ({ publicationBaseSha }) => { releaseBaseSha = publicationBaseSha; },
-    publishMain: async ({ expectedRemoteSha }) => { publishBaseSha = expectedRemoteSha; return "published"; },
+    coverageGate: async ({ changedFiles }) => { coverageChangedFiles = changedFiles; },
+    publishMain: async ({ expectedRemoteSha, attributedCommits }) => {
+      publishBaseSha = expectedRemoteSha;
+      publishAttributions = attributedCommits;
+      return "published";
+    },
   });
   try {
     assert.equal(fixture.result, 0);
     assert.equal(releaseBaseSha, fixture.baseSha);
     assert.equal(publishBaseSha, fixture.baseSha);
     assert.notEqual(fixture.productionSha, fixture.baseSha);
+    assert.equal(publishAttributions.length, 1);
+    assert.deepEqual(publishAttributions[0].files, ["apps/web/src/page.tsx"]);
+    assert.equal(publishAttributions.some(({ files }) => files.includes("README.md")), false);
+    assert.equal(coverageChangedFiles.includes("README.md"), true);
   } finally {
     removeFixture(fixture.root);
   }

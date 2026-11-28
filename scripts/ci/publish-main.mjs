@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import { runCoveragePublicationGate } from "./coverage-publication.mjs";
 import { verifyGitHubPushAuthorization } from "./github-push-authorization.mjs";
 import { gitExecutable } from "./git-executable.mjs";
+import { verifyPublishedCommitAttributions } from "./publish-commit-attribution.mjs";
 
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_BACKOFF_MS = 1_000;
@@ -326,11 +327,10 @@ export async function publishMain({
   coverageGate = null,
   verifyAuthorization = verifyGitHubPushAuthorization,
   expectedRemoteSha = "",
-  attributedFiles = null,
+  attributedCommits: rawAttributedCommits = null,
 } = {}) {
   assertMain(runGitCommand);
   assertNoOperationInProgress(runGitCommand);
-  const attributedSet = new Set(Array.isArray(attributedFiles) ? sortedUnique(attributedFiles) : []);
 
   let candidateSha = null;
 
@@ -367,18 +367,8 @@ export async function publishMain({
       }
     }
 
-    if (attributedSet.size === 0) {
-      throw new Error("PUBLISH_ATTRIBUTION_REQUIRED: pass every path attributed to this publication.");
-    }
     assertCandidateIsCurrent(runGitCommand, candidateSha, "immediately before push");
-    const changedFilesResult = runGitCommand(["diff", "--name-only", `${remoteSha}..${candidateSha}`, "--"]);
-    if (changedFilesResult.status !== 0) {
-      throw new Error(`PUBLISH_ATTRIBUTION_UNVERIFIED: cannot inspect candidate path range ${remoteSha}..${candidateSha}.`);
-    }
-    const foreignFiles = sortedUnique(changedFilesResult.stdout.split(/\r?\n/)).filter((file) => !attributedSet.has(file));
-    if (foreignFiles.length > 0) {
-      throw new Error(`PUBLISH_FOREIGN_PATHS: candidate includes paths outside the attributed allowlist: ${foreignFiles.join(", ")}.`);
-    }
+    verifyPublishedCommitAttributions({ remoteSha, candidateSha, attributedCommits: rawAttributedCommits, runGitCommand });
     if (coverageGate) {
       coverageGate({ candidateSha, baseRef: remoteSha, runGitCommand });
       log(`Coverage publication gate passed for candidate ${candidateSha}.`);
@@ -432,7 +422,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     maxAttempts: Number(process.env.CMM_PUBLISH_MAX_ATTEMPTS ?? DEFAULT_MAX_ATTEMPTS),
     backoffMs: Number(process.env.CMM_PUBLISH_BACKOFF_MS ?? DEFAULT_BACKOFF_MS),
     coverageGate: runPublicationCoverageGate,
-    attributedFiles: JSON.parse(process.env.CMM_ATTRIBUTED_FILES ?? "[]"),
+    attributedCommits: JSON.parse(process.env.CMM_ATTRIBUTED_COMMITS ?? "[]"),
   }).catch((error) => {
     console.error(`PUBLISH_MAIN_BLOCKED: ${error.message}`);
     process.exitCode = 1;

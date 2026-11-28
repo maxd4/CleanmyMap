@@ -77,6 +77,7 @@ la liste complète des fichiers attribués au chantier courant :
 ```powershell
 npm run checks:deploy -- --auto-publish `
   --candidate-file=<chemin-1> --candidate-file=<chemin-2> `
+  --publish-attribution=<sha-commit-local>=<chemin-attribue> `
   --deployment-ref=<sha-production-verifie> `
   --deployment-proof=<preuve-vercel.json>
 ```
@@ -89,6 +90,13 @@ un échec du push bloque la publication. Après les guards et la release gate,
 le runner valide l'arbre exact, commit le lot et pousse les commits validés en
 avance selon les règles universelles de gouvernance. Il vérifie enfin
 `HEAD = origin/main` et la divergence `0/0`.
+
+`--candidate-file` attribue uniquement le commit créé par cette exécution.
+Tout commit local antérieur également publié doit avoir une attribution
+explicite par SHA via une option répétée `--publish-attribution=<sha>=<path>`.
+Le publisher examine les chemins de chaque commit de la plage, même si un
+commit suivant annule un changement. Le diff depuis Production Vercel détermine
+les contrôles DEPLOY, jamais l'attribution des commits du push.
 
 Cette preuve DEPLOY est distincte de FULL, ne couvre que la portée Web
 détectée cumulativement depuis le SHA de Production Vercel effectivement
