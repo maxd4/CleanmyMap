@@ -837,6 +837,7 @@ export async function runValidationMode(
         });
         const publishedSha = await (runtime.publishMain ?? publishMain)({
           expectedRemoteSha: finalScope.publicationBaseSha,
+          attributedFiles: finalScope.changedFiles,
         });
         log(`PUBLISHED_MAIN_SHA: ${publishedSha}`);
         log(`PUBLISHED_TREE_SHA: ${finalTreeSha}`);

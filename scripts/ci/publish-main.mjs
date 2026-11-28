@@ -323,9 +323,14 @@ export async function publishMain({
   log = console.log,
   coverageGate = null,
   expectedRemoteSha = "",
+  attributedFiles = null,
 } = {}) {
   assertMain(runGitCommand);
   assertNoOperationInProgress(runGitCommand);
+  if (!Array.isArray(attributedFiles) || attributedFiles.length === 0) {
+    throw new Error("PUBLISH_ATTRIBUTION_REQUIRED: pass every path attributed to this publication.");
+  }
+  const attributedSet = new Set(sortedUnique(attributedFiles));
 
   let candidateSha = null;
 
@@ -363,11 +368,23 @@ export async function publishMain({
     }
 
     assertCandidateIsCurrent(runGitCommand, candidateSha, "immediately before push");
+    const changedFilesResult = runGitCommand(["diff", "--name-only", `${remoteSha}..${candidateSha}`, "--"]);
+    if (changedFilesResult.status !== 0) {
+      throw new Error(`PUBLISH_ATTRIBUTION_UNVERIFIED: cannot inspect candidate path range ${remoteSha}..${candidateSha}.`);
+    }
+    const foreignFiles = sortedUnique(changedFilesResult.stdout.split(/\r?\n/)).filter((file) => !attributedSet.has(file));
+    if (foreignFiles.length > 0) {
+      throw new Error(`PUBLISH_FOREIGN_PATHS: candidate includes paths outside the attributed allowlist: ${foreignFiles.join(", ")}.`);
+    }
     if (coverageGate) {
       coverageGate({ candidateSha, baseRef: remoteSha, runGitCommand });
       log(`Coverage publication gate passed for candidate ${candidateSha}.`);
     }
     const push = runGitCommand(["push", "origin", `${candidateSha}:refs/heads/main`]);
+    const pushOutput = `${push.stdout ?? ""}\n${push.stderr ?? ""}`;
+    if (/Bypassed rule violations/i.test(pushOutput)) {
+      throw new Error(`PUSH_ACCEPTED_WITH_BYPASS: GitHub accepted candidate ${candidateSha} while bypassing an active rule; this is not PUBLISHED.`);
+    }
     if (push.status === 0) {
       const verifyFetch = runGitCommand(["fetch", "origin", "main"]);
       if (verifyFetch.status !== 0) {
@@ -410,6 +427,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     maxAttempts: Number(process.env.CMM_PUBLISH_MAX_ATTEMPTS ?? DEFAULT_MAX_ATTEMPTS),
     backoffMs: Number(process.env.CMM_PUBLISH_BACKOFF_MS ?? DEFAULT_BACKOFF_MS),
     coverageGate: runPublicationCoverageGate,
+    attributedFiles: JSON.parse(process.env.CMM_ATTRIBUTED_FILES ?? "[]"),
   }).catch((error) => {
     console.error(`PUBLISH_MAIN_BLOCKED: ${error.message}`);
     process.exitCode = 1;

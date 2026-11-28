@@ -6,9 +6,8 @@ Ce mémo résume les garde-fous GitHub à garder en place pour CleanMyMap.
 
 ### Contrat durable
 
-La maintenance suit `MAIN-ONLY / MULTI-WRITER COORDONNÉ` : un checkout local
-canonique sur `main`, plusieurs writers coordonnés, des candidats explicitement
-identifiés et aucune publication implicite. La branche de développement canonique est `main`. Les branches techniques
+Les règles universelles de livraison R01–R12 ont une source canonique unique.
+La branche de développement canonique est `main`. Les branches techniques
 Dependabot peuvent exister pour leurs PR ; elles ne constituent pas des
 branches de chantier des writers.
 
@@ -22,8 +21,9 @@ branches de chantier des writers.
   distinctes pour une revue explicite. Les security updates restent actives et
   ne sont pas masquées par ces limites.
 - Aucun automerge Dependabot n'est configuré.
-- Le ruleset de `main` interdit la suppression de la branche et les mises à
-  jour `non_fast_forward` ; un push fast-forward direct reste permis.
+- L'état distant des rulesets est volatile et doit être relu avant une
+  publication concernée ; les observations datées ci-dessous ne constituent
+  pas une garantie de configuration future.
 - Une alerte CodeQL se corrige dans le code, puis doit être vérifiée par un run
   GitHub réussi sur le SHA publié exact.
 - Secret Scanning et Push Protection sont des réglages distants à relire ; un
@@ -86,16 +86,35 @@ invariants.
 
 ## Protection de `main`
 
-Le dépôt conserve un workflow `MAIN-ONLY / MULTI-WRITER COORDONNÉ` : les pushes
-fast-forward directs sur `main` restent autorisés pour l'intégrateur légitime
-autorisé par le ruleset distant. Les deux rulesets GitHub actifs ciblant `main`
-interdisent :
+Observation en lecture seule effectuée le 2026-11-28 avec `gh api` pour
+`maxd4/CleanMyMap` (identité CLI `maxd4`, rôle collaborateur `admin`). Deux
+rulesets actifs ciblent `main` : `23565928` interdit suppression et
+non-fast-forward sans bypass ; `25034548` (`main — owner-only updates`) impose
+la règle `update` et accorde un bypass `always` au rôle repository admin et à
+l'intégration `1144995`. L'API a indiqué `current_user_can_bypass: always` pour
+la règle d'update et `never` pour la règle de protection contre suppression et
+non-fast-forward. La protection classique de branche n'était pas configurée
+(endpoint `branches/main/protection` renvoyait 404). Aucun check obligatoire,
+approbation ou exigence de Pull Request n'a été observé dans le ruleset actif.
+
+Cette configuration ne fournit pas de voie directe conforme à la règle
+`update` pour un push ordinaire : l'acceptation observée précédemment avec
+`Bypassed rule violations` constitue un bypass, donc ne qualifie pas
+`PUBLISHED`. Aucun push de vérification ne doit être tenté. Ne pas changer le
+ruleset, utiliser le bypass, ni tenter un merge qui l'emploierait. La voie de
+publication doit être rétablie par l'administrateur GitHub selon une procédure
+conforme à R11 ; la configuration actuelle ne définit pas elle-même une voie
+Pull Request de remplacement.
+
+Les règles actives observées interdisent également :
 
 - la suppression de `main` ;
 - les mises à jour non fast-forward et les force-push.
 
-Chaque tentative établit un SHA candidat immuable après le `fetch` et pousse
-explicitement `${candidateSha}:refs/heads/main`. Le publisher relit `HEAD` et
+Le publisher établit un SHA candidat immuable après le `fetch` et prépare le
+refspec `${candidateSha}:refs/heads/main`. Il ne peut toutefois pas publier
+tant que le ruleset `update` impose le bypass. Lorsqu'une voie conforme est
+disponible, le publisher relit `HEAD` et
 `refs/heads/main` avant le push et après sa vérification ; un nouveau commit
 local apparu entre ces étapes bloque la publication et impose une nouvelle
 réconciliation des fichiers, commits et validations. Il ne peut donc pas
@@ -107,15 +126,11 @@ intégration fast-forward distante explicitement vérifiée. Une divergence, un
 conflit ou une erreur de permission reste visible et bloque la publication ;
 aucune tentative ne contourne les protections distantes.
 
-Les rulesets n'imposent ni Pull Request, ni approbation, ni required status
-check, ni merge queue. Le ruleset `main — owner-only updates` réserve toutefois
-la mise à jour aux acteurs explicitement autorisés dans ses bypass (rôle
-administrateur et intégration autorisée selon la configuration distante).
-Ne pas déduire leur identité effective d'un nom de ruleset. Les protections
-de suppression et de non-fast-forward restent dans un ruleset indépendant
-sans bypass. Ne pas ajouter de bypass global pour rétablir un accès. Les contrôles CI et CodeQL restent
-disponibles pour les runs GitHub et les revues, sans remplacer la validation
-locale du candidat.
+L'auteur exact de l'événement de push antérieur n'a pas été établi par les
+événements GitHub consultés ; l'identité active et les droits courants ne
+permettent pas de l'affirmer. Relire ces règles avant toute décision future.
+Les contrôles CI et CodeQL restent disponibles pour les runs GitHub et les
+revues, sans remplacer la validation locale du candidat.
 
 Checks conservés pour la revue manuelle GitHub :
 

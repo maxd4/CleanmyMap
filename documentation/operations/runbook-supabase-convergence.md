@@ -83,6 +83,13 @@ séquence sérialisée :
 
 ## 3. Interdictions permanentes
 
+La publication Git et l'application de migrations sont deux états séparés selon
+Les règles R03/R10 distinguent les deux états. `PUBLISHED` atteste uniquement la convergence Git ; elle
+n'atteste jamais l'application DB. Un préflight `BLOCKED` ou `DIVERGED` peut
+bloquer l'application distante, mais ne bloque pas à lui seul une publication
+Git sûre. Aucune application n'est permise sans les contrôles et preuves requis
+par les sections précédentes.
+
 - Aucun `supabase migration repair`, `supabase db reset` distant, DDL manuelle
   en production ou réécriture d'une migration déjà appliquée.
 - Aucun Docker, WSL ou runtime Supabase local sur le poste utilisateur.

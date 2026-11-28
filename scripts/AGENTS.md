@@ -36,110 +36,19 @@ processus touchés, les imports et consommateurs, puis vérifier qu'aucune
 frontière autonome n'a été oubliée. Les seuils de qualité restent des signaux
 de revue : cette règle ne crée ni nouveau seuil bloquant ni nouvelle baseline.
 
-## Modèle canonique de développement
+## Modalités techniques du workflow canonique
 
-`MAIN-ONLY / MULTI-WRITER COORDONNÉ` est le workflow CURRENT pour les scripts
-et leurs consommateurs : `CleanmyMap-main` reste sur `main`, plusieurs writers
-peuvent travailler sur des fichiers distincts, et les analyses read-only
-peuvent être parallèles. Les fichiers partagés, l’index et les références Git
-doivent être relus et mutés de façon coordonnée. Tout fichier dirty préexistant
-non explicitement attribué au lot courant est présumé appartenir à un autre
-writer : il ne doit pas être nettoyé, restauré, supprimé, réécrit, stashed,
-déplacé ou réconcilié par ce lot. La coordination des références Git ne permet
-pas de modifier le contenu dirty étranger. Aucun nouveau worktree, clone, claim,
-coordinateur persistant ou branche de chantier n'est créé.
+Les règles universelles d'exécution, d'attribution, de livraison et de clôture sont exclusivement définies dans `AGENTS.md` (R01–R12). Ce fichier ne les redéfinit pas. Il précise les portées et mécanismes vérifiables des scripts et hooks.
 
-Chaque exécution capture au démarrage une référence (`HEAD`, `origin/main`,
-index, chemins tracked dirty et untracked) et l'allowlist attribuée au lot.
-Cette référence et ce périmètre restent gelés pour toute l'exécution. Les
-changements préexistants ou apparus ensuite sont présumés étrangers et exclus ;
-seules les modifications du writer attribué (ChatGPT ou Codex) sur ses chemins
-du lot sont incluses. Un changement concurrent du même chemin attribué est une
-collision :
-préserver les deux états, arrêter la mutation/publication du chemin et rapporter
-le conflit exact, sans absorption, fusion ni écrasement silencieux.
-L'allowlist initiale est un cadrage d'attribution qui fixe les chemins
-admissibles jusqu'à la clôture.
+Les scopes restent distincts : `WORKTREE_LIVE` est le checkout mutable, `STAGED` l'index exact, `COMMITTED_SNAPSHOT` un arbre immuable par SHA, `PUSH_CANDIDATE` les refs du protocole pre-push, et `DYNAMIC_CANDIDATE` un arbre matérialisé temporairement pour une validation. Une preuve d'un scope ne prouve pas un autre.
 
-Aucune évolution ultérieure de `HEAD`, `origin/main`, de l'index ou de fichiers
-dirty/untracked étrangers n'étend l'allowlist, ne déclenche une
-resynchronisation fonctionnelle, un rejeu de preuve ou une nouvelle validation
-globale. Rapporter les échecs constatés sur le candidat gelé ; corriger ceux
-attribuables au lot et signaler séparément les défauts préexistants ou étrangers
-sans modifier leurs fichiers. À la publication, vérifier uniquement
-l'attribution des commits transmis, le fast-forward, les hooks, permissions et
-convergence. Une évolution externe sans conflit ne provoque aucune campagne de
-validation supplémentaire ; un conflit réel arrête la publication avec son
-diagnostic.
+Les contrôles de publication doivent exiger une allowlist explicite quand elle est objectivement disponible et rejeter tout chemin du candidat non attribué. Les scripts qui matérialisent des candidats doivent garder leur mapping source/cible, l'empreinte et la preuve sur le SHA concerné. Les candidats durables décrits par R04 restent sous `documentation/specs/<chantier>/`; les sorties éphémères de validation restent exclusivement sous `artifacts/validation/prepush-candidate/<sha>/` et relèvent de `candidate-lifecycle.mjs`.
 
-Avant un nouveau commit, stage uniquement les changements attribués au lot au
-démarrage, vérifie `STAGED` sur son contenu exact et conserve les autres
-changements. Plusieurs chantiers ou writers peuvent être regroupés dans un
-nouveau commit uniquement si tous étaient initialement attribués. Lorsqu'un
-push est demandé, publier tous les commits déjà créés en avance sur la branche
-distante sans filtrage d'attribution, même s'ils contiennent des chemins d'un
-autre lot ; les fichiers dirty et untracked restent exclus. Les gardes,
-secrets, AuthZ, migrations et fast-forward restent obligatoires.
+Les hooks `.githooks/pre-commit` et `.githooks/pre-push` restent obligatoires et lisent leurs scopes exacts. Le pré-commit vérifie `STAGED`; le pré-push vérifie `PUSH_CANDIDATE` reçu par le protocole Git. `publish-main.mjs` capture une candidate immuable et refuse les chemins hors allowlist avant push. Avant publication, l'appelant applique R11 en inspectant les règles distantes en lecture seule ; le publisher refuse également de classer comme `PUBLISHED` une réponse contenant `Bypassed rule violations`. Aucun helper ne modifie les rulesets.
 
-Règle de clôture par défaut confirmée par `AGENTS.md` : à chaque exécution qui
-modifie le checkout, après validation du candidat exact, inclure dans le commit
-et pousser `main` tous les chemins tracked staged/unstaged et untracked du
-snapshot initial, y compris les changements préexistants ou étrangers au lot.
-Cette règle n'inclut jamais les fichiers ignorés, secrets ou modifications
-apparues après le snapshot. Relire et auditer chaque chemin, stage explicitement
-toute la liste sans `git add -A`, puis relire `STAGED` avant commit. Garder tous
-les hooks, protections, contrôles de sécurité et règles fast-forward ; si l'un
-bloque, ne jamais contourner ni pousser un candidat invalide. Toute modification
-concurrente postérieure au snapshot est une collision à préserver et signaler.
+`DEVELOPMENT`, `FULL` et `RELEASE` sont des profils de validation, pas des états de livraison et ne modifient pas les règles R01–R12. Les procédures canoniques définissent les contrôles exigés par une opération ; l'étendue supplémentaire reste proportionnée au risque conformément à R09. Un préflight Supabase et une publication Git sont des opérations indépendantes ; l'application DB suit le runbook et ses preuves PostgreSQL.
 
-Les scopes sont strictement séparés : `WORKTREE_LIVE` est le checkout mouvant,
-`STAGED` l'index exact, `COMMITTED_SNAPSHOT` un arbre Git immuable par SHA, et
-`PUSH_CANDIDATE` les refs effectivement transmises par le protocole Git. Une
-mesure live ne peut jamais être présentée comme preuve reproductible d'un SHA.
-Les validations globales utilisent les matérialisateurs statiques ou
-`DYNAMIC_CANDIDATE` existants, sur le contenu exact examiné, et ne lisent pas le
-worktree mutable comme une preuve de SHA.
-
-Hors mode de développement rapide :
-
-```text
-validation du candidat final exact → commit validé → push main → vérification de convergence
-```
-
-Cette clôture est obligatoire par défaut pour tout lot exécuté depuis le
-checkout local qui produit un changement validé, sauf exception déjà
-explicitement gouvernée dans `AGENTS.md` ou refus explicite de l'utilisateur.
-Les hooks `.githooks/pre-commit` et `.githooks/pre-push` restent obligatoires
-pour toute contribution effectuée depuis le checkout local. Le mode
-`DIRECT_GITHUB_PUBLICATION` de ChatGPT via les API GitHub (contributions
-documentaires et artefacts `CANDIDATE`) suit `CHATGPT.md` avec
-`HOOK_NOT_AVAILABLE`, des contrôles équivalents accessibles et la CI pertinente,
-sans jamais assimiler un hook indisponible à `PASS`. Un blocage seulement
-supposé — ruleset présent, identité supposée non autorisée ou refus anticipé —
-ne permet pas d'arrêter avant d'avoir vérifié l'identité et ses droits
-effectifs, puis tenté le push normal du candidat sûr.
-Une publication n'est réussie qu'après un push accepté, un fetch et la preuve
-`HEAD = origin/main` avec ahead/behind `0/0`. Si le push échoue réellement,
-rapporter sa cause observée sans donnée sensible et l'action nécessaire ; ne
-contourner ni hook, ni protection, ni fast-forward.
-
-Mode de développement rapide explicitement activé :
-
-```text
-commit local selon son protocole, sans push tant que le mode reste actif
-```
-
-Lorsqu’un push échoue parce que `main` a avancé sans conflit sur les chemins
-attribués, la resynchronisation automatique par `git fetch origin main` puis
-`git rebase origin/main` est autorisée et exécutée (en préservant les éventuels
-fichiers dirty/untracked étrangers), avant de relancer `git push origin main`
-avec les gardes `pre-push` sur le `PUSH_CANDIDATE` rebasé. En cas de conflit
-réel lors du rebase, exécuter `git rebase --abort`, préserver les commits et le
-worktree locaux, puis arrêter la publication avec le diagnostic exact. Après un
-push accepté, le fetch prouve la convergence `HEAD = origin/main` et
-ahead/behind `0/0`. Aucun force-push ni contournement des protections GitHub
-n’est permis.
-
+Les scripts de validation et de publication préservent les changements étrangers et ne les incluent jamais par simple présence au démarrage. Les décisions d'attribution sont injectées explicitement par l'appelant ; les scripts ne les infèrent pas à partir du seul état dirty.
 ### LEGACY / COMPATIBILITY
 
 Les anciens noms `workspace:*`, `codex/*`, `publish/*`, les claims, locks,

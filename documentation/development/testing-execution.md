@@ -276,12 +276,11 @@ par la suite Web complète ; une modification du candidat invalide toute preuve
 réutilisée. Les accès distants indisponibles restent `BLOCKED_ACCESS` et ne
 peuvent jamais produire un FULL vert.
 
-Lorsqu'un `FULL` est explicitement lancé, toute erreur actionnable de ses
-contrôles devient une obligation de correction dans l'exécution courante,
-même si les fichiers causaux n'appartiennent pas au lot initial. Un échec ne
-peut pas être laissé rouge en le classant simplement
-`PREEXISTING_CI_FAILURE` ou « hors périmètre ». Les blocages externes,
-décisionnels ou d'environnement restent `BLOCKED_*`, doivent conserver leur
+Lorsqu'un `FULL` est explicitement lancé, rapporter chaque échec actionnable
+avec son scope et sa preuve. Corriger les fichiers attribués au lot ; préserver
+et exclure les chemins étrangers conformément à R07. Un défaut étranger ne peut
+être pris en charge qu'après réattribution explicite (R08). Les blocages
+externes, décisionnels ou d'environnement restent `BLOCKED_*`, conservent leur
 preuve et ne peuvent pas être masqués ni comptés comme un succès.
 
 Une exécution ne lance qu'un seul `FULL` : le runner refuse un second `FULL`
@@ -416,6 +415,11 @@ du worktree (staged, unstaged et fichiers non ignorés non suivis). Un fichier
 la campagne ; aucun secret ou artefact ne peut être ajouté implicitement. Le
 fichier de preuve Vercel reste une entrée de validation, pas une partie de la
 candidate.
+
+L'interface bas niveau `npm run publish:main` exige `CMM_ATTRIBUTED_FILES`, un
+tableau JSON non vide de chemins attribués. Le publisher compare ces chemins à
+tous les fichiers du range distant/local juste avant le push ; un chemin
+étranger ou une comparaison impossible arrête la publication.
 
 La preuve Vercel doit identifier le commit Git de la dernière Production
 effectivement vérifiée et contenir `provider=vercel`, `projectName=web`,

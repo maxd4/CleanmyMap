@@ -31,6 +31,9 @@ Une ancienne conversation, un ancien SHA, un audit passé, QMD ou un snapshot ne
 
 ## Règles de travail
 
+- `AGENTS.md` racine est l'unique owner des règles universelles (R01–R12) ; ce
+  skill et les instructions scoped ne les redéfinissent pas.
+
 - Travailler en `MAIN-ONLY / MULTI-WRITER COORDONNÉ` selon la gouvernance
   actuelle : plusieurs writers peuvent agir sur des fichiers distincts, tandis
   que les fichiers partagés, l’index et les références Git sont réconciliés

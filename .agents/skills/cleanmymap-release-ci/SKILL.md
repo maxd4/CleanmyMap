@@ -19,6 +19,11 @@ Activer pour `.github/workflows`, hooks, `scripts/ci`, échec de check, candidat
 
 ## Diagnostic
 
+`AGENTS.md` racine est l'unique owner des règles universelles R01–R12. Avant
+toute publication, appliquer R03 (état et preuve distincts) et R11 (lecture
+des protections actives, sans bypass). Ce skill précise seulement les gardes
+techniques de CI/release.
+
 1. Identifier SHA, candidat, environnement, trigger, condition `if`, permissions, job et artefact. `skipped`, `not run`, `failed` et `passed` sont des états différents.
 2. Séparer `WORKTREE_LIVE`, `STAGED`, `COMMITTED_SNAPSHOT`, `PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE` ; une preuve locale ne prouve pas un autre candidat.
 3. Remonter au garde-fou et au scénario réel avant de changer un seuil, une baseline, un timeout ou une exclusion. Ne jamais rendre vert en affaiblissant le contrôle.

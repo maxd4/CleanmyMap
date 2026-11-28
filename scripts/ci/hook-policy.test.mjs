@@ -311,80 +311,21 @@ test("pre-commit is independent from the retired coordinator", async () => {
   assert.equal(Object.keys(packageJson.scripts).some((name) => name.startsWith("workspace:")), false);
 });
 
-test("governance coordinates parallel dirty work without losing published scope", async () => {
+test("root AGENTS owns delivery rules and scoped guidance does not contradict it", async () => {
   const rootAgents = await readRepoFile("AGENTS.md");
   const chatgpt = await readRepoFile("CHATGPT.md");
   const scriptsAgents = await readRepoFile("scripts/AGENTS.md");
   const testingGuide = await readRepoFile("documentation/development/TESTING.md");
-  const executionPolicy = sectionMatching(
-    rootAgents,
-    /^## (?:\d+\.\s*)?Modèle d['’]exécution/m,
-    "Modèle d'exécution",
-  );
-  const chatgptPolicy = sectionMatching(chatgpt, /^## .*MAIN-ONLY \/ MULTI-WRITER/m, "ChatGPT multi-writer policy");
-  const scriptsPolicy = currentSection(scriptsAgents, "Modèle canonique de développement");
-
-  assert.match(executionPolicy, /MAIN-ONLY/);
-  assert.match(executionPolicy, /MULTI-WRITER/);
-  assert.match(executionPolicy, /dirty|locales?/i);
-  assert.match(executionPolicy, /staged|stag(?:é|ées?)/i);
-  assert.match(executionPolicy, /commit/);
-  assert.match(executionPolicy, /push/);
-  assert.match(executionPolicy, /jamais[^\n]*[ée]cras/i);
-  assert.match(executionPolicy, /PUSH_CANDIDATE/);
-  assert.match(executionPolicy, /origin\/main/);
-  assert.match(executionPolicy, /force-push/);
-  assert.match(rootAgents, /git diff --cached --name-only/);
-  assert.match(rootAgents, /commits locaux en avance.*ordre d['’]historique/s);
-  assert.match(scriptsAgents, /sans filtrage d['’]attribution/);
-  assert.match(rootAgents, /WORKTREE/);
-  assert.match(rootAgents, /STAGED/);
-  assert.match(rootAgents, /PUSH_CANDIDATE/);
-  assert.match(rootAgents, /ne bloquent pas l['’]analyse ni le travail indépendant/);
-  assert.match(rootAgents, /WORKTREE_LIVE.*STAGED.*COMMITTED_SNAPSHOT.*PUSH_CANDIDATE/s);
-  assert.match(scriptsPolicy, /référence et ce périmètre restent gelés/i);
-  assert.match(testingGuide, /Référence et périmètre restent gelés/);
-  assert.match(rootAgents, /aucune évolution ultérieure de `HEAD`, `origin\/main`/i);
-  assert.match(scriptsAgents, /candidat immuable/);
-  assert.match(testingGuide, /elles ne bloquent pas les\s+diagnostics locaux/);
-  assert.doesNotMatch(rootAgents, /l['’]état local est prioritaire sur l['’]état github/i);
-  assert.doesNotMatch(rootAgents, /workspace:start/);
-  assert.doesNotMatch(scriptsAgents, /workspace:start/);
-  assert.match(rootAgents, /### LEGACY \/ COMPATIBILITY/);
-  assert.match(chatgpt, /^## .*MAIN-ONLY \/ MULTI-WRITER/m);
-  assert.match(chatgptPolicy, /collision|parallel|concurrent/i);
-  assert.match(chatgptPolicy, /préserver|non destructive/i);
-  assert.match(chatgptPolicy, /STAGED/);
-  assert.match(chatgptPolicy, /PUSH_CANDIDATE/);
-  assert.match(chatgptPolicy, /valid(?:ation|e)/i);
-  assert.match(chatgptPolicy, /commit/);
-  assert.match(chatgptPolicy, /push/);
-  assert.match(chatgptPolicy, /convergence/);
-  assert.match(chatgptPolicy, /rapide/);
-  assert.match(chatgptPolicy, /sans push/i);
-  assert.match(chatgptPolicy, /référence Git et (?:les\s+)?fichiers attribués/);
-  assert.match(testingGuide, /gelés jusqu'à la\s+clôture/);
-  assert.match(rootAgents, /ne relance une validation globale/);
-  assert.match(chatgptPolicy, /COMMITTED_SNAPSHOT/);
-  assert.doesNotMatch(chatgpt, /push origin\/main sur demande explicite|demander commit et push le lot|committer et pousser sur main lorsque l'utilisateur l'a demandé/i);
-  assert.doesNotMatch(chatgpt, /workspace:start/);
-  assert.doesNotMatch(chatgpt, /publication-candidate/);
-  assert.match(scriptsPolicy, /MAIN-ONLY/);
-  assert.match(scriptsPolicy, /MULTI-WRITER/);
-  assert.match(scriptsPolicy, /validation/);
-  assert.match(scriptsPolicy, /commit/);
-  assert.match(scriptsPolicy, /push/);
-  assert.match(scriptsPolicy, /rapide/);
-  assert.match(scriptsPolicy, /sans push/i);
-  assert.doesNotMatch(scriptsAgents, /HEAD == origin\/main/);
-  assert.match(scriptsAgents, /pré-commit doit utiliser exclusivement la portée `STAGED`/);
-  assert.match(scriptsAgents, /pré-push réel doit utiliser exclusivement la portée\s+`PUSH_CANDIDATE`/);
-  assert.match(scriptsPolicy, /Chaque exécution capture au démarrage/);
-  assert.match(scriptsPolicy, /Une évolution externe sans conflit ne provoque aucune campagne de\s+validation/);
-  assert.match(scriptsPolicy, /un rejeu de preuve ou une nouvelle validation\s+globale/);
-  assert.match(scriptsPolicy, /WORKTREE_LIVE.*STAGED.*COMMITTED_SNAPSHOT.*PUSH_CANDIDATE/s);
-  assert.match(testingGuide, /## Exécution non bloquante du checkout/);
-  assert.match(testingGuide, /référence initiale[\s\S]*?allowlist de ses\s+fichiers attribués/);
-  assert.match(testingGuide, /ne\s+déclenche ni extension de périmètre, ni resynchronisation fonctionnelle/);
-  assert.match(testingGuide, /Une mesure `WORKTREE_LIVE`.*ne constitue jamais une preuve reproductible/s);
+  for (let index = 1; index <= 12; index += 1) {
+    const rule = `### R${String(index).padStart(2, "0")} —`;
+    assert.equal(rootAgents.split(rule).length - 1, 1, `${rule} must have one owner`);
+  }
+  assert.match(scriptsAgents, /AGENTS\.md` \(R01–R12\)/i);
+  assert.match(chatgpt, /AGENTS\.md` est l'autorité unique/i);
+  assert.match(testingGuide, /`PUBLISHED` exige un push conforme/);
+  assert.doesNotMatch(scriptsAgents, /sans filtrage d['’]attribution/);
+  assert.doesNotMatch(testingGuide, /tous les chemins tracked staged\/unstaged et untracked du snapshot initial/);
+  assert.match(rootAgents, /Bypassed rule violations/);
+  assert.match(rootAgents, /COMMIT_READY.*PUSH_READY.*PUBLISHED.*INTEGRATION_VALIDATED.*RELEASE_READY.*COMPLETED/s);
+  assert.match(scriptsAgents, /WORKTREE_LIVE.*STAGED.*COMMITTED_SNAPSHOT.*PUSH_CANDIDATE/);
 });

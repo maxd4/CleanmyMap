@@ -10,7 +10,7 @@ Le workflow CleanMyMap distingue trois modes de validation : `DEVELOPMENT`,
 `FULL` et `RELEASE`. Les tests spécialisés restent des briques appelables
 séparément, pas des modes supplémentaires.
 
-## Exécution non bloquante du checkout
+## Attribution, scopes et preuves de livraison
 
 Au démarrage, chaque exécution capture sa référence initiale (`HEAD`,
 `origin/main`, index, chemins tracked dirty et untracked) et l'allowlist de ses
@@ -30,15 +30,11 @@ mutable ne peut être attribuée à un SHA. Le rapport conserve tout échec obse
 sur le candidat vérifié : corriger uniquement les causes attribuables au lot,
 et signaler séparément les défauts préexistants ou étrangers.
 
-La règle de clôture Git du dépôt demande qu'après chaque
-exécution qui modifie le checkout, le candidat validé commit et pousse `main`
-tous les chemins tracked staged/unstaged et untracked du snapshot initial,
-même s'ils préexistent ou sont étrangers au lot. Relire et contrôler chaque
-chemin, puis stage la liste explicite ; ne jamais utiliser `git add -A`. Cette
-règle exclut les fichiers ignorés, secrets et changements apparus après le
-snapshot. Une modification concurrente postérieure au snapshot est préservée et
-signalée. Aucun hook, contrôle de sécurité, protection de branche ou fast-forward
-ne peut être contourné pour forcer la publication.
+Les règles universelles R01–R12 ont une source unique. Les changements
+étrangers au lot sont préservés et exclus des nouveaux commits. Les outils de
+publication exigent une attribution explicite quand elle est contrôlable ; ils
+ne déduisent jamais l'attribution de la seule présence au démarrage. Les hooks,
+contrôles de sécurité, protections et fast-forward ne sont pas contournables.
 
 Les provenances sont distinctes et doivent être affichées : `WORKTREE_LIVE`
 pour le checkout mouvant, `STAGED` pour l'index exact, `COMMITTED_SNAPSHOT`
@@ -48,6 +44,16 @@ le checkout évolue et ne constitue jamais une preuve reproductible d'un SHA.
 Les exigences de candidat exact pour `FULL`, SonarQube, les releases et le push
 restent obligatoires au moment de leur opération ; elles ne bloquent pas les
 diagnostics locaux.
+
+Les états `COMMIT_READY`, `PUSH_READY`, `PUBLISHED`, `INTEGRATION_VALIDATED`,
+`RELEASE_READY` et `COMPLETED` ont des préconditions distinctes définies en
+R03. Les scopes ci-dessus décrivent la provenance d'une preuve, pas l'état de
+livraison. `PUBLISHED` exige un push conforme (sans bypass), puis un fetch qui
+prouve la convergence de `HEAD` et `origin/main`; il ne signifie ni intégration
+runtime, ni release, ni réception finale. Un statut `BLOCKED` contient le
+contrôle exécuté, son résultat, sa cause, le périmètre et l'action requise
+(R05). Une exigence impossible à mesurer est `NOT_RUN` ou `BLOCKED`, jamais
+`PASS`.
 
 ## Niveau de preuve et contrats exécutés
 

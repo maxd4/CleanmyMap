@@ -2,6 +2,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
+import { validateCandidateArtifactManifests } from "./candidate-artifacts.mjs";
 
 export const canonicalAgentFiles = Object.freeze([
   "AGENTS.md",
@@ -36,13 +37,13 @@ const skippedDirectories = new Set([
 ]);
 
 const requiredMarkers = new Map([
-  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push", "Plusieurs writers ChatGPT et Codex peuvent contribuer au dépôt", "Plusieurs chantiers ou writers peuvent être regroupés dans un commit", "L'allowlist initiale sert à l'attribution et au cadrage", "Lorsqu'un push est explicitement demandé, tous les commits locaux en avance"]],
+  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push", "### R01 — CONTINUITÉ", "### R12 — CLÔTURE CONTRÔLÉE", "COMMIT_READY", "INTEGRATION_VALIDATED", "Bypassed rule violations"]],
   ["apps/web/AGENTS.md", ["Next.js", "Server/Client", "Leaflet"]],
   ["apps/web/src/app/api/AGENTS.md", ["AuthN", "AuthZ", "contrat de réponse propre"]],
   ["apps/web/supabase/AGENTS.md", ["apps/web/supabase/migrations/", "unique", "RLS"]],
   ["apps/web/scripts/AGENTS.md", ["dry-run", "--apply", "provenance"]],
   ["apps/mobile/AGENTS.md", ["ClerkProvider", "Third-Party Auth", "`sub` Clerk", "distance_m"]],
-  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push", "Plusieurs chantiers ou writers peuvent être regroupés dans un nouveau commit", "L'allowlist initiale est un cadrage d'attribution", "commits déjà créés en avance", "sans filtrage d'attribution"]],
+  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push", "AGENTS.md` (R01–R12)", "refuse les chemins hors allowlist"]],
   [".github/AGENTS.md", ["permissions", "CodeQL", "check:github-actions"]],
   ["maintenance/python/AGENTS.md", ["hors du", "requirements", "pytest"]],
   ["documentation/AGENTS.md", ["état actuel", "historique", "public"]],
@@ -108,86 +109,37 @@ function validateCurrentCoordinatorDoctrine(view, findings) {
   }
 }
 
-const publicationPolicyTerms = ["commit", "push", "vérification de convergence"];
-const explicitNoPushExceptionTerms = ["mode de développement rapide", "interdiction explicite", "sans push"];
-const chatgptDirectWritePolicyTerms = [
-  "chatgpt contribue directement par défaut",
-  "toute demande de l'utilisateur visant à implémenter, corriger ou mettre à jour le dépôt autorise ces opérations",
-  "commit → push fast-forward",
-];
-const forbiddenChatgptReadOnlyTerms = [
-  "chatgpt est limité à la lecture et à la revue de github",
-  "chatgpt n'effectue sur github que des vérifications en lecture",
-];
-const commitReviewPolicyTerms = [
-  "la commit review privilégie le résultat publié",
-  "les régressions démontrées",
-  "la taille, le regroupement ou l'organisation des commits ne suffisent pas à demander un prompt correctif",
-];
-
 function validateCurrentWorkflowDoctrine(view, findings) {
   const rootAgents = readIfPresent(view, "AGENTS.md");
   const chatgpt = readIfPresent(view, "CHATGPT.md");
-
   if (!rootAgents) findings.push("AGENTS.md: missing CURRENT workflow doctrine.");
   if (!chatgpt) findings.push("CHATGPT.md: missing CURRENT workflow doctrine.");
-
-  const normalizeWorkflowContent = (content) => content
-    .replace(/```(?:text)?/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  const normalizedRoot = rootAgents ? normalizeWorkflowContent(rootAgents) : "";
-  const normalizedRootLower = normalizedRoot.toLocaleLowerCase("fr-FR");
-  const normalizedChatgpt = chatgpt ? normalizeWorkflowContent(chatgpt) : "";
-  const normalizedCurrentChatgpt = contentOutsideLegacySections(chatgpt ?? "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (rootAgents && !normalizedRootLower.includes("plusieurs writers chatgpt et codex peuvent contribuer au dépôt")) {
-    findings.push("AGENTS.md: CURRENT workflow must describe coordinated parallel writers in the canonical checkout.");
+  const root = rootAgents ?? "";
+  const scopedFiles = ["scripts/AGENTS.md", "CHATGPT.md", ".agents/skills/cleanmymap-repo/SKILL.md", ".agents/skills/cleanmymap-release-ci/SKILL.md"];
+  for (const marker of Array.from({ length: 12 }, (_, index) => `### R${String(index + 1).padStart(2, "0")} —`)) {
+    const count = root.split(/\r?\n/).filter((line) => line.startsWith(marker)).length;
+    if (count !== 1) findings.push(`AGENTS.md: ${marker} must occur exactly once (found ${count}).`);
   }
-  if (rootAgents && !normalizedRootLower.includes("les modifications sur des fichiers distincts peuvent progresser en parallèle")) {
-    findings.push("AGENTS.md: CURRENT workflow must permit independent file changes to progress in parallel.");
-  }
-  if (rootAgents && !normalizedRootLower.includes("aucun ne doit jamais écraser silencieusement les changements d'un autre writer")) {
-    findings.push("AGENTS.md: CURRENT workflow must prohibit silent loss of another writer's changes.");
-  }
-  if (rootAgents && !normalizedRoot.includes("main publié = référence versionnée ;")) {
-    findings.push("AGENTS.md: CURRENT workflow must identify published main as the versioned reference.");
-  }
-  if (rootAgents && !normalizedRoot.includes("une candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;")) {
-    findings.push("AGENTS.md: CURRENT workflow must scope local candidate authority to the current lot.");
-  }
-  if (rootAgents && !normalizedRoot.includes("tout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.")) {
-    findings.push("AGENTS.md: CURRENT workflow must preserve pre-existing local changes during synchronization.");
-  }
-
-  for (const [relativePath, content, normalizedContent] of [
-    ["AGENTS.md", rootAgents, normalizedRoot],
-    ["CHATGPT.md", chatgpt, normalizedChatgpt],
-  ]) {
-    if (!content) continue;
-    if (!publicationPolicyTerms.every((term) => normalizedContent.includes(term))) {
-      findings.push(`${relativePath}: missing the mandatory commit/push/convergence policy for each lot.`);
-    }
-    if (!explicitNoPushExceptionTerms.every((term) => normalizedContent.includes(term))) {
-      findings.push(`${relativePath}: missing the explicit user-authorized no-push exception.`);
+  for (const relativePath of scopedFiles) {
+    const content = readIfPresent(view, relativePath) ?? "";
+    if (content && !/AGENTS\.md.{0,100}(?:R01|règles universelles|autorité unique)/is.test(content)) {
+      findings.push(`${relativePath}: scoped guidance must defer universal rules to root AGENTS.md.`);
     }
   }
-
-  if (/l['’]état local est prioritaire sur l['’](?:état|etat) github/i.test(normalizedRoot)) {
-    findings.push("AGENTS.md: global local-over-GitHub priority is not a CURRENT rule.");
+  const forbiddenPhrases = [
+    "tous les chemins tracked staged/unstaged et untracked du snapshot initial",
+    "sans filtrage d'attribution", "sans filtrage d’attribution",
+    "sans push tant que le mode reste actif",
+  ];
+  for (const phrase of forbiddenPhrases) {
+    for (const relativePath of ["AGENTS.md", "scripts/AGENTS.md", "CHATGPT.md", "documentation/development/TESTING.md"]) {
+      const content = contentOutsideLegacySections(readIfPresent(view, relativePath) ?? "").toLocaleLowerCase("fr-FR");
+      if (content.includes(phrase.toLocaleLowerCase("fr-FR"))) findings.push(`${relativePath}: contradictory delivery rule remains: ${phrase}.`);
+    }
   }
-  const normalizedCurrentChatgptLower = normalizedCurrentChatgpt.toLocaleLowerCase("fr-FR");
-  if (!chatgptDirectWritePolicyTerms.every((term) => normalizedCurrentChatgptLower.includes(term))) {
-    findings.push("CHATGPT.md: current policy must authorize scoped direct ChatGPT edits, commits and pushes on main.");
-  }
-  if (forbiddenChatgptReadOnlyTerms.some((term) => normalizedCurrentChatgptLower.includes(term))) {
-    findings.push("CHATGPT.md: current policy must not restrict ChatGPT to read-only GitHub access.");
-  }
-  if (!commitReviewPolicyTerms.every((term) => normalizedCurrentChatgptLower.includes(term))) {
-    findings.push("CHATGPT.md: Commit Review must prioritize published outcomes and demonstrated regressions, not commit size or grouping.");
-  }
+  const normalizedChatgpt = contentOutsideLegacySections(chatgpt ?? "").toLocaleLowerCase("fr-FR");
+  if (!normalizedChatgpt.includes("réception indépendante")) findings.push("CHATGPT.md: independent result reception boundary is missing.");
+  if (root && !root.includes("`COMMIT_READY`")) findings.push("AGENTS.md: delivery states are missing.");
 }
 
 function walk(view) {
@@ -306,6 +258,7 @@ function validateMarkers(view, findings) {
 
 export function validateAgentGovernance(repoRoot = process.cwd(), { view = null } = {}) {
   const findings = [];
+  if (!view) findings.push(...validateCandidateArtifactManifests(repoRoot));
   const repositoryView = view ?? createRepositoryView({ root: repoRoot });
   validateCanonicalFiles(repositoryView, findings);
   validateAgentLocations(repositoryView, findings);

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "status": "CANDIDATE",
+  "artifacts": [
+    {
+      "file": "candidates/governance.patch",
+      "targetPaths": [
+        ".agents/skills/cleanmymap-release-ci/SKILL.md",
+        ".agents/skills/cleanmymap-repo/SKILL.md",
+        ".codex/skills/cleanmymap-release-ci/SKILL.md",
+        ".codex/skills/cleanmymap-repo/SKILL.md",
+        "AGENTS.md",
+        "CHATGPT.md",
+        "documentation/development/TESTING.md",
+        "documentation/development/testing-execution.md",
+        "documentation/operations/github-governance.md",
+        "documentation/operations/runbook-supabase-convergence.md",
+        "scripts/AGENTS.md",
+        "scripts/checks/candidate-artifacts.mjs",
+        "scripts/checks/candidate-artifacts.test.mjs",
+        "scripts/checks/check-agent-governance.mjs",
+        "scripts/checks/check-agent-governance.test.mjs",
+        "scripts/ci/hook-policy.test.mjs",
+        "scripts/ci/publish-main.mjs",
+        "scripts/ci/publish-main.test.mjs",
+        "scripts/ci/run_validation_mode.mjs"
+      ],
+      "kind": "patch",
+      "sha256": "c58da5c9cde35f0d2e04580d9bace217ec8a60cf01bd858c369bbb6a984b54a4"
+    }
+  ]
+}

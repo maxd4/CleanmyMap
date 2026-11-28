@@ -1,0 +1,861 @@
+diff --git a/.agents/skills/cleanmymap-release-ci/SKILL.md b/.agents/skills/cleanmymap-release-ci/SKILL.md
+index aea015562..f3443bf04 100644
+--- a/.agents/skills/cleanmymap-release-ci/SKILL.md
++++ b/.agents/skills/cleanmymap-release-ci/SKILL.md
+@@ -21,0 +22,5 @@ Activer pour `.github/workflows`, hooks, `scripts/ci`, échec de check, candidat
++`AGENTS.md` racine est l'unique owner des règles universelles R01–R12. Avant
++toute publication, appliquer R03 (état et preuve distincts) et R11 (lecture
++des protections actives, sans bypass). Ce skill précise seulement les gardes
++techniques de CI/release.
++
+diff --git a/.agents/skills/cleanmymap-repo/SKILL.md b/.agents/skills/cleanmymap-repo/SKILL.md
+index 93ab6dac7..04669c12a 100644
+--- a/.agents/skills/cleanmymap-repo/SKILL.md
++++ b/.agents/skills/cleanmymap-repo/SKILL.md
+@@ -33,0 +34,3 @@ Une ancienne conversation, un ancien SHA, un audit passé, QMD ou un snapshot ne
++- `AGENTS.md` racine est l'unique owner des règles universelles (R01–R12) ; ce
++  skill et les instructions scoped ne les redéfinissent pas.
++
+diff --git a/.codex/skills/cleanmymap-release-ci/SKILL.md b/.codex/skills/cleanmymap-release-ci/SKILL.md
+index aea015562..f3443bf04 100644
+--- a/.codex/skills/cleanmymap-release-ci/SKILL.md
++++ b/.codex/skills/cleanmymap-release-ci/SKILL.md
+@@ -21,0 +22,5 @@ Activer pour `.github/workflows`, hooks, `scripts/ci`, échec de check, candidat
++`AGENTS.md` racine est l'unique owner des règles universelles R01–R12. Avant
++toute publication, appliquer R03 (état et preuve distincts) et R11 (lecture
++des protections actives, sans bypass). Ce skill précise seulement les gardes
++techniques de CI/release.
++
+diff --git a/.codex/skills/cleanmymap-repo/SKILL.md b/.codex/skills/cleanmymap-repo/SKILL.md
+index 93ab6dac7..04669c12a 100644
+--- a/.codex/skills/cleanmymap-repo/SKILL.md
++++ b/.codex/skills/cleanmymap-repo/SKILL.md
+@@ -33,0 +34,3 @@ Une ancienne conversation, un ancien SHA, un audit passé, QMD ou un snapshot ne
++- `AGENTS.md` racine est l'unique owner des règles universelles (R01–R12) ; ce
++  skill et les instructions scoped ne les redéfinissent pas.
++
+diff --git a/AGENTS.md b/AGENTS.md
+index 4b1e6d747..8d2fcc370 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -33 +33 @@ Avant d'écrire :
+-3. **Preuves typées et substance.** Distinguer `STATIC_CONTRACT` ≠ `EXECUTED_BEHAVIOR` ≠ `INTEGRATION_PROOF` (`documentation/development/TESTING.md`). Tout lot modifiant un comportement ou contrat exige : consommation réellement exécutée du runtime, tests comportementaux et régressions (nominaux, limites, invalides, adversariaux, erreurs, transitions, concurrence selon le risque), couverture pertinente (Web et Mobile restent indépendants ; sinon `NOT_MEASURED` motivé ; aucun seuil/baseline/exclusion modifié) et mise à jour des documents `CURRENT`. Sans exécution PostgreSQL autorisée, déclarer `DB_SEMANTICS_NOT_EXECUTED`.
++3. **Preuves typées et substance.** Distinguer `STATIC_CONTRACT` ≠ `EXECUTED_BEHAVIOR` ≠ `INTEGRATION_PROOF` (`documentation/development/TESTING.md`). Un changement de comportement exige des tests comportementaux et régressions proportionnés au risque et une mise à jour des documents `CURRENT`. La consommation runtime, couverture du périmètre, intégration et PostgreSQL sont des preuves distinctes à exiger selon les contrats et le risque ; Web et Mobile restent indépendants, une couverture non mesurée est `NOT_MEASURED` avec motif. Aucun seuil/baseline/exclusion ne peut être modifié pour publier. Sans exécution PostgreSQL autorisée, déclarer `DB_SEMANTICS_NOT_EXECUTED`.
+@@ -39 +39 @@ Avant d'écrire :
+-## 4. Modèle d'exécution : MAIN-ONLY / MULTI-WRITER COORDONNÉ
++## 4. Règles universelles d'exécution et de livraison
+@@ -41 +41 @@ Avant d'écrire :
+-Plusieurs writers ChatGPT et Codex peuvent contribuer au dépôt et travailler sur des chemins distincts ; aucun ne doit jamais écraser silencieusement les changements d'un autre writer. Les modifications sur des fichiers distincts peuvent progresser en parallèle ; un même fichier, l'index, `HEAD` et les opérations Git mutantes sont coordonnés explicitement (`CHATGPT.md`, `scripts/AGENTS.md`).
++`AGENTS.md` est l'unique owner des règles universelles ci-dessous. Les documents scoped, skills et procédures les précisent pour leur domaine sans les redéfinir. `CHATGPT.md` précise la contribution ChatGPT et la réception indépendante. Le travail courant reste sur `main` dans le checkout canonique ; ne pas créer de branche, clone ou worktree.
+@@ -43,11 +43,2 @@ Plusieurs writers ChatGPT et Codex peuvent contribuer au dépôt et travailler s
+-- `main publié = référence versionnée ;` `une candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;` `tout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.`
+-- Travail normal sur `main` dans le checkout canonique : **ne jamais créer** branche de chantier, clone, worktree, coordinateur ou claim persistant. Un checkout dirty, des untracked ou `HEAD != origin/main` ne bloquent pas l'analyse ni le travail indépendant.
+-- Capturer au démarrage référence (`HEAD`, `origin/main`, index, dirty/untracked) et allowlist du lot. L'allowlist initiale sert à l'attribution et au cadrage : les changements étrangers sont préservés et exclus (ne jamais restaurer, stasher, supprimer ou fusionner). Une écriture concurrente sur un chemin attribué est une collision : préserver les deux états, arrêter la mutation/publication de ce chemin et rapporter le diagnostic.
+-- **Ne jamais interrompre le lot entier à cause d'un worktree dirty.** Continuer immédiatement les travaux dont les chemins sont indépendants. Pour un chemin déjà dirty mais nécessaire au lot, inspecter et conserver le diff existant, puis intégrer uniquement les changements compatibles sans remplacer l'état courant. Une collision sur un chemin bloque seulement les écritures et la publication qui dépendent de ce chemin ; elle ne bloque ni les autres fichiers, ni leurs tests, ni une publication indépendante. Avant de conclure, reprendre et publier les changements attribuables au lot dès que leurs contrôles passent ; ne pas transformer une validation restante en motif d'arrêt global.
+-- Aucune évolution ultérieure de `HEAD`, `origin/main`, de l'index ou du worktree n'étend le périmètre ni ne relance une validation globale. Corriger uniquement les défauts du lot ; signaler séparément les défauts étrangers.
+-- **Scopes et candidats** : distinguer `WORKTREE_LIVE`, `STAGED`, `COMMITTED_SNAPSHOT`, `PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE` (`scripts/AGENTS.md`, `TESTING.md`). Staging explicite obligatoire (jamais `git add -A`) ; vérifier `git diff --cached --name-only` et le diff staged avant commit. Plusieurs chantiers ou writers peuvent être regroupés dans un commit lorsque chacun figure dans l'allowlist attribuée.
+-- **Synchronisation distante à la demande de fraîcheur** : dès qu'une décision dépend de l'état courant de `origin/main` — comparaison, réconciliation, push, doute de divergence, ou signalement d'un commit concurrent — exécuter immédiatement `git fetch origin main` avant de décider ou modifier l'historique. Ne pas attendre la dernière étape de publication pour rafraîchir la référence. Comparer ensuite `HEAD`, `main` et `origin/main`; si `origin/main` est en avance et que les chemins attribués ne collisionnent pas, réconcilier par fast-forward/rebase selon la procédure ci-dessous et revalider les surfaces affectées. Préserver les fichiers dirty et changements concurrents; ne jamais utiliser `reset`, `clean`, `stash`, force-push ou checkout destructif pour synchroniser. Si la fraîcheur distante n'affecte aucune décision et aucune publication n'est prévue, ne pas fetch par routine.
+-- **Clôture Git obligatoire à chaque exécution qui modifie le checkout** : après validation du candidat exact, créer un commit puis pousser `main` tous les fichiers tracked staged/unstaged et untracked du snapshot initial, y compris les changements préexistants ou d'autres lots. Cette règle s'applique par défaut sans demande de publication répétée. Inventorier, relire et auditer chaque fichier, stage explicitement la liste complète (jamais `git add -A`), puis relire intégralement `STAGED` avant commit. Exclure les fichiers ignorés et secrets. Ne jamais inclure silencieusement un changement apparu après le snapshot ; préserver et signaler toute collision concurrente sur le même chemin. Si tests, secrets, hooks, protections, permissions ou fast-forward bloquent, ne rien contourner : corriger le défaut attribuable au lot ou rapporter le blocage exact sans publier le candidat invalide. Après push, `fetch` et vérifier `HEAD = origin/main`, ahead/behind `0/0`. Aucun force-push.
+-- **Publication et exceptions gouvernées** : lorsqu'un push est explicitement demandé, tous les commits locaux en avance sur la branche distante sont poussés dans leur ordre d'historique. En l'absence d'interdiction explicite de l'utilisateur (« sans push »), la clôture obligatoire de chaque lot reste commit, push puis vérification de convergence. Lorsqu'un push est explicitement demandé, tous les commits locaux en avance sur la branche distante sont publiés dans leur ordre d'historique. Les hooks `pre-commit` et `pre-push` et leurs protections ne sont jamais contournés. Si `origin/main` a avancé sans conflit sur les chemins attribués : `git fetch origin main` → `git rebase origin/main` → laisser `pre-push` valider `PUSH_CANDIDATE` → push fast-forward (`git rebase --abort` si conflit). `DIRECT_GITHUB_PUBLICATION` de ChatGPT suit `CHATGPT.md` (`HOOK_NOT_AVAILABLE` n'est jamais assimilé à `PASS`). Le mode de développement rapide ne supprime pas cette clôture, sauf consigne explicite « sans push ». Un préflight Supabase `BLOCKED`/`DIVERGED` ne retient pas un push Git autrement publiable, mais les hooks SQL pertinents restent obligatoires.
+-- **Fichiers fournis et protection préexistante** : un fichier fourni par l'utilisateur pour créer, remplacer ou adapter un chemin est **la candidate autoritative de ce chemin pour le lot** (conserver sa source et sa correspondance nom → cible ; ne jamais l'écraser par `HEAD`, une ancienne version, `restore`, `checkout`, `reset`, `clean`, `stash` ou une régénération ; préserver les parties non concernées ; vérifier l'identité exacte avant staging ; sa seule présence ne justifie pas un commit hors lot). En cas d'attribution incertaine d'un chemin préexistant, arrêter sa mutation et en cas de doute, `STOP`.
+-- **Message de commit** : sujet `type(scope): résultat` compréhensible dans GitHub ; pour un changement fonctionnel, corps structuré (`POURQUOI`, `CHANGEMENTS ET CONTRATS`, `TESTS ET PREUVES` avec couverture par workspace ou `NOT_MEASURED`, `DOCUMENTATION`, `LIMITES OU SUITE`).
++### R01 — CONTINUITÉ
++Poursuivre toutes les actions réalisables jusqu'à la `STOP CONDITION`. Un jalon, un budget indicatif, un test réussi ou une validation restante ne justifie pas une clôture prématurée.
+@@ -54,0 +46,37 @@ Plusieurs writers ChatGPT et Codex peuvent contribuer au dépôt et travailler s
++### R02 — PUBLICATION INCRÉMENTALE
++Publier chaque sous-ensemble cohérent, sécurisé et validé sans attendre l'achèvement global du chantier. Le mode rapide ne dispense jamais du commit et du push, sauf interdiction explicite de l'utilisateur ou blocage démontré.
++
++### R03 — ÉTATS DE LIVRAISON
++Distinguer `COMMIT_READY`, `PUSH_READY`, `PUBLISHED`, `INTEGRATION_VALIDATED`, `RELEASE_READY` et `COMPLETED`. `COMMIT_READY` exige un diff attribué relu et prêt au commit ; `PUSH_READY`, une candidate exacte et les hooks/protections satisfaits ; `PUBLISHED`, un push accepté sans bypass puis un fetch prouvant `HEAD = origin/main` et ahead/behind `0/0` ; `INTEGRATION_VALIDATED`, les preuves runtime/CI et consommateurs concernés ; `RELEASE_READY`, les contrôles release canoniques ; `COMPLETED`, toute la `STOP CONDITION`. Aucun état n'implique automatiquement le suivant.
++
++### R04 — SAUVEGARDE DES CANDIDATS
++Si le runtime ne peut pas être publié en sécurité, publier les véritables artefacts `CANDIDATE` dans `documentation/specs/<chantier>/` : fichiers complets ou patches applicables, SQL, tests pertinents et manifeste avec correspondance exacte source/cible. Un manifeste seul ne sauvegarde pas les candidats. Chaque artefact déclaré doit exister, être hashé et avoir une correspondance sûre. Ne pas dupliquer les candidats déjà intégrés ni activer prématurément une migration. Ces candidats durables sont distincts des sorties éphémères `artifacts/validation/prepush-candidate/`.
++
++### R05 — BLOCAGE DÉMONTRÉ
++Tout statut `BLOCKED` identifie le contrôle exécuté, son résultat exact, la cause établie ou inconnue, les fichiers concernés, le périmètre bloqué et l'action nécessaire. Un refus anticipé, une hypothèse ou une validation non lancée ne prouve pas un blocage. Ne pas tenter une opération dont l'insécurité est déjà établie uniquement pour provoquer un échec.
++
++### R06 — DÉBLOCAGE AUTONOME
++Rechercher et exécuter les solutions autorisées avant de s'arrêter. Continuer les travaux indépendants du blocage. Ne pas demander confirmation pour une décision technique déjà couverte par les instructions ou autorisations existantes.
++
++### R07 — ATTRIBUTION MULTI-WRITER
++Seuls les chemins explicitement attribués, relus et validés entrent dans un nouveau commit. Préserver et exclure les changements étrangers, y compris ceux présents au démarrage ; l'allowlist capture l'attribution, elle ne transforme pas les autres chemins. Coordonner index et refs Git. Aucun écrasement, stash, nettoyage destructif ou force-push. Une collision bloque uniquement les opérations dépendant du chemin concerné.
++
++### R08 — TRANSFERT DE RESPONSABILITÉ
++Si un défaut étranger bloque le lot et que son owner n'est plus disponible, organiser une réattribution explicite limitée au défaut démontré. Ne pas absorber silencieusement un chantier étranger.
++
++### R09 — VALIDATIONS PROPORTIONNÉES
++Distinguer contrôles obligatoires de publication, tests ciblés, couverture du périmètre, couverture globale, intégration et release. Diagnostiquer les échecs observés sans répéter indéfiniment les mêmes suites. N'imposer une validation globale que si une procédure canonique l'exige ou si un risque démontré le justifie. Ne jamais affaiblir seuil, exclusion, ratchet ou test pour publier.
++
++### R10 — ABSENCE DE DÉPENDANCE CIRCULAIRE
++Une preuve exigeant un SHA déjà publié ne peut pas conditionner cette même publication. Un préflight Supabase `BLOCKED`/`DIVERGED` ne bloque pas un push Git par ailleurs sûr. L'application distante des migrations sensibles reste soumise au runbook et aux preuves PostgreSQL requises ; publier du code n'atteste pas l'application DB.
++
++### R11 — PROTECTIONS DISTANTES
++Avant une publication concernée, vérifier en lecture seule les règles GitHub actives, les acteurs de bypass et leurs conditions. Un push accepté avec `Bypassed rule violations` ne prouve pas la conformité. Ne jamais modifier ni contourner une protection pour obtenir un push accepté. Si l'identité courante ne dispose d'aucune voie conforme, documenter les preuves et l'intervention externe nécessaire, sans tenter le bypass.
++
++### R12 — CLÔTURE CONTRÔLÉE
++Ne pas clore `PARTIEL` par convenance. Toute clôture partielle prouve qu'aucune autre action utile n'est réalisable, nomme les acquis effectivement publiés et les preuves restantes. Une liste de travaux restants ne remplace pas leur exécution. `COMPLETED` requiert toute la `STOP CONDITION`.
++
++### MAIN-ONLY / MULTI-WRITER COORDONNÉ : modalités
++Capturer au démarrage `HEAD`, état distant utile, index et chemins dirty/untracked ainsi que l'allowlist attribuée. Les changements étrangers restent intacts et exclus ; aucune évolution ultérieure n'étend l'allowlist. Distinguer les scopes `WORKTREE_LIVE`, `STAGED`, `COMMITTED_SNAPSHOT`, `PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE` selon `scripts/AGENTS.md` et `documentation/development/TESTING.md`. Avant commit, relire les chemins candidats et le staged exact ; ne transmettre que des commits relus et attribués. Actualiser `origin/main` avant toute décision de comparaison, réconciliation ou publication qui en dépend. Réconcilier uniquement sans collision, préserver les changements locaux et vérifier la convergence après publication. Aucun hook `pre-commit`/`pre-push`, contrôle de sécurité, protection GitHub ni garde fast-forward ne peut être contourné. Les fichiers fournis par l'utilisateur restent autoritatifs pour leurs chemins.
++
++Le message de commit suit `type(scope): résultat` et, pour un changement fonctionnel, contient `POURQUOI`, `CHANGEMENTS ET CONTRATS`, `TESTS ET PREUVES`, couverture par workspace ou `NOT_MEASURED`, `DOCUMENTATION` et `LIMITES OU SUITE`.
+diff --git a/CHATGPT.md b/CHATGPT.md
+index 3d3ea8e7f..02dbbc07b 100644
+--- a/CHATGPT.md
++++ b/CHATGPT.md
+@@ -28 +28 @@ Ce document gouverne **ChatGPT comme analyste et contributeur direct** au dépô
+-- Pour tout prompt fonctionnel, exiger consommation runtime réelle, tests comportementaux/régressions, couverture pertinente (Web et Mobile indépendants, sinon `NOT_MEASURED` motivé) et mise à jour `CURRENT`. Avant le **premier prompt** d'un chantier fonctionnel ou transversal, instruire : 1) owner, données canoniques, voies lecture/écriture (API, clients, imports, triggers, RPC, jobs), callers/consommateurs ; 2) acteurs, AuthN/AuthZ/ownership/scope, états/transitions et chemins de contournement ; 3) cas normaux/interdits, limites, concurrence, reprises, historiques et preuves selon le risque ; 4) alternatives, coût, modularisation et plus petit lot cohérent complet. Ne jamais découper une cause partagée en micro-prompts (« un fichier », « une assertion », « une ligne »), ni renvoyer un prompt identique sans nouvelle preuve, décision ou responsabilité.
++- Pour tout prompt fonctionnel, exiger consommation runtime réelle, tests comportementaux/régressions, couverture pertinente selon R09 de `AGENTS.md` (Web et Mobile indépendants) et mise à jour `CURRENT`. Avant le **premier prompt** d'un chantier fonctionnel ou transversal, instruire : 1) owner, données canoniques, voies lecture/écriture (API, clients, imports, triggers, RPC, jobs), callers/consommateurs ; 2) acteurs, AuthN/AuthZ/ownership/scope, états/transitions et chemins de contournement ; 3) cas normaux/interdits, limites, concurrence, reprises, historiques et preuves selon le risque ; 4) alternatives, coût, modularisation et plus petit lot cohérent complet. Ne jamais découper une cause partagée en micro-prompts (« un fichier », « une assertion », « une ligne »), ni renvoyer un prompt identique sans nouvelle preuve, décision ou responsabilité. La réponse distingue les états de livraison R03 et satisfait R12 avant clôture.
+@@ -39 +39 @@ Ce document gouverne **ChatGPT comme analyste et contributeur direct** au dépô
+-## 5. MAIN-ONLY / MULTI-WRITER COORDONNÉ et publication
++## 5. Gouvernance et contribution directe
+@@ -41,2 +41,18 @@ Ce document gouverne **ChatGPT comme analyste et contributeur direct** au dépô
+-- Identifier au démarrage référence Git et fichiers attribués ; préserver et exclure les changements dirty étrangers ; signaler toute collision sur un même chemin sans écrasement. Les scopes `WORKTREE_LIVE`, `STAGED`, `COMMITTED_SNAPSHOT` et `PUSH_CANDIDATE` restent distincts.
+-- Pour un lot réalisé directement, ChatGPT valide le candidat attribué, puis commit → push fast-forward `main` → fetch et vérification de convergence (`ahead/behind 0/0`). Si `main` a avancé sans conflit sur les chemins attribués, `git fetch origin main` puis `git rebase origin/main` (conflit réel → `git rebase --abort` et diagnostic). Le mode de développement rapide ne supprime pas la publication ; seule une interdiction explicite de l'utilisateur (« sans push ») autorise un commit sans push. Un préflight Supabase bloqué ne retient pas un push Git autrement publiable.
++`AGENTS.md` est l'autorité unique des règles universelles d'exécution et de
++livraison, y compris l'attribution, les validations, les états de livraison,
++les protections GitHub et les blocages. Ce document ne les redéfinit pas.
++ChatGPT applique ces règles à toute contribution directe, aux commits créés
++via l'API GitHub et aux artefacts candidats. Une capacité technique à écrire
++ou à bypasser un ruleset n'est pas une autorisation de le faire.
++
++Les instructions scoped et skills précisent uniquement les opérations de leur
++domaine. Si un contrôle local n'est pas disponible, déclarer
++`HOOK_NOT_AVAILABLE` et utiliser les contrôles accessibles ; ne jamais
++présenter l'absence de hook comme `PASS`.
++
++La réception indépendante après publication reste définie par
++`COMMIT_REVIEW_PROTOCOL.md` lorsqu'une source autoritative accessible existe ;
++elle ne se confond pas avec `PUBLISHED` ni avec `COMPLETED`. Ce protocole n'a
++pas été trouvé dans le dépôt ni dans les emplacements locaux accessibles à
++l'audit du 2026-11-28 ; aucune copie concurrente n'est créée. Son owner externe
++devra aligner la distinction réception/livraison sur R03 si cette source existe.
+@@ -48 +64 @@ Ce document gouverne **ChatGPT comme analyste et contributeur direct** au dépô
+-- **Publication des candidats et `README_CODEX.md`** : regrouper les lots liés dans un dossier unique `documentation/specs/<chantier>/` publié directement sur GitHub (sauf règle contraire ou blocage avéré), en préservant les chemins cibles et sans jamais copier un candidat non validé dans un chemin runtime ou un arbre de migrations actif. Le manifeste `README_CODEX.md` précise : objectifs et jalons, référence factuelle lue, owners/consommateurs, décisions et alternatives rejetées, invariants/contrats, correspondance exacte source/destination, candidats à intégrer/adapter, changements déjà publiés, risques/collisions, tests/résultats réellement obtenus, preuves manquantes, tâches restantes ordonnées et `STOP CONDITION`. Le prompt Codex reste court et pointe vers ce manifeste. Tout artefact non exécuté dans le runtime reste `CANDIDATE` ; après réception, transférer la connaissance durable vers `CURRENT` et retirer les candidats devenus inutiles.
++- **Candidats et `README_CODEX.md`** : appliquer R04 dans `AGENTS.md` pour les artefacts candidats et leur publication. Le manifeste conserve le contexte du chantier : objectif, owners/consommateurs, décisions, invariants, correspondance source/destination, changements intégrés, preuves réellement obtenues, limites et `STOP CONDITION`. Il ne remplace jamais les candidats concrets. Après réception, transférer la connaissance durable vers `CURRENT` et retirer les candidats devenus inutiles lorsque leur intégration est démontrée.
+diff --git a/documentation/development/TESTING.md b/documentation/development/TESTING.md
+index 09db77130..50e189e1a 100644
+--- a/documentation/development/TESTING.md
++++ b/documentation/development/TESTING.md
+@@ -13 +13 @@ séparément, pas des modes supplémentaires.
+-## Exécution non bloquante du checkout
++## Attribution, scopes et preuves de livraison
+@@ -33,9 +33,5 @@ et signaler séparément les défauts préexistants ou étrangers.
+-La règle de clôture Git du dépôt demande qu'après chaque
+-exécution qui modifie le checkout, le candidat validé commit et pousse `main`
+-tous les chemins tracked staged/unstaged et untracked du snapshot initial,
+-même s'ils préexistent ou sont étrangers au lot. Relire et contrôler chaque
+-chemin, puis stage la liste explicite ; ne jamais utiliser `git add -A`. Cette
+-règle exclut les fichiers ignorés, secrets et changements apparus après le
+-snapshot. Une modification concurrente postérieure au snapshot est préservée et
+-signalée. Aucun hook, contrôle de sécurité, protection de branche ou fast-forward
+-ne peut être contourné pour forcer la publication.
++Les règles universelles R01–R12 ont une source unique. Les changements
++étrangers au lot sont préservés et exclus des nouveaux commits. Les outils de
++publication exigent une attribution explicite quand elle est contrôlable ; ils
++ne déduisent jamais l'attribution de la seule présence au démarrage. Les hooks,
++contrôles de sécurité, protections et fast-forward ne sont pas contournables.
+@@ -51,0 +48,10 @@ diagnostics locaux.
++Les états `COMMIT_READY`, `PUSH_READY`, `PUBLISHED`, `INTEGRATION_VALIDATED`,
++`RELEASE_READY` et `COMPLETED` ont des préconditions distinctes définies en
++R03. Les scopes ci-dessus décrivent la provenance d'une preuve, pas l'état de
++livraison. `PUBLISHED` exige un push conforme (sans bypass), puis un fetch qui
++prouve la convergence de `HEAD` et `origin/main`; il ne signifie ni intégration
++runtime, ni release, ni réception finale. Un statut `BLOCKED` contient le
++contrôle exécuté, son résultat, sa cause, le périmètre et l'action requise
++(R05). Une exigence impossible à mesurer est `NOT_RUN` ou `BLOCKED`, jamais
++`PASS`.
++
+diff --git a/documentation/development/testing-execution.md b/documentation/development/testing-execution.md
+index 5d74b3883..e29900a31 100644
+--- a/documentation/development/testing-execution.md
++++ b/documentation/development/testing-execution.md
+@@ -279,6 +279,5 @@ peuvent jamais produire un FULL vert.
+-Lorsqu'un `FULL` est explicitement lancé, toute erreur actionnable de ses
+-contrôles devient une obligation de correction dans l'exécution courante,
+-même si les fichiers causaux n'appartiennent pas au lot initial. Un échec ne
+-peut pas être laissé rouge en le classant simplement
+-`PREEXISTING_CI_FAILURE` ou « hors périmètre ». Les blocages externes,
+-décisionnels ou d'environnement restent `BLOCKED_*`, doivent conserver leur
++Lorsqu'un `FULL` est explicitement lancé, rapporter chaque échec actionnable
++avec son scope et sa preuve. Corriger les fichiers attribués au lot ; préserver
++et exclure les chemins étrangers conformément à R07. Un défaut étranger ne peut
++être pris en charge qu'après réattribution explicite (R08). Les blocages
++externes, décisionnels ou d'environnement restent `BLOCKED_*`, conservent leur
+@@ -419,0 +419,5 @@ candidate.
++L'interface bas niveau `npm run publish:main` exige `CMM_ATTRIBUTED_FILES`, un
++tableau JSON non vide de chemins attribués. Le publisher compare ces chemins à
++tous les fichiers du range distant/local juste avant le push ; un chemin
++étranger ou une comparaison impossible arrête la publication.
++
+diff --git a/documentation/operations/github-governance.md b/documentation/operations/github-governance.md
+index d9346a4c9..4d9a80681 100644
+--- a/documentation/operations/github-governance.md
++++ b/documentation/operations/github-governance.md
+@@ -9,3 +9,2 @@ Ce mémo résume les garde-fous GitHub à garder en place pour CleanMyMap.
+-La maintenance suit `MAIN-ONLY / MULTI-WRITER COORDONNÉ` : un checkout local
+-canonique sur `main`, plusieurs writers coordonnés, des candidats explicitement
+-identifiés et aucune publication implicite. La branche de développement canonique est `main`. Les branches techniques
++Les règles universelles de livraison R01–R12 ont une source canonique unique.
++La branche de développement canonique est `main`. Les branches techniques
+@@ -25,2 +24,3 @@ branches de chantier des writers.
+-- Le ruleset de `main` interdit la suppression de la branche et les mises à
+-  jour `non_fast_forward` ; un push fast-forward direct reste permis.
++- L'état distant des rulesets est volatile et doit être relu avant une
++  publication concernée ; les observations datées ci-dessous ne constituent
++  pas une garantie de configuration future.
+@@ -89,4 +89,21 @@ invariants.
+-Le dépôt conserve un workflow `MAIN-ONLY / MULTI-WRITER COORDONNÉ` : les pushes
+-fast-forward directs sur `main` restent autorisés pour l'intégrateur légitime
+-autorisé par le ruleset distant. Les deux rulesets GitHub actifs ciblant `main`
+-interdisent :
++Observation en lecture seule effectuée le 2026-11-28 avec `gh api` pour
++`maxd4/CleanMyMap` (identité CLI `maxd4`, rôle collaborateur `admin`). Deux
++rulesets actifs ciblent `main` : `23565928` interdit suppression et
++non-fast-forward sans bypass ; `25034548` (`main — owner-only updates`) impose
++la règle `update` et accorde un bypass `always` au rôle repository admin et à
++l'intégration `1144995`. L'API a indiqué `current_user_can_bypass: always` pour
++la règle d'update et `never` pour la règle de protection contre suppression et
++non-fast-forward. La protection classique de branche n'était pas configurée
++(endpoint `branches/main/protection` renvoyait 404). Aucun check obligatoire,
++approbation ou exigence de Pull Request n'a été observé dans le ruleset actif.
++
++Cette configuration ne fournit pas de voie directe conforme à la règle
++`update` pour un push ordinaire : l'acceptation observée précédemment avec
++`Bypassed rule violations` constitue un bypass, donc ne qualifie pas
++`PUBLISHED`. Aucun push de vérification ne doit être tenté. Ne pas changer le
++ruleset, utiliser le bypass, ni tenter un merge qui l'emploierait. La voie de
++publication doit être rétablie par l'administrateur GitHub selon une procédure
++conforme à R11 ; la configuration actuelle ne définit pas elle-même une voie
++Pull Request de remplacement.
++
++Les règles actives observées interdisent également :
+@@ -97,2 +114,4 @@ interdisent :
+-Chaque tentative établit un SHA candidat immuable après le `fetch` et pousse
+-explicitement `${candidateSha}:refs/heads/main`. Le publisher relit `HEAD` et
++Le publisher établit un SHA candidat immuable après le `fetch` et prépare le
++refspec `${candidateSha}:refs/heads/main`. Il ne peut toutefois pas publier
++tant que le ruleset `update` impose le bypass. Lorsqu'une voie conforme est
++disponible, le publisher relit `HEAD` et
+@@ -110,9 +129,5 @@ aucune tentative ne contourne les protections distantes.
+-Les rulesets n'imposent ni Pull Request, ni approbation, ni required status
+-check, ni merge queue. Le ruleset `main — owner-only updates` réserve toutefois
+-la mise à jour aux acteurs explicitement autorisés dans ses bypass (rôle
+-administrateur et intégration autorisée selon la configuration distante).
+-Ne pas déduire leur identité effective d'un nom de ruleset. Les protections
+-de suppression et de non-fast-forward restent dans un ruleset indépendant
+-sans bypass. Ne pas ajouter de bypass global pour rétablir un accès. Les contrôles CI et CodeQL restent
+-disponibles pour les runs GitHub et les revues, sans remplacer la validation
+-locale du candidat.
++L'auteur exact de l'événement de push antérieur n'a pas été établi par les
++événements GitHub consultés ; l'identité active et les droits courants ne
++permettent pas de l'affirmer. Relire ces règles avant toute décision future.
++Les contrôles CI et CodeQL restent disponibles pour les runs GitHub et les
++revues, sans remplacer la validation locale du candidat.
+diff --git a/documentation/operations/runbook-supabase-convergence.md b/documentation/operations/runbook-supabase-convergence.md
+index aa26384fc..65beb2cb1 100644
+--- a/documentation/operations/runbook-supabase-convergence.md
++++ b/documentation/operations/runbook-supabase-convergence.md
+@@ -85,0 +86,7 @@ séquence sérialisée :
++La publication Git et l'application de migrations sont deux états séparés selon
++Les règles R03/R10 distinguent les deux états. `PUBLISHED` atteste uniquement la convergence Git ; elle
++n'atteste jamais l'application DB. Un préflight `BLOCKED` ou `DIVERGED` peut
++bloquer l'application distante, mais ne bloque pas à lui seul une publication
++Git sûre. Aucune application n'est permise sans les contrôles et preuves requis
++par les sections précédentes.
++
+diff --git a/scripts/AGENTS.md b/scripts/AGENTS.md
+index e1a94fb4b..8f9070e9b 100644
+--- a/scripts/AGENTS.md
++++ b/scripts/AGENTS.md
+@@ -39,103 +39 @@ de revue : cette règle ne crée ni nouveau seuil bloquant ni nouvelle baseline.
+-## Modèle canonique de développement
+-
+-`MAIN-ONLY / MULTI-WRITER COORDONNÉ` est le workflow CURRENT pour les scripts
+-et leurs consommateurs : `CleanmyMap-main` reste sur `main`, plusieurs writers
+-peuvent travailler sur des fichiers distincts, et les analyses read-only
+-peuvent être parallèles. Les fichiers partagés, l’index et les références Git
+-doivent être relus et mutés de façon coordonnée. Tout fichier dirty préexistant
+-non explicitement attribué au lot courant est présumé appartenir à un autre
+-writer : il ne doit pas être nettoyé, restauré, supprimé, réécrit, stashed,
+-déplacé ou réconcilié par ce lot. La coordination des références Git ne permet
+-pas de modifier le contenu dirty étranger. Aucun nouveau worktree, clone, claim,
+-coordinateur persistant ou branche de chantier n'est créé.
+-
+-Chaque exécution capture au démarrage une référence (`HEAD`, `origin/main`,
+-index, chemins tracked dirty et untracked) et l'allowlist attribuée au lot.
+-Cette référence et ce périmètre restent gelés pour toute l'exécution. Les
+-changements préexistants ou apparus ensuite sont présumés étrangers et exclus ;
+-seules les modifications du writer attribué (ChatGPT ou Codex) sur ses chemins
+-du lot sont incluses. Un changement concurrent du même chemin attribué est une
+-collision :
+-préserver les deux états, arrêter la mutation/publication du chemin et rapporter
+-le conflit exact, sans absorption, fusion ni écrasement silencieux.
+-L'allowlist initiale est un cadrage d'attribution qui fixe les chemins
+-admissibles jusqu'à la clôture.
+-
+-Aucune évolution ultérieure de `HEAD`, `origin/main`, de l'index ou de fichiers
+-dirty/untracked étrangers n'étend l'allowlist, ne déclenche une
+-resynchronisation fonctionnelle, un rejeu de preuve ou une nouvelle validation
+-globale. Rapporter les échecs constatés sur le candidat gelé ; corriger ceux
+-attribuables au lot et signaler séparément les défauts préexistants ou étrangers
+-sans modifier leurs fichiers. À la publication, vérifier uniquement
+-l'attribution des commits transmis, le fast-forward, les hooks, permissions et
+-convergence. Une évolution externe sans conflit ne provoque aucune campagne de
+-validation supplémentaire ; un conflit réel arrête la publication avec son
+-diagnostic.
+-
+-Avant un nouveau commit, stage uniquement les changements attribués au lot au
+-démarrage, vérifie `STAGED` sur son contenu exact et conserve les autres
+-changements. Plusieurs chantiers ou writers peuvent être regroupés dans un
+-nouveau commit uniquement si tous étaient initialement attribués. Lorsqu'un
+-push est demandé, publier tous les commits déjà créés en avance sur la branche
+-distante sans filtrage d'attribution, même s'ils contiennent des chemins d'un
+-autre lot ; les fichiers dirty et untracked restent exclus. Les gardes,
+-secrets, AuthZ, migrations et fast-forward restent obligatoires.
+-
+-Règle de clôture par défaut confirmée par `AGENTS.md` : à chaque exécution qui
+-modifie le checkout, après validation du candidat exact, inclure dans le commit
+-et pousser `main` tous les chemins tracked staged/unstaged et untracked du
+-snapshot initial, y compris les changements préexistants ou étrangers au lot.
+-Cette règle n'inclut jamais les fichiers ignorés, secrets ou modifications
+-apparues après le snapshot. Relire et auditer chaque chemin, stage explicitement
+-toute la liste sans `git add -A`, puis relire `STAGED` avant commit. Garder tous
+-les hooks, protections, contrôles de sécurité et règles fast-forward ; si l'un
+-bloque, ne jamais contourner ni pousser un candidat invalide. Toute modification
+-concurrente postérieure au snapshot est une collision à préserver et signaler.
+-
+-Les scopes sont strictement séparés : `WORKTREE_LIVE` est le checkout mouvant,
+-`STAGED` l'index exact, `COMMITTED_SNAPSHOT` un arbre Git immuable par SHA, et
+-`PUSH_CANDIDATE` les refs effectivement transmises par le protocole Git. Une
+-mesure live ne peut jamais être présentée comme preuve reproductible d'un SHA.
+-Les validations globales utilisent les matérialisateurs statiques ou
+-`DYNAMIC_CANDIDATE` existants, sur le contenu exact examiné, et ne lisent pas le
+-worktree mutable comme une preuve de SHA.
+-
+-Hors mode de développement rapide :
+-
+-```text
+-validation du candidat final exact → commit validé → push main → vérification de convergence
+-```
+-
+-Cette clôture est obligatoire par défaut pour tout lot exécuté depuis le
+-checkout local qui produit un changement validé, sauf exception déjà
+-explicitement gouvernée dans `AGENTS.md` ou refus explicite de l'utilisateur.
+-Les hooks `.githooks/pre-commit` et `.githooks/pre-push` restent obligatoires
+-pour toute contribution effectuée depuis le checkout local. Le mode
+-`DIRECT_GITHUB_PUBLICATION` de ChatGPT via les API GitHub (contributions
+-documentaires et artefacts `CANDIDATE`) suit `CHATGPT.md` avec
+-`HOOK_NOT_AVAILABLE`, des contrôles équivalents accessibles et la CI pertinente,
+-sans jamais assimiler un hook indisponible à `PASS`. Un blocage seulement
+-supposé — ruleset présent, identité supposée non autorisée ou refus anticipé —
+-ne permet pas d'arrêter avant d'avoir vérifié l'identité et ses droits
+-effectifs, puis tenté le push normal du candidat sûr.
+-Une publication n'est réussie qu'après un push accepté, un fetch et la preuve
+-`HEAD = origin/main` avec ahead/behind `0/0`. Si le push échoue réellement,
+-rapporter sa cause observée sans donnée sensible et l'action nécessaire ; ne
+-contourner ni hook, ni protection, ni fast-forward.
+-
+-Mode de développement rapide explicitement activé :
+-
+-```text
+-commit local selon son protocole, sans push tant que le mode reste actif
+-```
+-
+-Lorsqu’un push échoue parce que `main` a avancé sans conflit sur les chemins
+-attribués, la resynchronisation automatique par `git fetch origin main` puis
+-`git rebase origin/main` est autorisée et exécutée (en préservant les éventuels
+-fichiers dirty/untracked étrangers), avant de relancer `git push origin main`
+-avec les gardes `pre-push` sur le `PUSH_CANDIDATE` rebasé. En cas de conflit
+-réel lors du rebase, exécuter `git rebase --abort`, préserver les commits et le
+-worktree locaux, puis arrêter la publication avec le diagnostic exact. Après un
+-push accepté, le fetch prouve la convergence `HEAD = origin/main` et
+-ahead/behind `0/0`. Aucun force-push ni contournement des protections GitHub
+-n’est permis.
++## Modalités techniques du workflow canonique
+@@ -142,0 +41,11 @@ n’est permis.
++Les règles universelles d'exécution, d'attribution, de livraison et de clôture sont exclusivement définies dans `AGENTS.md` (R01–R12). Ce fichier ne les redéfinit pas. Il précise les portées et mécanismes vérifiables des scripts et hooks.
++
++Les scopes restent distincts : `WORKTREE_LIVE` est le checkout mutable, `STAGED` l'index exact, `COMMITTED_SNAPSHOT` un arbre immuable par SHA, `PUSH_CANDIDATE` les refs du protocole pre-push, et `DYNAMIC_CANDIDATE` un arbre matérialisé temporairement pour une validation. Une preuve d'un scope ne prouve pas un autre.
++
++Les contrôles de publication doivent exiger une allowlist explicite quand elle est objectivement disponible et rejeter tout chemin du candidat non attribué. Les scripts qui matérialisent des candidats doivent garder leur mapping source/cible, l'empreinte et la preuve sur le SHA concerné. Les candidats durables décrits par R04 restent sous `documentation/specs/<chantier>/`; les sorties éphémères de validation restent exclusivement sous `artifacts/validation/prepush-candidate/<sha>/` et relèvent de `candidate-lifecycle.mjs`.
++
++Les hooks `.githooks/pre-commit` et `.githooks/pre-push` restent obligatoires et lisent leurs scopes exacts. Le pré-commit vérifie `STAGED`; le pré-push vérifie `PUSH_CANDIDATE` reçu par le protocole Git. `publish-main.mjs` capture une candidate immuable et refuse les chemins hors allowlist avant push. Avant publication, l'appelant applique R11 en inspectant les règles distantes en lecture seule ; le publisher refuse également de classer comme `PUBLISHED` une réponse contenant `Bypassed rule violations`. Aucun helper ne modifie les rulesets.
++
++`DEVELOPMENT`, `FULL` et `RELEASE` sont des profils de validation, pas des états de livraison et ne modifient pas les règles R01–R12. Les procédures canoniques définissent les contrôles exigés par une opération ; l'étendue supplémentaire reste proportionnée au risque conformément à R09. Un préflight Supabase et une publication Git sont des opérations indépendantes ; l'application DB suit le runbook et ses preuves PostgreSQL.
++
++Les scripts de validation et de publication préservent les changements étrangers et ne les incluent jamais par simple présence au démarrage. Les décisions d'attribution sont injectées explicitement par l'appelant ; les scripts ne les infèrent pas à partir du seul état dirty.
+diff --git a/scripts/checks/candidate-artifacts.mjs b/scripts/checks/candidate-artifacts.mjs
+new file mode 100644
+index 000000000..d48a5f162
+--- /dev/null
++++ b/scripts/checks/candidate-artifacts.mjs
+@@ -0,0 +1,54 @@
++import crypto from "node:crypto";
++import fs from "node:fs";
++import path from "node:path";
++
++const MANIFEST_NAME = "CANDIDATE.manifest.json";
++function safeRelative(value) {
++  return typeof value === "string" && value.length > 0 && !path.posix.isAbsolute(value)
++    && !value.includes("\\") && !value.split("/").some((part) => part === ".." || part === "" || part === ".");
++}
++function within(root, relative) {
++  const base = path.resolve(root);
++  const target = path.resolve(base, ...relative.split("/"));
++  return target.startsWith(`${base}${path.sep}`);
++}
++
++export function validateCandidateManifestFile(repositoryRoot, manifestPath) {
++  const errors = [];
++  let manifest;
++  try { manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")); }
++  catch (error) { return [`${manifestPath}: invalid JSON (${error.message})`]; }
++  if (manifest.schemaVersion !== 1) errors.push(`${manifestPath}: schemaVersion must be 1.`);
++  if (!["CANDIDATE", "PUBLISHED"].includes(manifest.status)) errors.push(`${manifestPath}: status must be CANDIDATE or PUBLISHED.`);
++  const baseDirectory = path.dirname(manifestPath);
++  if (!Array.isArray(manifest.artifacts) || manifest.artifacts.length === 0) errors.push(`${manifestPath}: artifacts must be a non-empty array; a manifest alone is not a candidate.`);
++  for (const [index, artifact] of (manifest.artifacts ?? []).entries()) {
++    const label = `${manifestPath}: artifacts[${index}]`;
++    if (!Array.isArray(artifact.targetPaths) || artifact.targetPaths.length === 0 || artifact.targetPaths.some((target) => !safeRelative(target))) {
++      errors.push(`${label}: targetPaths must map to one or more safe repository-relative paths.`);
++    }
++    if (!new Set(["file", "patch", "sql", "test"]).has(artifact.kind)) errors.push(`${label}: unsupported artifact kind.`);
++    if (!safeRelative(artifact?.file) || !within(baseDirectory, artifact.file)) { errors.push(`${label}: file must be a safe path inside the candidate directory.`); continue; }
++    const fullPath = path.resolve(baseDirectory, ...artifact.file.split("/"));
++    if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) { errors.push(`${label}: declared artifact is absent: ${artifact.file}.`); continue; }
++    const actualHash = crypto.createHash("sha256").update(fs.readFileSync(fullPath)).digest("hex");
++    if (artifact.sha256 !== actualHash) errors.push(`${label}: SHA-256 mismatch for ${artifact.file}.`);
++  }
++  return errors;
++}
++
++export function validateCandidateArtifactManifests(repositoryRoot) {
++  const root = path.resolve(repositoryRoot);
++  const specsRoot = path.join(root, "documentation", "specs");
++  if (!fs.existsSync(specsRoot)) return [];
++  const manifests = [];
++  const visit = (directory) => {
++    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
++      const full = path.join(directory, entry.name);
++      if (entry.isDirectory()) visit(full);
++      else if (entry.isFile() && entry.name === MANIFEST_NAME) manifests.push(full);
++    }
++  };
++  visit(specsRoot);
++  return manifests.flatMap((manifestPath) => validateCandidateManifestFile(root, manifestPath));
++}
+diff --git a/scripts/checks/candidate-artifacts.test.mjs b/scripts/checks/candidate-artifacts.test.mjs
+new file mode 100644
+index 000000000..6713aa1c1
+--- /dev/null
++++ b/scripts/checks/candidate-artifacts.test.mjs
+@@ -0,0 +1,21 @@
++import assert from "node:assert/strict";
++import crypto from "node:crypto";
++import fs from "node:fs";
++import { test } from "node:test";
++import os from "node:os";
++import path from "node:path";
++import { validateCandidateManifestFile } from "./candidate-artifacts.mjs";
++
++function setup(artifactFile = "candidates/update.patch", targetPaths = ["AGENTS.md"], status = "CANDIDATE") {
++  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cmm-candidate-artifacts-"));
++  const dir = path.join(root, "documentation/specs/example"); fs.mkdirSync(path.join(dir, "candidates"), { recursive: true });
++  const artifactPath = path.join(dir, "candidates/update.patch"); const content = "diff --git a/AGENTS.md b/AGENTS.md\n"; fs.writeFileSync(artifactPath, content);
++  const manifest = { schemaVersion: 1, status, artifacts: [{ file: artifactFile, targetPaths, kind: "patch", sha256: crypto.createHash("sha256").update(content).digest("hex") }] };
++  const manifestPath = path.join(dir, "CANDIDATE.manifest.json"); fs.writeFileSync(manifestPath, JSON.stringify(manifest));
++  return { root, manifestPath, artifactPath, manifest };
++}
++
++test("accepts a present patch with exact target mapping and matching digest", () => { const x = setup(); try { assert.deepEqual(validateCandidateManifestFile(x.root, x.manifestPath), []); } finally { fs.rmSync(x.root, { recursive: true, force: true }); } });
++test("rejects a manifest-only candidate or missing published artifact", () => { const x = setup("candidates/missing.patch", ["AGENTS.md"], "PUBLISHED"); try { assert.ok(validateCandidateManifestFile(x.root, x.manifestPath).some((error) => error.includes("artifact is absent"))); } finally { fs.rmSync(x.root, { recursive: true, force: true }); } });
++test("rejects traversal in artifact path and target mapping", () => { const x = setup("../escape.patch", ["../AGENTS.md"]); try { const errors = validateCandidateManifestFile(x.root, x.manifestPath); assert.ok(errors.some((error) => error.includes("safe path"))); assert.ok(errors.some((error) => error.includes("safe repository-relative"))); } finally { fs.rmSync(x.root, { recursive: true, force: true }); } });
++test("rejects stale candidate digests", () => { const x = setup(); x.manifest.artifacts[0].sha256 = "0".repeat(64); fs.writeFileSync(x.manifestPath, JSON.stringify(x.manifest)); try { assert.ok(validateCandidateManifestFile(x.root, x.manifestPath).some((error) => error.includes("SHA-256 mismatch"))); } finally { fs.rmSync(x.root, { recursive: true, force: true }); } });
+diff --git a/scripts/checks/check-agent-governance.mjs b/scripts/checks/check-agent-governance.mjs
+index cb8c5dab7..4d1e7f89d 100644
+--- a/scripts/checks/check-agent-governance.mjs
++++ b/scripts/checks/check-agent-governance.mjs
+@@ -4,0 +5 @@ import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs"
++import { validateCandidateArtifactManifests } from "./candidate-artifacts.mjs";
+@@ -39 +40 @@ const requiredMarkers = new Map([
+-  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push", "Plusieurs writers ChatGPT et Codex peuvent contribuer au dépôt", "Plusieurs chantiers ou writers peuvent être regroupés dans un commit", "L'allowlist initiale sert à l'attribution et au cadrage", "Lorsqu'un push est explicitement demandé, tous les commits locaux en avance"]],
++  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push", "### R01 — CONTINUITÉ", "### R12 — CLÔTURE CONTRÔLÉE", "COMMIT_READY", "INTEGRATION_VALIDATED", "Bypassed rule violations"]],
+@@ -45 +46 @@ const requiredMarkers = new Map([
+-  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "MAIN-ONLY / MULTI-WRITER COORDONNÉ", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push", "Plusieurs chantiers ou writers peuvent être regroupés dans un nouveau commit", "L'allowlist initiale est un cadrage d'attribution", "commits déjà créés en avance", "sans filtrage d'attribution"]],
++  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push", "AGENTS.md` (R01–R12)", "refuse les chemins hors allowlist"]],
+@@ -111,17 +111,0 @@ function validateCurrentCoordinatorDoctrine(view, findings) {
+-const publicationPolicyTerms = ["commit", "push", "vérification de convergence"];
+-const explicitNoPushExceptionTerms = ["mode de développement rapide", "interdiction explicite", "sans push"];
+-const chatgptDirectWritePolicyTerms = [
+-  "chatgpt contribue directement par défaut",
+-  "toute demande de l'utilisateur visant à implémenter, corriger ou mettre à jour le dépôt autorise ces opérations",
+-  "commit → push fast-forward",
+-];
+-const forbiddenChatgptReadOnlyTerms = [
+-  "chatgpt est limité à la lecture et à la revue de github",
+-  "chatgpt n'effectue sur github que des vérifications en lecture",
+-];
+-const commitReviewPolicyTerms = [
+-  "la commit review privilégie le résultat publié",
+-  "les régressions démontrées",
+-  "la taille, le regroupement ou l'organisation des commits ne suffisent pas à demander un prompt correctif",
+-];
+-
+@@ -131 +114,0 @@ function validateCurrentWorkflowDoctrine(view, findings) {
+-
+@@ -134,23 +117,5 @@ function validateCurrentWorkflowDoctrine(view, findings) {
+-
+-  const normalizeWorkflowContent = (content) => content
+-    .replace(/```(?:text)?/gi, "")
+-    .replace(/\s+/g, " ")
+-    .trim();
+-  const normalizedRoot = rootAgents ? normalizeWorkflowContent(rootAgents) : "";
+-  const normalizedRootLower = normalizedRoot.toLocaleLowerCase("fr-FR");
+-  const normalizedChatgpt = chatgpt ? normalizeWorkflowContent(chatgpt) : "";
+-  const normalizedCurrentChatgpt = contentOutsideLegacySections(chatgpt ?? "")
+-    .replace(/\s+/g, " ")
+-    .trim();
+-
+-  if (rootAgents && !normalizedRootLower.includes("plusieurs writers chatgpt et codex peuvent contribuer au dépôt")) {
+-    findings.push("AGENTS.md: CURRENT workflow must describe coordinated parallel writers in the canonical checkout.");
+-  }
+-  if (rootAgents && !normalizedRootLower.includes("les modifications sur des fichiers distincts peuvent progresser en parallèle")) {
+-    findings.push("AGENTS.md: CURRENT workflow must permit independent file changes to progress in parallel.");
+-  }
+-  if (rootAgents && !normalizedRootLower.includes("aucun ne doit jamais écraser silencieusement les changements d'un autre writer")) {
+-    findings.push("AGENTS.md: CURRENT workflow must prohibit silent loss of another writer's changes.");
+-  }
+-  if (rootAgents && !normalizedRoot.includes("main publié = référence versionnée ;")) {
+-    findings.push("AGENTS.md: CURRENT workflow must identify published main as the versioned reference.");
++  const root = rootAgents ?? "";
++  const scopedFiles = ["scripts/AGENTS.md", "CHATGPT.md", ".agents/skills/cleanmymap-repo/SKILL.md", ".agents/skills/cleanmymap-release-ci/SKILL.md"];
++  for (const marker of Array.from({ length: 12 }, (_, index) => `### R${String(index + 1).padStart(2, "0")} —`)) {
++    const count = root.split(/\r?\n/).filter((line) => line.startsWith(marker)).length;
++    if (count !== 1) findings.push(`AGENTS.md: ${marker} must occur exactly once (found ${count}).`);
+@@ -158,17 +123,4 @@ function validateCurrentWorkflowDoctrine(view, findings) {
+-  if (rootAgents && !normalizedRoot.includes("une candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;")) {
+-    findings.push("AGENTS.md: CURRENT workflow must scope local candidate authority to the current lot.");
+-  }
+-  if (rootAgents && !normalizedRoot.includes("tout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.")) {
+-    findings.push("AGENTS.md: CURRENT workflow must preserve pre-existing local changes during synchronization.");
+-  }
+-
+-  for (const [relativePath, content, normalizedContent] of [
+-    ["AGENTS.md", rootAgents, normalizedRoot],
+-    ["CHATGPT.md", chatgpt, normalizedChatgpt],
+-  ]) {
+-    if (!content) continue;
+-    if (!publicationPolicyTerms.every((term) => normalizedContent.includes(term))) {
+-      findings.push(`${relativePath}: missing the mandatory commit/push/convergence policy for each lot.`);
+-    }
+-    if (!explicitNoPushExceptionTerms.every((term) => normalizedContent.includes(term))) {
+-      findings.push(`${relativePath}: missing the explicit user-authorized no-push exception.`);
++  for (const relativePath of scopedFiles) {
++    const content = readIfPresent(view, relativePath) ?? "";
++    if (content && !/AGENTS\.md.{0,100}(?:R01|règles universelles|autorité unique)/is.test(content)) {
++      findings.push(`${relativePath}: scoped guidance must defer universal rules to root AGENTS.md.`);
+@@ -177,13 +129,10 @@ function validateCurrentWorkflowDoctrine(view, findings) {
+-
+-  if (/l['’]état local est prioritaire sur l['’](?:état|etat) github/i.test(normalizedRoot)) {
+-    findings.push("AGENTS.md: global local-over-GitHub priority is not a CURRENT rule.");
+-  }
+-  const normalizedCurrentChatgptLower = normalizedCurrentChatgpt.toLocaleLowerCase("fr-FR");
+-  if (!chatgptDirectWritePolicyTerms.every((term) => normalizedCurrentChatgptLower.includes(term))) {
+-    findings.push("CHATGPT.md: current policy must authorize scoped direct ChatGPT edits, commits and pushes on main.");
+-  }
+-  if (forbiddenChatgptReadOnlyTerms.some((term) => normalizedCurrentChatgptLower.includes(term))) {
+-    findings.push("CHATGPT.md: current policy must not restrict ChatGPT to read-only GitHub access.");
+-  }
+-  if (!commitReviewPolicyTerms.every((term) => normalizedCurrentChatgptLower.includes(term))) {
+-    findings.push("CHATGPT.md: Commit Review must prioritize published outcomes and demonstrated regressions, not commit size or grouping.");
++  const forbiddenPhrases = [
++    "tous les chemins tracked staged/unstaged et untracked du snapshot initial",
++    "sans filtrage d'attribution", "sans filtrage d’attribution",
++    "sans push tant que le mode reste actif",
++  ];
++  for (const phrase of forbiddenPhrases) {
++    for (const relativePath of ["AGENTS.md", "scripts/AGENTS.md", "CHATGPT.md", "documentation/development/TESTING.md"]) {
++      const content = contentOutsideLegacySections(readIfPresent(view, relativePath) ?? "").toLocaleLowerCase("fr-FR");
++      if (content.includes(phrase.toLocaleLowerCase("fr-FR"))) findings.push(`${relativePath}: contradictory delivery rule remains: ${phrase}.`);
++    }
+@@ -190,0 +140,3 @@ function validateCurrentWorkflowDoctrine(view, findings) {
++  const normalizedChatgpt = contentOutsideLegacySections(chatgpt ?? "").toLocaleLowerCase("fr-FR");
++  if (!normalizedChatgpt.includes("réception indépendante")) findings.push("CHATGPT.md: independent result reception boundary is missing.");
++  if (root && !root.includes("`COMMIT_READY`")) findings.push("AGENTS.md: delivery states are missing.");
+@@ -308,0 +261 @@ export function validateAgentGovernance(repoRoot = process.cwd(), { view = null
++  if (!view) findings.push(...validateCandidateArtifactManifests(repoRoot));
+diff --git a/scripts/checks/check-agent-governance.test.mjs b/scripts/checks/check-agent-governance.test.mjs
+index eec93c6f0..a7a81ff6f 100644
+--- a/scripts/checks/check-agent-governance.test.mjs
++++ b/scripts/checks/check-agent-governance.test.mjs
+@@ -12,0 +13 @@ function createValidFixture() {
++  const rules = Array.from({ length: 12 }, (_, index) => `### R${String(index + 1).padStart(2, "0")} — RULE`).join("\n");
+@@ -14,23 +15,2 @@ function createValidFixture() {
+-    "AGENTS.md": [
+-      "apps/web scripts documentation fichiers scoped MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push",
+-      "Plusieurs writers ChatGPT et Codex peuvent contribuer au dépôt et travailler sur des chemins distincts ; aucun ne doit jamais écraser silencieusement les changements d'un autre writer.",
+-      "Les modifications sur des fichiers distincts peuvent progresser en parallèle ; un même fichier, l’index, HEAD et les opérations Git mutantes doivent être relus et réconciliés explicitement.",
+-      "main publié = référence versionnée ;",
+-      "une candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;",
+-      "tout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.",
+-      "L'allowlist initiale sert à l'attribution et au cadrage ; elle ne fige pas le candidat final.",
+-      "Plusieurs chantiers ou writers peuvent être regroupés dans un commit lorsque chaque changement est identifié, attribué, relu et validé sur le candidat final exact.",
+-      "Cette règle contrôle la création des nouveaux commits, pas la publication des commits déjà créés. Lorsqu'un push est explicitement demandé, tous les commits locaux en avance sur la branche distante cible sont publiés dans leur ordre d'historique, même s'ils contiennent des chemins étrangers au lot courant ou proviennent d'autres writers.",
+-      "Workflow de chaque exécution de lot : validation → commit validé → push main → vérification de convergence",
+-      "Le mode de développement rapide ne supprime pas l'exigence de commit et push ; une interdiction explicite de l'utilisateur autorise un commit local sans push",
+-      "",
+-      "### LEGACY / COMPATIBILITY",
+-      "MAIN-ONLY / SINGLE-WRITER workspace:start codex/<run-id> CleanMyMap-worktrees publication-acquire",
+-    ].join("\n"),
+-    "CHATGPT.md": [
+-      "MAIN-ONLY / MULTI-WRITER COORDONNÉ",
+-      "ChatGPT contribue directement par défaut lorsque les outils GitHub authentifiés permettent de lire, modifier, valider et publier le lot. Toute demande de l'utilisateur visant à implémenter, corriger ou mettre à jour le dépôt autorise ces opérations.",
+-      "Pour un lot réalisé directement, ChatGPT valide le candidat attribué, puis commit → push fast-forward main → fetch et vérification de convergence.",
+-      "La Commit Review privilégie le résultat publié et les régressions démontrées. La taille, le regroupement ou l'organisation des commits ne suffisent pas à demander un prompt correctif.",
+-      "Le mode de développement rapide ne supprime pas la publication ; une interdiction explicite de l'utilisateur autorise un commit local sans push",
+-    ].join("\n"),
++    "AGENTS.md": ["apps/web scripts documentation fichiers scoped MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push `COMMIT_READY` INTEGRATION_VALIDATED Bypassed rule violations", rules.replace("R01 — RULE", "R01 — CONTINUITÉ").replace("R12 — RULE", "R12 — CLÔTURE CONTRÔLÉE"), "### LEGACY / COMPATIBILITY", "MAIN-ONLY / SINGLE-WRITER workspace:start codex/<run-id> CleanMyMap-worktrees publication-acquire"].join("\n"),
++    "CHATGPT.md": "AGENTS.md est l'autorité unique. Contribution directe et réception indépendante après publication.",
+@@ -42,7 +22 @@ function createValidFixture() {
+-    "scripts/AGENTS.md": [
+-      "audit cleanup provenance MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push",
+-      "L'allowlist initiale est un cadrage d'attribution, pas un plafond immuable.",
+-      "Plusieurs chantiers ou writers peuvent être regroupés dans un nouveau commit si tous les changements sont identifiés, attribués, relus et validés sur le candidat final exact.",
+-      "Les commits déjà créés en avance sont publiés sans filtrage d'attribution, même s'ils dépassent le lot courant.",
+-      "Workflow hors mode rapide : validation du candidat final exact → commit validé → push main → vérification de convergence",
+-    ].join("\n"),
++    "scripts/AGENTS.md": "audit cleanup provenance MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push. AGENTS.md` (R01–R12) refuse les chemins hors allowlist.",
+@@ -54 +27,0 @@ function createValidFixture() {
+-
+@@ -89 +62 @@ describe("AGENTS hierarchy governance", () => {
+-  it("requires the current rule to publish already-created commits without attribution filtering", () => {
++  it("rejects a legacy policy that publishes foreign ahead commits", () => {
+@@ -92,8 +65 @@ describe("AGENTS hierarchy governance", () => {
+-    const current = fs.readFileSync(agentsPath, "utf8");
+-    fs.writeFileSync(
+-      agentsPath,
+-      current.replace(
+-        "tous les commits locaux en avance sur la branche distante cible sont publiés",
+-        "seuls les commits attribués au lot courant sont publiés",
+-      ),
+-    );
++    fs.appendFileSync(agentsPath, "\n## Current policy\nTous les chemins tracked staged/unstaged et untracked du snapshot initial sont inclus.\n");
+@@ -102 +68 @@ describe("AGENTS hierarchy governance", () => {
+-      assert.ok(findings.some((finding) => finding.includes("tous les commits locaux en avance")));
++      assert.ok(findings.some((finding) => finding.includes("contradictory delivery rule remains")));
+@@ -108 +74 @@ describe("AGENTS hierarchy governance", () => {
+-  it("requires attribution and requalification when the final candidate differs from its initial scope", () => {
++  it("requires each numbered root rule exactly once", () => {
+@@ -111,8 +77 @@ describe("AGENTS hierarchy governance", () => {
+-    const current = fs.readFileSync(agentsPath, "utf8");
+-    fs.writeFileSync(
+-      agentsPath,
+-      current.replace(
+-        "Plusieurs chantiers ou writers peuvent être regroupés dans un commit",
+-        "Un seul chantier doit être committé à la fois",
+-      ),
+-    );
++    fs.appendFileSync(agentsPath, "\n### R01 — DUPLICATE\n");
+@@ -121 +80 @@ describe("AGENTS hierarchy governance", () => {
+-      assert.ok(findings.some((finding) => finding.includes("Plusieurs chantiers ou writers peuvent être regroupés dans un commit")));
++      assert.ok(findings.some((finding) => finding.includes("R01") && finding.includes("exactly once")));
+@@ -127 +86 @@ describe("AGENTS hierarchy governance", () => {
+-  it("requires Commit Review to focus on published outcomes and demonstrated regressions", () => {
++  it("requires the independent reception boundary in ChatGPT guidance", () => {
+@@ -133,4 +92 @@ describe("AGENTS hierarchy governance", () => {
+-      current.replace(
+-        "La taille, le regroupement ou l'organisation des commits ne suffisent pas à demander un prompt correctif.",
+-        "Un prompt correctif peut demander de séparer les commits selon leur taille.",
+-      ),
++      current.replace("réception indépendante", "livraison terminée"),
+@@ -140 +96 @@ describe("AGENTS hierarchy governance", () => {
+-      assert.ok(findings.some((finding) => finding.includes("Commit Review must prioritize published outcomes and demonstrated regressions")));
++      assert.ok(findings.some((finding) => finding.includes("independent result reception boundary is missing")));
+@@ -181 +137 @@ describe("AGENTS hierarchy governance", () => {
+-  it("requires direct ChatGPT write authority and rejects contradictory CURRENT workflow wording", () => {
++  it("rejects a remaining old all-paths publication contradiction", () => {
+@@ -187,4 +143 @@ describe("AGENTS hierarchy governance", () => {
+-      fs.readFileSync(agentsPath, "utf8").replace(
+-        "main publié = référence versionnée ;",
+-        "l'état local est prioritaire sur l'etat github",
+-      ),
++      `${fs.readFileSync(agentsPath, "utf8")}\n## Current policy\nTous les chemins tracked staged/unstaged et untracked du snapshot initial.\n`,
+@@ -194,4 +147 @@ describe("AGENTS hierarchy governance", () => {
+-      fs.readFileSync(chatgptPath, "utf8").replace(
+-        "ChatGPT contribue directement par défaut",
+-        "ChatGPT est limité à la lecture et à la revue de GitHub",
+-      ),
++      `${fs.readFileSync(chatgptPath, "utf8")}\nSans push tant que le mode reste actif.\n`,
+@@ -201,2 +151 @@ describe("AGENTS hierarchy governance", () => {
+-      assert.ok(findings.some((finding) => finding.includes("global local-over-GitHub priority")));
+-      assert.ok(findings.some((finding) => finding.includes("current policy must authorize scoped direct ChatGPT edits, commits and pushes on main")));
++      assert.ok(findings.some((finding) => finding.includes("contradictory delivery rule remains")));
+@@ -208 +157 @@ describe("AGENTS hierarchy governance", () => {
+-  it("rejects a leftover ChatGPT read-only rule alongside direct-write authorization", () => {
++  it("requires scoped ChatGPT guidance to defer universal rules", () => {
+@@ -211 +160 @@ describe("AGENTS hierarchy governance", () => {
+-    fs.appendFileSync(chatgptPath, "\nChatGPT n'effectue sur GitHub que des vérifications en lecture.\n");
++    fs.writeFileSync(chatgptPath, "Contribution directe et réception indépendante.\n");
+@@ -214 +163 @@ describe("AGENTS hierarchy governance", () => {
+-      assert.ok(findings.some((finding) => finding.includes("must not restrict ChatGPT to read-only GitHub access")));
++      assert.ok(findings.some((finding) => finding.includes("CHATGPT.md") && finding.includes("defer universal rules")));
+diff --git a/scripts/ci/hook-policy.test.mjs b/scripts/ci/hook-policy.test.mjs
+index a92028cdc..8a5186646 100644
+--- a/scripts/ci/hook-policy.test.mjs
++++ b/scripts/ci/hook-policy.test.mjs
+@@ -314 +314 @@ test("pre-commit is independent from the retired coordinator", async () => {
+-test("governance coordinates parallel dirty work without losing published scope", async () => {
++test("root AGENTS owns delivery rules and scoped guidance does not contradict it", async () => {
+@@ -319,71 +319,12 @@ test("governance coordinates parallel dirty work without losing published scope"
+-  const executionPolicy = sectionMatching(
+-    rootAgents,
+-    /^## (?:\d+\.\s*)?Modèle d['’]exécution/m,
+-    "Modèle d'exécution",
+-  );
+-  const chatgptPolicy = sectionMatching(chatgpt, /^## .*MAIN-ONLY \/ MULTI-WRITER/m, "ChatGPT multi-writer policy");
+-  const scriptsPolicy = currentSection(scriptsAgents, "Modèle canonique de développement");
+-
+-  assert.match(executionPolicy, /MAIN-ONLY/);
+-  assert.match(executionPolicy, /MULTI-WRITER/);
+-  assert.match(executionPolicy, /dirty|locales?/i);
+-  assert.match(executionPolicy, /staged|stag(?:é|ées?)/i);
+-  assert.match(executionPolicy, /commit/);
+-  assert.match(executionPolicy, /push/);
+-  assert.match(executionPolicy, /jamais[^\n]*[ée]cras/i);
+-  assert.match(executionPolicy, /PUSH_CANDIDATE/);
+-  assert.match(executionPolicy, /origin\/main/);
+-  assert.match(executionPolicy, /force-push/);
+-  assert.match(rootAgents, /git diff --cached --name-only/);
+-  assert.match(rootAgents, /commits locaux en avance.*ordre d['’]historique/s);
+-  assert.match(scriptsAgents, /sans filtrage d['’]attribution/);
+-  assert.match(rootAgents, /WORKTREE/);
+-  assert.match(rootAgents, /STAGED/);
+-  assert.match(rootAgents, /PUSH_CANDIDATE/);
+-  assert.match(rootAgents, /ne bloquent pas l['’]analyse ni le travail indépendant/);
+-  assert.match(rootAgents, /WORKTREE_LIVE.*STAGED.*COMMITTED_SNAPSHOT.*PUSH_CANDIDATE/s);
+-  assert.match(scriptsPolicy, /référence et ce périmètre restent gelés/i);
+-  assert.match(testingGuide, /Référence et périmètre restent gelés/);
+-  assert.match(rootAgents, /aucune évolution ultérieure de `HEAD`, `origin\/main`/i);
+-  assert.match(scriptsAgents, /candidat immuable/);
+-  assert.match(testingGuide, /elles ne bloquent pas les\s+diagnostics locaux/);
+-  assert.doesNotMatch(rootAgents, /l['’]état local est prioritaire sur l['’]état github/i);
+-  assert.doesNotMatch(rootAgents, /workspace:start/);
+-  assert.doesNotMatch(scriptsAgents, /workspace:start/);
+-  assert.match(rootAgents, /### LEGACY \/ COMPATIBILITY/);
+-  assert.match(chatgpt, /^## .*MAIN-ONLY \/ MULTI-WRITER/m);
+-  assert.match(chatgptPolicy, /collision|parallel|concurrent/i);
+-  assert.match(chatgptPolicy, /préserver|non destructive/i);
+-  assert.match(chatgptPolicy, /STAGED/);
+-  assert.match(chatgptPolicy, /PUSH_CANDIDATE/);
+-  assert.match(chatgptPolicy, /valid(?:ation|e)/i);
+-  assert.match(chatgptPolicy, /commit/);
+-  assert.match(chatgptPolicy, /push/);
+-  assert.match(chatgptPolicy, /convergence/);
+-  assert.match(chatgptPolicy, /rapide/);
+-  assert.match(chatgptPolicy, /sans push/i);
+-  assert.match(chatgptPolicy, /référence Git et (?:les\s+)?fichiers attribués/);
+-  assert.match(testingGuide, /gelés jusqu'à la\s+clôture/);
+-  assert.match(rootAgents, /ne relance une validation globale/);
+-  assert.match(chatgptPolicy, /COMMITTED_SNAPSHOT/);
+-  assert.doesNotMatch(chatgpt, /push origin\/main sur demande explicite|demander commit et push le lot|committer et pousser sur main lorsque l'utilisateur l'a demandé/i);
+-  assert.doesNotMatch(chatgpt, /workspace:start/);
+-  assert.doesNotMatch(chatgpt, /publication-candidate/);
+-  assert.match(scriptsPolicy, /MAIN-ONLY/);
+-  assert.match(scriptsPolicy, /MULTI-WRITER/);
+-  assert.match(scriptsPolicy, /validation/);
+-  assert.match(scriptsPolicy, /commit/);
+-  assert.match(scriptsPolicy, /push/);
+-  assert.match(scriptsPolicy, /rapide/);
+-  assert.match(scriptsPolicy, /sans push/i);
+-  assert.doesNotMatch(scriptsAgents, /HEAD == origin\/main/);
+-  assert.match(scriptsAgents, /pré-commit doit utiliser exclusivement la portée `STAGED`/);
+-  assert.match(scriptsAgents, /pré-push réel doit utiliser exclusivement la portée\s+`PUSH_CANDIDATE`/);
+-  assert.match(scriptsPolicy, /Chaque exécution capture au démarrage/);
+-  assert.match(scriptsPolicy, /Une évolution externe sans conflit ne provoque aucune campagne de\s+validation/);
+-  assert.match(scriptsPolicy, /un rejeu de preuve ou une nouvelle validation\s+globale/);
+-  assert.match(scriptsPolicy, /WORKTREE_LIVE.*STAGED.*COMMITTED_SNAPSHOT.*PUSH_CANDIDATE/s);
+-  assert.match(testingGuide, /## Exécution non bloquante du checkout/);
+-  assert.match(testingGuide, /référence initiale[\s\S]*?allowlist de ses\s+fichiers attribués/);
+-  assert.match(testingGuide, /ne\s+déclenche ni extension de périmètre, ni resynchronisation fonctionnelle/);
+-  assert.match(testingGuide, /Une mesure `WORKTREE_LIVE`.*ne constitue jamais une preuve reproductible/s);
++  for (let index = 1; index <= 12; index += 1) {
++    const rule = `### R${String(index).padStart(2, "0")} —`;
++    assert.equal(rootAgents.split(rule).length - 1, 1, `${rule} must have one owner`);
++  }
++  assert.match(scriptsAgents, /AGENTS\.md` \(R01–R12\)/i);
++  assert.match(chatgpt, /AGENTS\.md` est l'autorité unique/i);
++  assert.match(testingGuide, /`PUBLISHED` exige un push conforme/);
++  assert.doesNotMatch(scriptsAgents, /sans filtrage d['’]attribution/);
++  assert.doesNotMatch(testingGuide, /tous les chemins tracked staged\/unstaged et untracked du snapshot initial/);
++  assert.match(rootAgents, /Bypassed rule violations/);
++  assert.match(rootAgents, /COMMIT_READY.*PUSH_READY.*PUBLISHED.*INTEGRATION_VALIDATED.*RELEASE_READY.*COMPLETED/s);
++  assert.match(scriptsAgents, /WORKTREE_LIVE.*STAGED.*COMMITTED_SNAPSHOT.*PUSH_CANDIDATE/);
+diff --git a/scripts/ci/publish-main.mjs b/scripts/ci/publish-main.mjs
+index 0b3bb8c67..b56782b75 100644
+--- a/scripts/ci/publish-main.mjs
++++ b/scripts/ci/publish-main.mjs
+@@ -325,0 +326 @@ export async function publishMain({
++  attributedFiles = null,
+@@ -328,0 +330,4 @@ export async function publishMain({
++  if (!Array.isArray(attributedFiles) || attributedFiles.length === 0) {
++    throw new Error("PUBLISH_ATTRIBUTION_REQUIRED: pass every path attributed to this publication.");
++  }
++  const attributedSet = new Set(sortedUnique(attributedFiles));
+@@ -365,0 +371,8 @@ export async function publishMain({
++    const changedFilesResult = runGitCommand(["diff", "--name-only", `${remoteSha}..${candidateSha}`, "--"]);
++    if (changedFilesResult.status !== 0) {
++      throw new Error(`PUBLISH_ATTRIBUTION_UNVERIFIED: cannot inspect candidate path range ${remoteSha}..${candidateSha}.`);
++    }
++    const foreignFiles = sortedUnique(changedFilesResult.stdout.split(/\r?\n/)).filter((file) => !attributedSet.has(file));
++    if (foreignFiles.length > 0) {
++      throw new Error(`PUBLISH_FOREIGN_PATHS: candidate includes paths outside the attributed allowlist: ${foreignFiles.join(", ")}.`);
++    }
+@@ -370,0 +384,4 @@ export async function publishMain({
++    const pushOutput = `${push.stdout ?? ""}\n${push.stderr ?? ""}`;
++    if (/Bypassed rule violations/i.test(pushOutput)) {
++      throw new Error(`PUSH_ACCEPTED_WITH_BYPASS: GitHub accepted candidate ${candidateSha} while bypassing an active rule; this is not PUBLISHED.`);
++    }
+@@ -412,0 +430 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
++    attributedFiles: JSON.parse(process.env.CMM_ATTRIBUTED_FILES ?? "[]"),
+diff --git a/scripts/ci/publish-main.test.mjs b/scripts/ci/publish-main.test.mjs
+index b7df27e11..9727d50e9 100644
+--- a/scripts/ci/publish-main.test.mjs
++++ b/scripts/ci/publish-main.test.mjs
+@@ -11 +11 @@ import {
+-  publishMain,
++  publishMain as publishMainImpl,
+@@ -33,0 +34 @@ function fakeGit({
++  changedFiles = ["AGENTS.md"],
+@@ -72,0 +74 @@ function fakeGit({
++    if (args[0] === "diff" && args[1] === "--name-only") return { status: 0, stdout: `${changedFiles.join("\n")}\n`, stderr: "" };
+@@ -90,0 +93,4 @@ function fakeGit({
++function publishMain(options = {}) {
++  return publishMainImpl({ attributedFiles: ["AGENTS.md"], ...options });
++}
++
+@@ -110,0 +117,8 @@ test("publishes exactly the immutable candidate SHA with an explicit refspec", a
++test("requires explicit attribution and rejects foreign paths before push", async () => {
++  const noAllowlist = fakeGit();
++  await assert.rejects(publishMainImpl({ runGitCommand: noAllowlist.runGitCommand }), /PUBLISH_ATTRIBUTION_REQUIRED/);
++  const foreign = fakeGit({ changedFiles: ["AGENTS.md", "foreign.txt"] });
++  await assert.rejects(publishMainImpl({ runGitCommand: foreign.runGitCommand, attributedFiles: ["AGENTS.md"] }), /PUBLISH_FOREIGN_PATHS.*foreign.txt/);
++  assert.equal(pushCalls(foreign).length, 0);
++});
++
+@@ -135,0 +150,9 @@ test("blocks before push when the active coverage proof is absent", async () =>
++test("does not classify a push accepted with a GitHub ruleset bypass as published", async () => {
++  const fake = fakeGit({ pushResults: [{ status: 0, stdout: "remote: Bypassed rule violations for refs/heads/main", stderr: "" }] });
++  await assert.rejects(
++    publishMain({ runGitCommand: fake.runGitCommand, sleep: async () => {} }),
++    /PUSH_ACCEPTED_WITH_BYPASS.*not PUBLISHED/,
++  );
++  assert.equal(fake.state.remote, "candidate");
++});
++
+diff --git a/scripts/ci/run_validation_mode.mjs b/scripts/ci/run_validation_mode.mjs
+index 558dc403e..6c4c59e4a 100644
+--- a/scripts/ci/run_validation_mode.mjs
++++ b/scripts/ci/run_validation_mode.mjs
+@@ -839,0 +840 @@ export async function runValidationMode(
++          attributedFiles: finalScope.changedFiles,

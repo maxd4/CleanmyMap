@@ -8,7 +8,7 @@ import test from "node:test";
 import {
   captureWorktreeCandidate,
   commitCandidate,
-  publishMain,
+  publishMain as publishMainImpl,
 } from "./publish-main.mjs";
 import { removePathWithRetry } from "./validation-evidence.mjs";
 
@@ -31,6 +31,7 @@ function fakeGit({
   parents = { candidate: "base" },
   onHeadRead,
   onPush,
+  changedFiles = ["AGENTS.md"],
 } = {}) {
   const calls = [];
   const state = { local, branch: local, remote };
@@ -70,6 +71,7 @@ function fakeGit({
     if (args[0] === "merge-base" && args[1] === "--is-ancestor") {
       return { status: isAncestor(args[2], args[3]) ? 0 : 1, stdout: "", stderr: "" };
     }
+    if (args[0] === "diff" && args[1] === "--name-only") return { status: 0, stdout: `${changedFiles.join("\n")}\n`, stderr: "" };
     if (args[0] === "merge" && args[1] === "--ff-only") {
       state.local = state.remote;
       state.branch = state.remote;
@@ -86,6 +88,10 @@ function fakeGit({
   };
 
   return { calls, state, runGitCommand };
+}
+
+function publishMain(options = {}) {
+  return publishMainImpl({ attributedFiles: ["AGENTS.md"], ...options });
 }
 
 function pushCalls(fake) {
@@ -106,6 +112,14 @@ test("publishes exactly the immutable candidate SHA with an explicit refspec", a
   assert.equal(fake.state.local, "candidate");
   assert.equal(fake.state.remote, "candidate");
   assert.equal(fake.calls.some((args) => ["reset", "stash", "clean"].includes(args[0])), false);
+});
+
+test("requires explicit attribution and rejects foreign paths before push", async () => {
+  const noAllowlist = fakeGit();
+  await assert.rejects(publishMainImpl({ runGitCommand: noAllowlist.runGitCommand }), /PUBLISH_ATTRIBUTION_REQUIRED/);
+  const foreign = fakeGit({ changedFiles: ["AGENTS.md", "foreign.txt"] });
+  await assert.rejects(publishMainImpl({ runGitCommand: foreign.runGitCommand, attributedFiles: ["AGENTS.md"] }), /PUBLISH_FOREIGN_PATHS.*foreign.txt/);
+  assert.equal(pushCalls(foreign).length, 0);
 });
 
 test("blocks before push when the active coverage proof is absent", async () => {
@@ -131,6 +145,15 @@ test("blocks before push when the active coverage proof is absent", async () => 
   );
   assert.equal(gateCalls, 1);
   assert.equal(pushCalls(fake).length, 0);
+});
+
+test("does not classify a push accepted with a GitHub ruleset bypass as published", async () => {
+  const fake = fakeGit({ pushResults: [{ status: 0, stdout: "remote: Bypassed rule violations for refs/heads/main", stderr: "" }] });
+  await assert.rejects(
+    publishMain({ runGitCommand: fake.runGitCommand, sleep: async () => {} }),
+    /PUSH_ACCEPTED_WITH_BYPASS.*not PUBLISHED/,
+  );
+  assert.equal(fake.state.remote, "candidate");
 });
 
 test("blocks a new local commit created between candidate capture and push", async () => {

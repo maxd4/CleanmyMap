@@ -10,48 +10,21 @@ import { canonicalAgentFiles, validateAgentGovernance } from "./check-agent-gove
 
 function createValidFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-agent-governance-"));
+  const rules = Array.from({ length: 12 }, (_, index) => `### R${String(index + 1).padStart(2, "0")} — RULE`).join("\n");
   const content = {
-    "AGENTS.md": [
-      "apps/web scripts documentation fichiers scoped MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push",
-      "Plusieurs writers ChatGPT et Codex peuvent contribuer au dépôt et travailler sur des chemins distincts ; aucun ne doit jamais écraser silencieusement les changements d'un autre writer.",
-      "Les modifications sur des fichiers distincts peuvent progresser en parallèle ; un même fichier, l’index, HEAD et les opérations Git mutantes doivent être relus et réconciliés explicitement.",
-      "main publié = référence versionnée ;",
-      "une candidate locale explicitement fournie ou produite pour le lot courant est autoritative pour ce lot jusqu’à intégration ;",
-      "tout changement local préexistant doit être préservé et ne doit jamais être écrasé par une synchronisation avec Git.",
-      "L'allowlist initiale sert à l'attribution et au cadrage ; elle ne fige pas le candidat final.",
-      "Plusieurs chantiers ou writers peuvent être regroupés dans un commit lorsque chaque changement est identifié, attribué, relu et validé sur le candidat final exact.",
-      "Cette règle contrôle la création des nouveaux commits, pas la publication des commits déjà créés. Lorsqu'un push est explicitement demandé, tous les commits locaux en avance sur la branche distante cible sont publiés dans leur ordre d'historique, même s'ils contiennent des chemins étrangers au lot courant ou proviennent d'autres writers.",
-      "Workflow de chaque exécution de lot : validation → commit validé → push main → vérification de convergence",
-      "Le mode de développement rapide ne supprime pas l'exigence de commit et push ; une interdiction explicite de l'utilisateur autorise un commit local sans push",
-      "",
-      "### LEGACY / COMPATIBILITY",
-      "MAIN-ONLY / SINGLE-WRITER workspace:start codex/<run-id> CleanMyMap-worktrees publication-acquire",
-    ].join("\n"),
-    "CHATGPT.md": [
-      "MAIN-ONLY / MULTI-WRITER COORDONNÉ",
-      "ChatGPT contribue directement par défaut lorsque les outils GitHub authentifiés permettent de lire, modifier, valider et publier le lot. Toute demande de l'utilisateur visant à implémenter, corriger ou mettre à jour le dépôt autorise ces opérations.",
-      "Pour un lot réalisé directement, ChatGPT valide le candidat attribué, puis commit → push fast-forward main → fetch et vérification de convergence.",
-      "La Commit Review privilégie le résultat publié et les régressions démontrées. La taille, le regroupement ou l'organisation des commits ne suffisent pas à demander un prompt correctif.",
-      "Le mode de développement rapide ne supprime pas la publication ; une interdiction explicite de l'utilisateur autorise un commit local sans push",
-    ].join("\n"),
+    "AGENTS.md": ["apps/web scripts documentation fichiers scoped MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push `COMMIT_READY` INTEGRATION_VALIDATED Bypassed rule violations", rules.replace("R01 — RULE", "R01 — CONTINUITÉ").replace("R12 — RULE", "R12 — CLÔTURE CONTRÔLÉE"), "### LEGACY / COMPATIBILITY", "MAIN-ONLY / SINGLE-WRITER workspace:start codex/<run-id> CleanMyMap-worktrees publication-acquire"].join("\n"),
+    "CHATGPT.md": "AGENTS.md est l'autorité unique. Contribution directe et réception indépendante après publication.",
     "apps/web/AGENTS.md": "Next.js Server/Client Leaflet",
     "apps/web/src/app/api/AGENTS.md": "AuthN AuthZ contrat de réponse propre",
     "apps/web/supabase/AGENTS.md": "apps/web/supabase/migrations/ unique RLS",
     "apps/web/scripts/AGENTS.md": "dry-run --apply provenance",
     "apps/mobile/AGENTS.md": "ClerkProvider Third-Party Auth `sub` Clerk distance_m",
-    "scripts/AGENTS.md": [
-      "audit cleanup provenance MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push",
-      "L'allowlist initiale est un cadrage d'attribution, pas un plafond immuable.",
-      "Plusieurs chantiers ou writers peuvent être regroupés dans un nouveau commit si tous les changements sont identifiés, attribués, relus et validés sur le candidat final exact.",
-      "Les commits déjà créés en avance sont publiés sans filtrage d'attribution, même s'ils dépassent le lot courant.",
-      "Workflow hors mode rapide : validation du candidat final exact → commit validé → push main → vérification de convergence",
-    ].join("\n"),
+    "scripts/AGENTS.md": "audit cleanup provenance MAIN-ONLY / MULTI-WRITER COORDONNÉ origin/main STAGED PUSH_CANDIDATE DYNAMIC_CANDIDATE pre-commit pre-push. AGENTS.md` (R01–R12) refuse les chemins hors allowlist.",
     ".github/AGENTS.md": "permissions CodeQL check:github-actions",
     "maintenance/python/AGENTS.md": "hors du requirements pytest",
     "documentation/AGENTS.md": "état actuel historique public",
     "e2e/AGENTS.md": "TESTING.md PUBLIC PROTECTED_SERVER_ONLY PROTECTED_CLERK_CLIENT Clerk Development Supabase storageState fixtures",
   };
-
   for (const relativePath of canonicalAgentFiles) {
     const absolutePath = path.join(root, ...relativePath.split("/"));
     fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
@@ -86,58 +59,41 @@ describe("AGENTS hierarchy governance", () => {
     }
   });
 
-  it("requires the current rule to publish already-created commits without attribution filtering", () => {
+  it("rejects a legacy policy that publishes foreign ahead commits", () => {
     const fixture = createValidFixture();
     const agentsPath = path.join(fixture, "AGENTS.md");
-    const current = fs.readFileSync(agentsPath, "utf8");
-    fs.writeFileSync(
-      agentsPath,
-      current.replace(
-        "tous les commits locaux en avance sur la branche distante cible sont publiés",
-        "seuls les commits attribués au lot courant sont publiés",
-      ),
-    );
+    fs.appendFileSync(agentsPath, "\n## Current policy\nTous les chemins tracked staged/unstaged et untracked du snapshot initial sont inclus.\n");
     try {
       const findings = validateAgentGovernance(fixture);
-      assert.ok(findings.some((finding) => finding.includes("tous les commits locaux en avance")));
+      assert.ok(findings.some((finding) => finding.includes("contradictory delivery rule remains")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }
   });
 
-  it("requires attribution and requalification when the final candidate differs from its initial scope", () => {
+  it("requires each numbered root rule exactly once", () => {
     const fixture = createValidFixture();
     const agentsPath = path.join(fixture, "AGENTS.md");
-    const current = fs.readFileSync(agentsPath, "utf8");
-    fs.writeFileSync(
-      agentsPath,
-      current.replace(
-        "Plusieurs chantiers ou writers peuvent être regroupés dans un commit",
-        "Un seul chantier doit être committé à la fois",
-      ),
-    );
+    fs.appendFileSync(agentsPath, "\n### R01 — DUPLICATE\n");
     try {
       const findings = validateAgentGovernance(fixture);
-      assert.ok(findings.some((finding) => finding.includes("Plusieurs chantiers ou writers peuvent être regroupés dans un commit")));
+      assert.ok(findings.some((finding) => finding.includes("R01") && finding.includes("exactly once")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }
   });
 
-  it("requires Commit Review to focus on published outcomes and demonstrated regressions", () => {
+  it("requires the independent reception boundary in ChatGPT guidance", () => {
     const fixture = createValidFixture();
     const chatgptPath = path.join(fixture, "CHATGPT.md");
     const current = fs.readFileSync(chatgptPath, "utf8");
     fs.writeFileSync(
       chatgptPath,
-      current.replace(
-        "La taille, le regroupement ou l'organisation des commits ne suffisent pas à demander un prompt correctif.",
-        "Un prompt correctif peut demander de séparer les commits selon leur taille.",
-      ),
+      current.replace("réception indépendante", "livraison terminée"),
     );
     try {
       const findings = validateAgentGovernance(fixture);
-      assert.ok(findings.some((finding) => finding.includes("Commit Review must prioritize published outcomes and demonstrated regressions")));
+      assert.ok(findings.some((finding) => finding.includes("independent result reception boundary is missing")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }
@@ -178,40 +134,33 @@ describe("AGENTS hierarchy governance", () => {
     }
   });
 
-  it("requires direct ChatGPT write authority and rejects contradictory CURRENT workflow wording", () => {
+  it("rejects a remaining old all-paths publication contradiction", () => {
     const fixture = createValidFixture();
     const agentsPath = path.join(fixture, "AGENTS.md");
     const chatgptPath = path.join(fixture, "CHATGPT.md");
     fs.writeFileSync(
       agentsPath,
-      fs.readFileSync(agentsPath, "utf8").replace(
-        "main publié = référence versionnée ;",
-        "l'état local est prioritaire sur l'etat github",
-      ),
+      `${fs.readFileSync(agentsPath, "utf8")}\n## Current policy\nTous les chemins tracked staged/unstaged et untracked du snapshot initial.\n`,
     );
     fs.writeFileSync(
       chatgptPath,
-      fs.readFileSync(chatgptPath, "utf8").replace(
-        "ChatGPT contribue directement par défaut",
-        "ChatGPT est limité à la lecture et à la revue de GitHub",
-      ),
+      `${fs.readFileSync(chatgptPath, "utf8")}\nSans push tant que le mode reste actif.\n`,
     );
     try {
       const findings = validateAgentGovernance(fixture);
-      assert.ok(findings.some((finding) => finding.includes("global local-over-GitHub priority")));
-      assert.ok(findings.some((finding) => finding.includes("current policy must authorize scoped direct ChatGPT edits, commits and pushes on main")));
+      assert.ok(findings.some((finding) => finding.includes("contradictory delivery rule remains")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }
   });
 
-  it("rejects a leftover ChatGPT read-only rule alongside direct-write authorization", () => {
+  it("requires scoped ChatGPT guidance to defer universal rules", () => {
     const fixture = createValidFixture();
     const chatgptPath = path.join(fixture, "CHATGPT.md");
-    fs.appendFileSync(chatgptPath, "\nChatGPT n'effectue sur GitHub que des vérifications en lecture.\n");
+    fs.writeFileSync(chatgptPath, "Contribution directe et réception indépendante.\n");
     try {
       const findings = validateAgentGovernance(fixture);
-      assert.ok(findings.some((finding) => finding.includes("must not restrict ChatGPT to read-only GitHub access")));
+      assert.ok(findings.some((finding) => finding.includes("CHATGPT.md") && finding.includes("defer universal rules")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }
