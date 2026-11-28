@@ -71,6 +71,25 @@ describe("createActionSchema core declarations", () => {
     expect(createActionSchema.safeParse({ ...basePayload, organizationLink: { ...link, siteId: "site-forged" } }).success).toBe(false);
   });
 
+  it("runs contract-payload temporal, route, GPX, forecast and characterization refinements", () => {
+    const parsed = createActionSchema.parse({
+      type: "action",
+      source: "manual",
+      location: { label: basePayload.locationLabel, latitude: 48.85, longitude: 2.35 },
+      dates: { observedAt: basePayload.actionDate, actionTimezone: "Europe/Paris", eventStartTime: null, eventEndTime: null },
+      metadata: {
+        ...basePayload,
+        organizerType: "spontaneous",
+        wasteBreakdown: undefined,
+        plannerSnapshotProof: null,
+      },
+    });
+
+    expect(parsed.recordType).toBe("action");
+    expect(parsed.actionDate).toBe(basePayload.actionDate);
+    expect(parsed.locationLabel).toBe(basePayload.locationLabel);
+  });
+
   it("rejects the removed creator role on new action writes", () => {
     expect(
       createActionSchema.safeParse({
