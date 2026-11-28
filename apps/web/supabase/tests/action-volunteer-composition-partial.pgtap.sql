@@ -57,18 +57,21 @@ select ok(pg_temp.reject_incoherent_partial_composition(), 'known partial catego
 select ok(pg_temp.reject_incoherent_complete_composition(), 'a complete composition must equal the declared total');
 
 reset role;
+select set_config('request.jwt.claims', '{"role":"service_role","sub":"partial-composition-rpc-test"}', true);
 select is((
   select count(*)::integer
     from public.create_action_with_relations_legacy(
       jsonb_build_object(
         'created_by_clerk_id', 'partial-composition-rpc-test',
         'client_request_id', null,
-        'action_date', current_date,
+        'action_date', current_date + 1,
         'location_label', 'RPC partial composition',
         'volunteers_count', 10,
         'children_count', 3,
         'adult_count', null,
-        'retired_count', 2
+        'retired_count', 2,
+        'status', 'pending',
+        'action_phase', 'pre_action'
       ),
       '[{"organizer_clerk_id":"partial-composition-rpc-test","organizer_label":"Test"}]'::jsonb,
       '[]'::jsonb,
@@ -80,16 +83,19 @@ create function pg_temp.reject_incoherent_rpc_composition() returns boolean
 language plpgsql as $$
 begin
   begin
+    perform set_config('request.jwt.claims', '{"role":"service_role","sub":"partial-composition-rpc-invalid"}', true);
     perform * from public.create_action_with_relations_legacy(
       jsonb_build_object(
         'created_by_clerk_id', 'partial-composition-rpc-invalid',
         'client_request_id', null,
-        'action_date', current_date,
+        'action_date', current_date + 1,
         'location_label', 'RPC invalid partial composition',
         'volunteers_count', 10,
         'children_count', 7,
         'adult_count', null,
-        'retired_count', 5
+        'retired_count', 5,
+        'status', 'pending',
+        'action_phase', 'pre_action'
       ),
       '[{"organizer_clerk_id":"partial-composition-rpc-invalid","organizer_label":"Test"}]'::jsonb,
       '[]'::jsonb,
