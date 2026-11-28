@@ -33,6 +33,7 @@ export function OrganizationCollectionsPanel({
     ? "Detach this collection from the organization? The Action remains available in CleanMyMap; campaign links will also be removed."
     : "Détacher cette collecte de l’organisation ? L’action reste disponible dans CleanMyMap ; ses liens aux campagnes seront également retirés.";
   const duplicateLabel = en ? "Duplicate collection" : "Dupliquer la collecte";
+  const manageActionLabel = en ? "Manage collection" : "Gérer la collecte";
 
   return (
     <CmmCard className="space-y-3">
@@ -48,6 +49,7 @@ export function OrganizationCollectionsPanel({
               <span> · {action.title} · {action.status}</span>
               {action.can_manage ? <span className="block"><a href="/actions/history">{en ? "Open action history" : "Ouvrir l’historique des actions"}</a></span> : null}
               {canManage && action.can_manage ? <div className="mt-2 flex flex-wrap gap-2">
+                <CmmButton href={`/actions/new?tab=${action.action_phase?.startsWith("post_action") || action.status === "completed" ? "after" : "before"}&actionId=${encodeURIComponent(action.id)}`} size="sm">{manageActionLabel}</CmmButton>
                 <CmmButton href={`/actions/new?tab=before&duplicateFrom=${encodeURIComponent(action.id)}&organizationId=${encodeURIComponent(workspace.id)}${action.site_id ? `&siteId=${encodeURIComponent(action.site_id)}` : ""}`} size="sm">{duplicateLabel}</CmmButton>
                 {onUnlinkAction ? <CmmButton tone="critical" size="sm" disabled={busy} onClick={() => { if (window.confirm(unlinkConfirmation)) onUnlinkAction(action.id, action.site_id); }}>{unlinkAction}</CmmButton> : null}
               </div> : null}

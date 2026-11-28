@@ -61,12 +61,17 @@ describe("organization collection panel", () => {
     const manager = { ...base, role: "manager" as const, actions: [{ ...action, can_manage: true }] };
     const html = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={manager} siteId={null} locale="fr" busy={false} offset={0} onPage={() => undefined} onUnlinkAction={() => undefined} />);
     expect(html).toContain("Retirer de l’organisation");
+    expect(html).toContain("/actions/new?tab=after&amp;actionId=00000000-0000-4000-8000-000000000051");
     expect(html).toContain("/actions/new?tab=before&amp;duplicateFrom=00000000-0000-4000-8000-000000000051&amp;organizationId=00000000-0000-4000-8000-000000000001");
+
+    const planned = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={{ ...manager, actions: [{ ...action, can_manage: true, action_date: "2026-04-04", action_phase: "pre_action", status: "planned" }] }} siteId={null} locale="fr" busy={false} offset={0} onPage={() => undefined} onUnlinkAction={() => undefined} />);
+    expect(planned).toContain("/actions/new?tab=before&amp;actionId=00000000-0000-4000-8000-000000000051");
 
     const noActionRights = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={{ ...manager, actions: [{ ...action, can_manage: false }] }} siteId={null} locale="fr" busy={false} offset={0} onPage={() => undefined} onUnlinkAction={() => undefined} />);
     expect(noActionRights).not.toContain("Retirer de l’organisation");
 
     const member = renderToStaticMarkup(<OrganizationCollectionsPanel workspace={{ ...base, actions: [{ ...action, can_manage: true }] }} siteId={null} locale="fr" busy={false} offset={0} onPage={() => undefined} onUnlinkAction={() => undefined} />);
     expect(member).not.toContain("Retirer de l’organisation");
+    expect(member).not.toContain("Gérer la collecte");
   });
 });
