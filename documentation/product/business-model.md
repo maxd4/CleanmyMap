@@ -173,6 +173,22 @@ Une grande fourchette n'est pas une preuve de demande. Définir un **prix test**
 - Un **abonnement professionnel** exige des droits d'accès organisationnels vérifiés, une capacité de support récurrent, des conditions contractuelles et une valeur démontrée chaque mois.
 - Les petites associations disposent souvent de budgets limités ; elles ne sont pas le meilleur segment à facturer dès le lancement. Préserver un socle gratuit augmente la compatibilité avec la mission d'intérêt collectif.
 
+
+### Lecture commerciale : autonomie, accompagnement et engagement local durable
+
+**PLAN / PROPOSITION, 28 novembre 2026.** La [stratégie de différenciation entreprise](./persona-entreprise-rse.md#différenciation-face-aux-campagnes-nationales-et-aux-outils-rse) explicite le concept pilote « Adoptez un territoire », la complémentarité avec World Cleanup Day et le Mégothon, les besoins à tester et les limites scientifiques. Les trois modes d'engagement suivants regroupent les offres déjà définies dans ce modèle, sans nouveaux tarifs ni priorité de développement.
+
+| Mode | Valeur testée | Financement de référence |
+| --- | --- | --- |
+| Entreprise autonome | Utiliser les parcours essentiels existants pour organiser ses actions sans accompagnement individuel ni service garanti | Gratuit pour le socle essentiel ; aucune extension privée ou service professionnel promis |
+| Entreprise accompagnée | Préparation, animation, matériel défini, sensibilisation et bilan d'une action | Offre A et fourchette cleanwalk de la section 4 ; prix test 900 EUR, fourchette 500 à 2 000 EUR / événement |
+| Entreprise engagée | Financer ou co-construire un programme local récurrent avec les acteurs de terrain, éventuellement sans présence de salariés | Programme de nettoyage d'une zone (section 4), fourchette exploratoire 1 000 à 5 000 EUR / an ; ou mécénat/prestation selon le contrat réel |
+
+Le scénario annuel de quatre collectes et deux ateliers du persona ne constitue pas un forfait garanti dans cette fourchette. Chiffrer séparément le temps humain, la logistique, le matériel, l'assurance, le suivi des mesures, les ateliers, les rapports et le support ; ajuster le volume ou le prix à la capacité et au coût complet. Les prix test des offres A, B et C ne s'additionnent pas automatiquement ; ne pas facturer deux fois une activité financée. Un programme pour une entreprise financeuse n'est pas identique à un marché communal.
+
+Tester d'abord l'usage réel et le renouvellement, en respectant les conditions de portage des sections 2 et 3. La qualification d'une aide d'entreprise dépend de sa contrepartie, de son bénéficiaire et de sa convention. Le financement associatif, les prestations commerciales et les contributions en nature restent distincts ; aucune réduction fiscale, certification RSE, garantie de propreté ou attribution exclusive des résultats n'est promise. Le mécénat de compétences et la mise à disposition de salariés sont à qualifier avec les employeurs et les organisateurs. La validation économique reste soumise aux sections 9 et 12.
+
+
 ## 6. Abonnements : pistes, pas chantier immédiat
 
 | Client | Hypothèse tarifaire | Contenu finançable | Dépendance principale |

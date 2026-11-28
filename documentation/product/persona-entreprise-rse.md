@@ -144,6 +144,85 @@ Secteurs à explorer : distribution, restauration, hôtellerie, énergie, immobi
 
 Les fonctions listées sont celles publiquement décrites, pas des tests des logiciels. L'absence d'une fonction dans ce tableau ne prouve pas son inexistence. Les offres peuvent être complémentaires à CleanMyMap. Étudier en particulier Lakaa pour le multisite et Clean Challenge pour la dépollution ludique. Ne pas copier une suite RSE généraliste ni faire de la compétition entre participants un prérequis.
 
+
+### Différenciation face aux campagnes nationales et aux outils RSE
+
+**Statut : PLAN / PROPOSITION, 28 novembre 2026.** Orientation stratégique issue de la réflexion sur le persona entreprise. Les sources publiques décrivent les offres annoncées par les acteurs, pas leur qualité d'exécution, leurs parts de marché ni leurs budgets réels. L'hypothèse que World Cleanup Day et le Mégothon captent la majorité des cleanwalks d'entreprise et de leurs financements RSE en France est **NON PROUVÉE** : aucune série représentative des dépenses, des événements et des acheteurs n'a été identifiée dans cette recherche. Ne pas dimensionner un marché adressable ni fixer un prix à partir de cette hypothèse.
+
+#### Concurrence, complémentarité et enseignements
+
+| Acteur | Offre publique consultée le 28 novembre 2026 | Conséquence pour CleanMyMap |
+|---|---|---|
+| [World Cleanup Day France](https://www.worldcleanupday.fr/prestations/) | Formation à l'organisation, accompagnement sur site selon les bénévoles disponibles, bilans compilés, infographies, atelier sur les mégots | Ne pas réduire son offre à une journée annuelle. Explorer les besoins de coordination locale, de suivi hors campagne et de restitution complémentaire, plutôt que remplacer son agenda ou son dispositif de bilan. |
+| [Mégothon](https://megothon.org/organiser/) | Format Solo gratuit : mission privée, accès par code, classement et résultats, rapport ; Format Tour premium multisite avec accompagnement, communication et engagement de crédits plastique-mégots ; animations collectives | Gratuité, accès privé, challenges, rapport et multisite ne sont pas des différenciateurs autonomes. Se concentrer sur les déchets au sens large, la prévention, l'interopérabilité et la connaissance territoriale durable. Les allégations de certification ou de compatibilité CSRD sont celles du prestataire, non vérifiées ici et non transposables à CleanMyMap. |
+| [Act! with Surfrider](https://act.surfrider.eu/collecte-de-dechets-entreprise/) | Collecte animée, tri, quantification, sciences participatives et sensibilisation, sur devis | La science participative et la pédagogie ne sont pas exclusives. Examiner une complémentarité entre animateurs qualifiés et outils numériques. |
+| [Lakaa](https://www.lakaa.io/product) | Pilotage de l'engagement local, animation d'un réseau d'ambassadeurs et consolidation multisite | Ne pas reproduire une suite généraliste de gestion de la RSE. Se spécialiser dans le terrain, la dépollution et la restitution documentée. |
+| [Clean Challenge](https://www.cleanchallenge.fr/challenge-entreprise/) | Collectes sous forme de challenges personnalisés, accès privé, suivi et bilan | Concurrence directe pour les opérations de mobilisation. Préserver l'engagement volontaire et non compétitif ; aucun nouveau challenge sans besoin distinct des campagnes. |
+
+Le [parcours entrepreneurial de Lakaa](https://www.lakaa.io/about) constitue un retour d'expérience intéressant : ses fondateurs ont commencé par Cleanwalk.org en 2019, puis expérimenté une offre événementielle destinée aux entreprises en 2020, arrêtée en 2022, avant de poursuivre le pilotage de l'engagement local. Ce précédent ne démontre pas que CleanMyMap doit reproduire cette trajectoire, ni que les prestations de collecte sont rentables.
+
+#### Proposition de valeur à tester
+
+> CleanMyMap aide les entreprises à transformer des engagements environnementaux ponctuels en actions locales durables, en mobilisant leurs collaborateurs, en soutenant des associations autonomes et en documentant les résultats de terrain.
+
+La cible n'est pas un remplacement des campagnes existantes, mais une infrastructure de coopération spécialisée dans les déchets sauvages. La combinaison suivante est une **hypothèse de différenciation**, non un avantage concurrentiel établi :
+
+| Axe | Valeur possible pour le client | Preuve nécessaire / limite |
+|---|---|---|
+| Engagement toute l'année | Continuité entre deux campagnes nationales, calendrier local et suivi de la récurrence | Vérifier qu'un responsable RSE a réellement des objectifs, un budget et des besoins hors campagne. Les campagnes nationales peuvent aussi accompagner des actions hors événement. |
+| Connaissance d'un territoire | Aider à choisir les secteurs où agir et à réorienter la prévention autour d'un site | Vérifier sur le terrain ; signalements historiques, projections et mesures actuelles ne sont pas interchangeables. Aucune couverture exhaustive. |
+| Méthodologie scientifique | Bilan traçable, catégories de déchets, effort et couverture explicites | Comparer des données et protocoles admissibles selon le [protocole scientifique](./SCIENTIFIC_PROTOCOL.md) et la [méthodologie de carte](./methodologie-carte-actions.md), sans certification implicite ni équivalences physiques non démontrées. |
+| Réseau associatif local | Mise en relation, organisation par les acteurs de proximité, mobilisation même sans salariés disponibles | Vérifier la capacité d'encadrement, le consentement des partenaires, la réutilisation effective et les coûts. Aucune association acquise par sa seule présence dans un annuaire. |
+| Financement d'actions et d'ateliers | Soutenir des projets citoyens ou scolaires, même sans journée de team building | Distinguer prestation, sponsoring, mécénat financier ou de compétences ; ne pas promettre de reçu fiscal. Définir les dépenses, le porteur et le résultat attendu. |
+| Interopérabilité et logiciel libre | Éviter les doubles saisies et la dépendance à un organisateur ou prestataire unique | Publication unique privilégiée, liens et exports admissibles en premier ; accord, licence, droits et rapprochement des sources nécessaires avant synchronisation. AGPL ne signifie pas que les données privées sont libres d'accès. |
+| Expérience web et mobile | Faciliter préparation, action et suivi volontaire de l'engagement | Réutiliser les parcours existants ; la vision mobile de continuité inspirée de Strava reste une orientation à valider. Ne pas promettre la disponibilité d'un mobile terrain non validé ni surveiller les salariés. |
+
+La gratuité du socle citoyen facilite l'adoption, mais ne suffit pas à elle seule à créer un avantage défendable. Les actifs potentiellement durables sont des relations volontaires et récurrentes avec les organisateurs, la fiabilité opérationnelle, une mémoire de terrain qualifiée et des usages reproductibles de ces données. Ne pas rechercher un monopole territorial, une exclusivité de données ni un verrouillage technique.
+
+#### Concept pilote : « Adoptez un territoire »
+
+**Proposition de nom et d'offre, non contractualisée.** Une entreprise contribue à un programme de dépollution et de prévention sur un périmètre limité (quartier, parc, abords d'un établissement ou site d'activité), pendant une période convenue. Le terme « adopter » ne confère ni propriété, ni exclusivité, ni responsabilité municipale. Le programme complète les dispositifs de propreté et les initiatives associatives ; les opérations et périmètres sont choisis avec les acteurs habilités.
+
+Exemple fictif d'une année, à ajuster aux autorisations, aux disponibilités et aux calendriers officiels :
+
+| Période indicative | Intervention | Restitution |
+|---|---|---|
+| Mars | Diagnostic initial documenté et première collecte | Périmètre, protocole, observations initiales et données de l'action |
+| Mai | Deuxième collecte, éventuellement inscrite au Mégothon, et un atelier de sensibilisation | Mégots et autres catégories selon le dispositif, destination connue, retour pédagogique |
+| Septembre | Troisième collecte, éventuellement inscrite au World Cleanup Day | Résultats de l'action et contribution à la campagne selon ses règles |
+| Novembre | Quatrième collecte, deuxième atelier et restitution annuelle | Comparaison si protocole comparable, bilan des moyens, limites, suites proposées |
+
+Les quatre collectes et deux ateliers ne sont ni un engagement de capacité ni un quota obligatoire. Définir avant signature l'organisateur réel, les animateurs, les autorisations, le matériel, l'assurance, la sécurité, la collecte et la destination des déchets, l'encadrement des mineurs, les conditions d'annulation, les droits de réutilisation des données et les livrables. Un diagnostic peut être manuel ; il ne requiert pas une nouvelle carte ou un nouveau portail.
+
+Indicateurs à discuter avec le financeur et les associations : présence effective, heures mobilisées si connues, actions et ateliers réalisés, quantité et type de déchets observés ou déclarés, destination documentée, coût complet, utilisation du bilan et renouvellement. Pour suivre la pollution, distinguer un relevé de stock sur secteur comparable et la quantité retirée pendant une collecte ; documenter périmètre, effort, durée, météo, saison, interventions tierces et limites de couverture. Une baisse du poids collecté ne prouve pas une réduction de la pollution ; une hausse ne prouve pas non plus une meilleure performance. Ne pas déduire de causalité de la seule série temporelle, ne pas convertir un manque de mesure en zéro, ni transformer les déchets retirés en émissions évitées ou en eau dépolluée mesurées. Appliquer les statuts canoniques du protocole scientifique.
+
+Le programme peut inclure des collectes avec les salariés, des actions associatives financées sans participation des salariés, et des ateliers scolaires si les conditions pédagogiques et juridiques sont réunies. L'entreprise peut choisir le périmètre de son soutien sans contrôler les méthodes scientifiques, les signalements ou la modération. Les résultats communs sont attribués aux actions et acteurs effectifs, sans double comptage lorsqu'une même collecte est publiée par plusieurs plateformes ou financée par plusieurs partenaires.
+
+L'[ambition territoriale parisienne](./ambition-territoriale-paris.md) reste l'owner de la coopération de quartier, des relations municipales et des responsabilités territoriales. Le [business model](./business-model.md) reste l'owner des offres, prix tests et portages ; les exemples ci-dessus ne créent aucun tarif forfaitaire.
+
+#### Coopérer avec les événements nationaux et accéder aux entreprises
+
+- **World Cleanup Day :** proposer un échange de découverte avec ses représentants et les associations locales sur les difficultés observées avant, pendant et après les collectes, les formats de bilan et le suivi entre éditions. Examiner un pilote limité avec des organisateurs volontaires, sur accord, plutôt qu'une migration complète de sa plateforme. Un rôle de prescripteur, relais ou partenaire de diffusion est une possibilité à valider, jamais un partenariat acquis.
+- **Mégothon :** étudier le complément d'un suivi annuel multidéchets, les besoins hors campagne et les règles de déclaration des résultats de mégots. Respecter l'identité de l'événement, ses critères de contribution et sa filière ; ne pas proposer un crédit plastique, certificat, label ou résultat CSRD automatique.
+- **Associations et prestataires :** faciliter leur travail numérique et la visibilité de leurs initiatives. Éviter de concurrencer systématiquement leurs prestations humaines ; définir par écrit la répartition des responsabilités, des coûts et, si besoin, des recettes. Pas de commission, d'exclusivité ou de rémunération présumée.
+- **Canal direct :** commencer avec les entreprises ayant déjà réalisé des collectes en Île-de-France, puis rencontrer celles qui n'en organisent pas pour comprendre les freins. Identifier l'acheteur RSE/RH, le responsable local, le porteur et les éventuels financeurs ; demander une introduction ou un entretien, pas une adhésion forcée.
+- **Fondations :** présenter un programme d'intérêt collectif avec bénéficiaires, territoire, budget et preuves de réalisation, plutôt que demander le financement indifférencié d'un logiciel. Le tableau de prospection des fondations de la section 9 reste la source de qualification.
+
+Commencer la coopération par des liens publics, un calendrier et des restitutions autorisées ; tester une transmission manuelle de bilan avant toute automatisation. L'interopérabilité suit les propriétaires existants : [publication unique et API Engagement](../plans/interoperabilite-api-engagement.md), [synchronisation des actions externes](../plans/synchronisation-actions-externes.md). Aucune API, extraction ou export privé n'est autorisé par cette proposition ; aucun participant inscrit ou événement importé ne devient automatiquement une présence ou une action réalisée. Respecter source, identifiant, statut, fraîcheur, conditions d'usage, déduplication et consentement.
+
+#### Expérimentation et décision de poursuite
+
+Ne pas ajouter de roadmap parallèle. L'ordre de développement appartient à la [roadmap priorisée](./roadmap-priorisee.md), les contrats disponibles aux fiches CURRENT et au runtime vérifié. Le chantier entreprise déjà engagé n'établit pas une demande commerciale ; sa réception technique est distincte de cette expérimentation.
+
+1. **Découverte :** dans les entretiens de la section 10, demander le calendrier réel des actions et des dépenses sur douze mois, les budgets déjà engagés pour les campagnes, leurs alternatives, la part disponible hors événement, le rôle du payeur et l'usage effectif des bilans. Chercher les tâches coûteuses ou mal couvertes, sans induire les réponses.
+2. **Test d'offre :** présenter le parcours autonome, l'action accompagnée et le programme annuel (voir le business model) à des acheteurs réels. Comparer leur intérêt pour un simple outil, une prestation ponctuelle, une coordination annuelle ou un soutien associatif. Demander une prochaine action, un budget identifié et des conditions de décision ; un intérêt verbal n'est pas une vente.
+3. **Pilote parisien :** avec un organisateur volontaire et un périmètre autorisé, réaliser d'abord une collecte et une restitution avec les outils existants ; si l'intérêt et la capacité se confirment, proposer un deuxième rendez-vous ou une action récurrente. Tester manuellement les dimensions cartographiques et de reporting avant d'industrialiser.
+4. **Évaluation :** documenter le temps de préparation, la présence, la complétude des données, la réception du bilan, le coût, l'intérêt pour le renouvellement, le consentement des partenaires et l'éventuel devis accepté. Recueillir aussi les refus, les raisons du recours aux acteurs existants et les coûts de changement.
+5. **Arbitrage :** conserver la spécialisation territoriale si un besoin répété et un usage réel sont démontrés ; privilégier l'offre ponctuelle ou l'accompagnement associatif si la demande annuelle reste absente. Ne pas ouvrir de chantier paywall, de portail distinct, de gamification concurrente, de certification ou d'intégration complexe pour compenser l'absence de demande.
+
+**STOP CONDITION de cette proposition :** l'expérimentation s'inscrit dans les critères de validation de la section 11 et du business model ; une décision de poursuite ou de recentrage est fondée sur des besoins réellement recueillis, au moins un pilote exploitable ou des refus documentés, un coût complet et un portage admissible. La stratégie ne devient pas CURRENT par sa publication ; les partenariats, la demande, la valeur scientifique comparative et les revenus restent NON PROUVÉS à ce stade.
+
+
 ## 7. Parcours et opportunités fonctionnelles (PLAN)
 
 Le [parcours CURRENT](./parcours-utilisateurs.md) décrit le représentant d'entreprise via partenariat, indicateurs et Sponsor. Les usages suivants sont des hypothèses de recherche, à confronter au runtime avant toute implémentation.
