@@ -8,6 +8,17 @@ mensuel `.github/workflows/supabase-backup.yml` et la preuve CI
 migration, ni `db push`, ni modification de Production. Les workflows utilisent
 un runner GitHub hébergé ; Docker n'est jamais lancé sur le poste local.
 
+Les utilitaires manuels `backup:actions` et `data:archive:supabase` n'écrivent
+plus par défaut dans le dépôt : fournir une destination absolue hors dépôt
+attestée par `.cmm-private-backup-destination` contenant
+`CLEANMYMAP PRIVATE BACKUP DESTINATION`. Cette attestation doit être créée
+uniquement après contrôle des permissions privées de la destination. Le backup
+Actions v2 reste limité aux relations métier listées par son contrat et
+n'exporte pas Storage. L'archive Supabase manuelle ne remplace pas le workflow
+mensuel, lequel exporte le dump base et les buckets Storage au moyen de son
+exporteur dédié, construit un manifeste de hashes puis restaure sur PostgreSQL
+éphémère avant chiffrement et publication privée.
+
 ### Statuts de preuve
 
 - `CURRENT` décrit ce qui est versionné dans le workflow et les scripts présents

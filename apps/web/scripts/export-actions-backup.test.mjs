@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { exportActionBackup } from "./export-actions-backup.mjs";
+import { generatePublicActionFiches, mergePublicActionSnapshot } from "./action-public-fiches.mjs";
 
 const actionId = "11111111-1111-4111-8111-111111111111";
 
@@ -270,4 +271,39 @@ test("rejects a partial relation read when a later page fails", async () => {
     exportActionBackup(supabase, "2026-10-18T10:00:00.000Z"),
     /action_organizers: simulated page failure/,
   );
+});
+
+test("generates deterministic public fiches from the validated snapshot using a private-field whitelist", async () => {
+  const candidates = [
+    ["b1f71234-21e2-4954-8526-f45f238249ae", "2026-02-14"],
+    ["15ee0be8-3747-48c8-9de0-c12b40e79eb9", "2026-03-06"],
+    ["e168fb7a-034c-4b22-9b5f-b138188bf1e2", "2026-03-21"],
+    ["da367653-530f-4554-9e9b-164519336f52", "2026-04-11"],
+    ["f92499c2-aa14-4a51-8b56-c835a7d436f6", "2026-04-22"],
+  ].map(([id, date], index) => ({
+    ...actionRow(id, `${date}T12:00:00.000Z`),
+    action_date: date,
+    location_label: `Public place ${index}`,
+    organizer_type: "association",
+    organizer_name: "Brigade Verte",
+    waste_kg: index === 0 ? null : index === 1 ? 0 : index,
+    cigarette_butts: 0,
+    collectors_count: null,
+    notes: "PRIVATE_SENTINEL",
+    preparation_data: { secret: "PRIVATE_PREPARATION_SENTINEL" },
+  }));
+  const { supabase } = makeSupabase({ rowsByTable: { actions: candidates } });
+  const backup = await exportActionBackup(supabase, "2026-11-28T10:00:00.000Z");
+  const first = generatePublicActionFiches(backup);
+  const again = generatePublicActionFiches(backup);
+
+  assert.deepEqual(first, again);
+  assert.equal(first.length, 5);
+  assert.match(first[0].markdown, /Masse hors mégots : Inconnu/);
+  assert.match(first[1].markdown, /Masse hors mégots : 0 kg/);
+  assert.doesNotMatch(first.map((item) => item.markdown).join("\n"), /PRIVATE_SENTINEL|preparation_data/);
+  const existing = "# Historique relu\nSource et hypothèses conservées.\n";
+  const merged = mergePublicActionSnapshot(existing, first[0].markdown);
+  assert.match(merged, /Source et hypothèses conservées/);
+  assert.equal(mergePublicActionSnapshot(merged, first[0].markdown), merged);
 });

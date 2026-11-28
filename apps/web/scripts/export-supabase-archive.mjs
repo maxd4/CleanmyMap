@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
@@ -141,10 +141,19 @@ async function main() {
   }
   const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
   const { outDir } = parseArgs();
-  const timestamp = new Date().toISOString().replace(/[:]/g, "-");
-  const baseDir = outDir
-    ? resolve(process.cwd(), outDir)
-    : join(REPO_ROOT, "artifacts", "backups", "supabase-archive", timestamp);
+  if (!outDir || !isAbsolute(outDir)) {
+    throw new Error("An explicit absolute --out directory on verified private storage is required");
+  }
+  const baseDir = resolve(outDir);
+  const rel = relative(REPO_ROOT, baseDir);
+  if (rel === "" || rel === ".." || rel.startsWith(`..${sep}`)) {
+    throw new Error("Supabase archive destination must be outside the repository");
+  }
+  const markerPath = join(baseDir, ".cmm-private-backup-destination");
+  const marker = await readFile(markerPath, "utf8").catch(() => "");
+  if (marker.trim() !== "CLEANMYMAP PRIVATE BACKUP DESTINATION") {
+    throw new Error("Private destination is unverified; provision and attest it before exporting sensitive data");
+  }
 
   await mkdir(baseDir, { recursive: true });
 

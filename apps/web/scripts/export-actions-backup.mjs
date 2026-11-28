@@ -1,5 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { writeFile, readFile } from "node:fs/promises";
+import { dirname, isAbsolute, join, relative as relativePath, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -7,6 +7,7 @@ import {
   buildActionBackup,
   validateActionBackup,
 } from "./action-backup-contract.mjs";
+import { generatePublicActionFiches, mergePublicActionSnapshot } from "./action-public-fiches.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const PAGE_SIZE = 1000;
@@ -208,14 +209,42 @@ async function main() {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const backup = await exportActionBackup(supabase);
-  const timestamp = new Date().toISOString().replace(/[:]/g, "-");
-  const backupDir = join(REPO_ROOT, "artifacts", "backups", "actions");
-  await mkdir(backupDir, { recursive: true });
-
-  const outPath = join(backupDir, `actions-backup-v${backup.version}-${timestamp}.json`);
-  await writeFile(outPath, `${JSON.stringify(backup, null, 2)}\n`, "utf8");
-  console.log(`Backup written: ${outPath}`);
-  console.log(`Actions: ${backup.counts.actions}; format: ${backup.format} v${backup.version}`);
+  const args = process.argv.slice(2);
+  const publicFichesOnly = args.includes("--public-fiches");
+  const privateOutArg = args.find((arg) => arg.startsWith("--private-out="));
+  if (args.some((arg) => arg !== "--public-fiches" && !arg.startsWith("--private-out="))) {
+    throw new Error("Usage: node scripts/export-actions-backup.mjs [--public-fiches] [--private-out=<verified-private-directory>]");
+  }
+  if (!publicFichesOnly && !privateOutArg) {
+    throw new Error("Explicit --private-out is required for technical action backups; repository artifacts are not a private destination");
+  }
+  if (privateOutArg) {
+    const outDir = resolve(process.cwd(), privateOutArg.slice("--private-out=".length));
+    const repoRoot = resolve(REPO_ROOT);
+    const relative = relativePath(repoRoot, outDir);
+    if (!isAbsolute(privateOutArg.slice("--private-out=".length)) || relative === "" || relative === ".." || relative.startsWith(`..${sep}`)) {
+      throw new Error("Private backup destination must be an absolute directory outside the repository");
+    }
+    const markerPath = join(outDir, ".cmm-private-backup-destination");
+    const marker = await readFile(markerPath, "utf8").catch(() => "");
+    if (marker.trim() !== "CLEANMYMAP PRIVATE BACKUP DESTINATION") {
+      throw new Error("Private destination is unverified; provision and attest it before exporting sensitive data");
+    }
+    const timestamp = new Date().toISOString().replace(/[:]/g, "-");
+    const outPath = join(outDir, `actions-backup-v${backup.version}-${timestamp}.json`);
+    await writeFile(outPath, `${JSON.stringify(backup, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+    console.log(`Backup written to verified private destination; format v${backup.version}; actions ${backup.counts.actions}`);
+  }
+  if (publicFichesOnly) {
+    const fiches = generatePublicActionFiches(backup);
+    const outputDir = join(REPO_ROOT, "documentation", "operations", "data-import", "reconciliation-actions", "fiches");
+    for (const fiche of fiches) {
+      const filePath = join(outputDir, fiche.file);
+      const existing = await readFile(filePath, "utf8");
+      await writeFile(filePath, mergePublicActionSnapshot(existing, fiche.markdown), "utf8");
+    }
+    console.log(`Generated ${fiches.length} public action fiches from the same validated snapshot`);
+  }
 }
 
 const currentModuleUrl = pathToFileURL(process.argv[1] ?? "").href;
