@@ -13,6 +13,7 @@ import {
   MOBILE_COVERAGE_SCOPE_FINGERPRINT,
   classifyCoverageFile,
   getDefaultCoveragePaths,
+  isInstrumentableCoveragePath,
   validateCoverageEnforcementPolicy,
 } from "../checks/coverage-policy.mjs";
 import { runCoverageCheck } from "../checks/check-coverage.mjs";
@@ -101,11 +102,26 @@ function stateFor(policy, scope) {
     ...Object.values(web?.domains ?? {}).map((entry) => entry?.state),
     web?.historical?.state,
     web?.changedLines?.state,
+    web?.candidateFiles?.state,
   ].includes("ENFORCE") ? "ENFORCE" : "OBSERVE";
 }
 
 function hasEnforcedWebRequirement(policy) {
   return stateFor(policy, "web") === "ENFORCE";
+}
+
+export function getCandidateDiffFiles({ repositoryRoot, baseRef, candidateSha }) {
+  if (!baseRef) throw new Error("Coverage publication requires a Git baseRef; changed-file allowlists are not accepted.");
+  const base = gitSha(repositoryRoot, baseRef);
+  const candidate = gitSha(repositoryRoot, candidateSha);
+  try {
+    execFileSync(gitExecutable(), ["merge-base", "--is-ancestor", base, candidate], { cwd: repositoryRoot, stdio: "ignore" });
+  } catch {
+    throw new Error("Coverage publication base must be an ancestor of the exact candidate commit.");
+  }
+  return execFileSync(gitExecutable(), [
+    "diff", "--name-only", "--no-renames", "--diff-filter=ACMRTUXB", base, candidate,
+  ], { cwd: repositoryRoot, encoding: "utf8" }).split(/\r?\n/).map(normalizePath).filter(Boolean);
 }
 
 function webRiskDomains(files) {
@@ -417,12 +433,15 @@ export function runCoveragePublicationGate({
   candidateSha,
   baseRef = null,
   currentRef = candidateSha,
-  changedFiles = [],
   policy = COVERAGE_ENFORCEMENT_POLICY,
   coverageCheck = runCoverageCheck,
+  candidateDiffResolver = getCandidateDiffFiles,
 } = {}) {
   validateCoverageEnforcementPolicy(policy);
-  const selection = getCoveragePublicationRequirements({ changedFiles, policy });
+  const exactChangedFiles = candidateDiffResolver({ repositoryRoot, baseRef, candidateSha });
+  const candidateFiles = exactChangedFiles.filter((file) => isWebFile(file)
+    && isInstrumentableCoveragePath(normalizePath(file).replace(/^apps\/web\//, ""), { scope: "web" }));
+  const selection = getCoveragePublicationRequirements({ changedFiles: exactChangedFiles, policy });
   if (selection.requirements.length === 0) {
     const status = selection.files.length === 0 || selection.files.every(isDocumentationFile) ? "NOT_REQUIRED" : "OBSERVE";
     console.log(`COVERAGE_PUBLICATION_GATE: ${status}`);
@@ -443,6 +462,8 @@ export function runCoveragePublicationGate({
         currentCommit: candidateSha,
         baseRef,
         currentRef,
+        candidateFiles,
+        candidateFilesRequired: true,
         enforcementPolicy: policy,
         validateEvidence: ({ repositoryRoot: evidenceRepositoryRoot, expectedCandidateSha }) => validateCoverageEvidence({
           repositoryRoot: evidenceRepositoryRoot,
@@ -490,23 +511,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToP
   const candidateRef = process.argv.find((argument) => argument.startsWith("--candidate-ref="))?.slice("--candidate-ref=".length) ?? "HEAD";
   const baseRef = process.argv.find((argument) => argument.startsWith("--base-ref="))?.slice("--base-ref=".length) ?? null;
   const candidateSha = gitSha(process.cwd(), candidateRef);
-  const changedFiles = process.argv.filter((argument) => argument.startsWith("--changed-file=")).map((argument) => argument.slice("--changed-file=".length));
-  const changedFilesFile = process.argv.find((argument) => argument.startsWith("--changed-files-file="))?.slice("--changed-files-file=".length) ?? null;
-  const changedFilesFromFile = changedFilesFile
-    ? JSON.parse(fs.readFileSync(path.resolve(changedFilesFile), "utf8").replace(/^\uFEFF/, ""))
-    : [];
-  if (!Array.isArray(changedFilesFromFile) || changedFilesFromFile.some((file) => typeof file !== "string")) {
-    throw new Error("--changed-files-file must contain a JSON array of file paths.");
-  }
-  const resolvedChangedFiles = changedFiles.length > 0
-    ? [...changedFiles, ...changedFilesFromFile]
-    : changedFilesFromFile.length > 0
-      ? changedFilesFromFile
-    : baseRef
-      ? execFileSync(gitExecutable(), ["diff", "--name-only", baseRef, candidateSha], { cwd: process.cwd(), encoding: "utf8" }).split(/\r?\n/).filter(Boolean)
-      : [];
   try {
-    runCoveragePublicationGate({ repositoryRoot: process.cwd(), candidateSha, baseRef, currentRef: candidateSha, changedFiles: resolvedChangedFiles });
+    runCoveragePublicationGate({ repositoryRoot: process.cwd(), candidateSha, baseRef, currentRef: candidateSha });
   } catch (error) {
     console.error(`COVERAGE_PUBLICATION_GATE_BLOCKED: ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 1;

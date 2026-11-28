@@ -20,8 +20,9 @@ import {
 } from "../checks/coverage-evidence.mjs";
 import {
   getCoveragePublicationRequirements,
+  getCandidateDiffFiles,
   resolveCoverageCandidate,
-  runCoveragePublicationGate,
+  runCoveragePublicationGate as runCoveragePublicationGateImpl,
   validateCoveragePublicationProof,
 } from "./coverage-publication.mjs";
 import { assertCoverageCandidateIdentity } from "./validation-evidence.mjs";
@@ -58,6 +59,28 @@ function candidateSha() {
   return execFileSync(gitExecutable(), ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
 }
 
+function runCoveragePublicationGate(options) {
+  return runCoveragePublicationGateImpl({
+    ...options,
+    candidateDiffResolver: options.candidateDiffResolver ?? (() => options.changedFiles ?? []),
+  });
+}
+
+test("le diff réel de publication est calculé depuis deux commits Git, sans allowlist manuelle", () => {
+  const fixture = createCoverageIdentityFixture();
+  try {
+    const baseRef = fixture.sha;
+    fs.mkdirSync(path.join(fixture.root, "apps", "web", "src", "lib", "actions"), { recursive: true });
+    fs.writeFileSync(path.join(fixture.root, "apps", "web", "src", "lib", "actions", "action.ts"), "export const value = 1;\n", "utf8");
+    gitAt(fixture.root, ["add", "."]);
+    gitAt(fixture.root, ["commit", "--quiet", "-m", "runtime change"]);
+    const candidateShaValue = gitAt(fixture.root, ["rev-parse", "HEAD"]);
+    assert.deepEqual(getCandidateDiffFiles({ repositoryRoot: fixture.root, baseRef, candidateSha: candidateShaValue }), ["apps/web/src/lib/actions/action.ts"]);
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 function enforcedWebPolicy() {
   const policy = structuredClone(COVERAGE_ENFORCEMENT_POLICY);
   policy.scopes.web.domains.business.state = "ENFORCE";
@@ -80,13 +103,19 @@ function enforcedMobilePolicy() {
   return policy;
 }
 
-function writeWebProof(root, sha, { candidate = sha } = {}) {
+function writeWebProof(root, sha, { candidate = sha, candidateBranchPct = 100, omitActionRow = false } = {}) {
   const scopeRoot = path.join(root, sha, "web");
   const reports = [
     "apps/web/coverage/coverage-summary.json",
     "apps/web/coverage/lcov.info",
     "apps/web/coverage/coverage-evidence.json",
   ];
+  const completeMetrics = (branches = 100) => ({
+    statements: { total: 100, covered: 100, pct: 100 },
+    branches: { total: 100, covered: branches, pct: branches },
+    functions: { total: 100, covered: 100, pct: 100 },
+    lines: { total: 100, covered: 100, pct: 100 },
+  });
   const summary = {
     total: {
       statements: { total: 1, covered: 1, pct: 100 },
@@ -94,6 +123,12 @@ function writeWebProof(root, sha, { candidate = sha } = {}) {
       functions: { total: 1, covered: 1, pct: 100 },
       lines: { total: 1, covered: 1, pct: 100 },
     },
+    "apps/web/src/lib/auth/auth.ts": completeMetrics(),
+    ...(!omitActionRow ? { "apps/web/src/lib/actions/action.ts": completeMetrics(candidateBranchPct) } : {}),
+    "apps/web/src/app/api/actions/[actionId]/formalities/route.ts": completeMetrics(),
+    "apps/web/src/app/api/actions/route.ts": completeMetrics(),
+    "apps/web/src/lib/route/route.ts": completeMetrics(),
+    "apps/web/src/lib/supabase/client.ts": completeMetrics(),
   };
   for (const report of reports) {
     const absolute = path.join(scopeRoot, report);
@@ -374,13 +409,12 @@ test("documentation-only candidates do not request a coverage suite", () => {
   assert.equal(result.reason, "DOCUMENTATION_ONLY_OR_EMPTY");
 });
 
-test("OBSERVE candidates remain diagnostic and do not require a proof", () => {
-  const result = runCoveragePublicationGate({
+test("un candidat Web runtime exige une preuve même si les agrégats historiques restent OBSERVE", () => {
+  assert.throws(() => runCoveragePublicationGateImpl({
     repositoryRoot,
     candidateSha: candidateSha(),
     changedFiles: ["apps/web/src/lib/actions/action.ts"],
-  });
-  assert.equal(result.status, "OBSERVE");
+  }), /requires a Git baseRef; changed-file allowlists are not accepted/);
 });
 
 test("changedLines ENFORCE alone requires Web proof for a relevant file", () => {
@@ -440,6 +474,47 @@ test("an ENFORCE candidate requires an exact proof and accepts a conforming repo
     });
     assert.equal(result.status, "PASS");
     assert.equal(validateCoveragePublicationProof({ repositoryRoot, candidateSha: sha, scope: "web" }).proof.candidateSha, sha);
+  } finally {
+    if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("the real publication gate rejects an under-threshold file despite 100% aggregate metrics", () => {
+  const sha = candidateSha();
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-candidate-file-gate-"));
+  const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;
+  try {
+    writeWebProof(temporaryRoot, sha, { candidateBranchPct: 69 });
+    assert.throws(() => runCoveragePublicationGate({
+      repositoryRoot,
+      candidateSha: sha,
+      baseRef: sha,
+      changedFiles: ["apps/web/src/lib/auth/auth.ts"],
+      candidateDiffResolver: () => ["apps/web/src/lib/actions/action.ts"],
+    }), /Coverage ENFORCE failed for web/);
+  } finally {
+    if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+    else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("the real publication gate rejects a candidate file omitted from the report", () => {
+  const sha = candidateSha();
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-candidate-file-omitted-"));
+  const previousRoot = process.env.CMM_COVERAGE_PUBLICATION_ROOT;
+  process.env.CMM_COVERAGE_PUBLICATION_ROOT = temporaryRoot;
+  try {
+    writeWebProof(temporaryRoot, sha, { omitActionRow: true });
+    assert.throws(() => runCoveragePublicationGate({
+      repositoryRoot,
+      candidateSha: sha,
+      baseRef: sha,
+      candidateDiffResolver: () => ["apps/web/src/lib/actions/action.ts"],
+    }), /Coverage ENFORCE failed for web/);
   } finally {
     if (previousRoot === undefined) delete process.env.CMM_COVERAGE_PUBLICATION_ROOT;
     else process.env.CMM_COVERAGE_PUBLICATION_ROOT = previousRoot;

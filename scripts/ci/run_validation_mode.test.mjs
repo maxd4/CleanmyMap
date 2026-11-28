@@ -1140,11 +1140,15 @@ test("publishes a candidate based on origin/main when Production Vercel is older
   let releaseBaseSha = "";
   let publishBaseSha = "";
   let publishAttributions = [];
-  let coverageChangedFiles = [];
+  let coverageBaseSha = "";
+  let coverageReceivedAllowlist = false;
   const fixture = await runAutoPublicationFixture({
     productionLag: true,
     releaseGate: async ({ publicationBaseSha }) => { releaseBaseSha = publicationBaseSha; },
-    coverageGate: async ({ changedFiles }) => { coverageChangedFiles = changedFiles; },
+    coverageGate: async (options) => {
+      coverageBaseSha = options.baseRef;
+      coverageReceivedAllowlist = Object.hasOwn(options, "changedFiles");
+    },
     publishMain: async ({ expectedRemoteSha, attributedCommits }) => {
       publishBaseSha = expectedRemoteSha;
       publishAttributions = attributedCommits;
@@ -1159,7 +1163,8 @@ test("publishes a candidate based on origin/main when Production Vercel is older
     assert.equal(publishAttributions.length, 1);
     assert.deepEqual(publishAttributions[0].files, ["apps/web/src/page.tsx"]);
     assert.equal(publishAttributions.some(({ files }) => files.includes("README.md")), false);
-    assert.equal(coverageChangedFiles.includes("README.md"), true);
+    assert.equal(coverageBaseSha, fixture.baseSha);
+    assert.equal(coverageReceivedAllowlist, false);
   } finally {
     removeFixture(fixture.root);
   }

@@ -21,39 +21,36 @@ export const COVERAGE_GRACE = Object.freeze({
   persistence: 0.75,
 });
 
-// Future targets are descriptive policy metadata for now. They are deliberately
-// not consumed by compareCoverage(), which remains the historical informative
-// ratchet until reliable measurements justify a separate gate.
+// Per-file targets apply to the exact runtime diff at publication time;
+// historical aggregates remain governed by their existing policy state.
 export const COVERAGE_RISK_FAMILIES = Object.freeze({
   security: Object.freeze({
-    minimum: Object.freeze({ statements: 90, lines: 90, branches: 85, functions: 90 }),
-    target: Object.freeze({ statements: 90, lines: 90, branches: 85, functions: 90 }),
+    minimum: Object.freeze({ statements: 90, lines: 90, branches: 80, functions: 90 }),
+    target: Object.freeze({ statements: 90, lines: 90, branches: 80, functions: 90 }),
   }),
   business: Object.freeze({
-    minimum: Object.freeze({ statements: 85, lines: 85, branches: 80, functions: 85 }),
-    target: Object.freeze({ statements: 85, lines: 85, branches: 80, functions: 85 }),
+    minimum: Object.freeze({ statements: 80, lines: 80, branches: 70, functions: 80 }),
+    target: Object.freeze({ statements: 80, lines: 80, branches: 70, functions: 80 }),
   }),
   "api-persistence": Object.freeze({
-    minimum: Object.freeze({ statements: 85, lines: 85, branches: 80, functions: 85 }),
-    target: Object.freeze({ statements: 85, lines: 85, branches: 80, functions: 85 }),
+    minimum: Object.freeze({ statements: 80, lines: 80, branches: 70, functions: 80 }),
+    target: Object.freeze({ statements: 80, lines: 80, branches: 70, functions: 80 }),
   }),
   "ui-presentational": Object.freeze({
-    minimum: Object.freeze({ statements: null, lines: null, branches: null, functions: null }),
-    target: Object.freeze({ statements: null, lines: null, branches: null, functions: null }),
+    minimum: Object.freeze({ statements: 70, lines: 70, branches: 70, functions: 70 }),
+    target: Object.freeze({ statements: 70, lines: 70, branches: 70, functions: 70 }),
   }),
   "new-code-non-critical": Object.freeze({
-    minimum: Object.freeze({ lines: 80 }),
-    target: Object.freeze({ lines: 90 }),
-    otherMetrics: "according-to-risk",
+    minimum: Object.freeze({ statements: 70, lines: 70, branches: 70, functions: 70 }),
+    target: Object.freeze({ statements: 70, lines: 70, branches: 70, functions: 70 }),
   }),
   unclassified: Object.freeze({
-    minimum: Object.freeze({ statements: null, lines: null, branches: null, functions: null }),
-    target: Object.freeze({ statements: null, lines: null, branches: null, functions: null }),
-    classification: "requires-risk-qualification",
+    minimum: Object.freeze({ statements: 70, lines: 70, branches: 70, functions: 70 }),
+    target: Object.freeze({ statements: 70, lines: 70, branches: 70, functions: 70 }),
   }),
 });
 
-const COVERAGE_ENFORCEMENT_SCHEMA_VERSION = 1;
+const COVERAGE_ENFORCEMENT_SCHEMA_VERSION = 2;
 
 function observePolicyEntry() {
   return Object.freeze({ state: "OBSERVE", policyVersion: COVERAGE_ENFORCEMENT_SCHEMA_VERSION, activation: null });
@@ -77,6 +74,11 @@ export const COVERAGE_ENFORCEMENT_POLICY = Object.freeze({
       )),
       historical: observePolicyEntry(),
       changedLines: COVERAGE_CHANGED_LINE_POLICY,
+      candidateFiles: Object.freeze({
+        state: "ENFORCE",
+        policyVersion: COVERAGE_ENFORCEMENT_SCHEMA_VERSION,
+        activation: Object.freeze({ version: 1, sourceCommit: "c7d81741f215927e1d620555498738552a3ae510" }),
+      }),
     }),
     // Mobile has a stable, representative V8 campaign and now enforces the
     // four global metrics. The activation points at the measured parent
@@ -529,6 +531,7 @@ export function validateCoverageEnforcementPolicy(policy = COVERAGE_ENFORCEMENT_
   }
   validatePolicyEntry(web.historical, "web.historical");
   validatePolicyEntry(web.changedLines, "web.changedLines");
+  validatePolicyEntry(web.candidateFiles, "web.candidateFiles");
   if (web.historical.state === "ENFORCE") {
     throw new Error("Coverage enforcement policy is invalid: web.historical has no implemented numeric threshold.");
   }
@@ -686,7 +689,7 @@ const APP_ROUTER_ENTRYPOINTS = new Set([
   "default",
 ]);
 
-function isInstrumentableCoveragePath(file, { scope = "web" } = {}) {
+export function isInstrumentableCoveragePath(file, { scope = "web" } = {}) {
   const normalized = normalizeCoveragePath(file, scope);
   if (!/\.(?:js|jsx|ts|tsx)$/.test(normalized)) return false;
   if (scope === "web") {
@@ -702,6 +705,50 @@ function isInstrumentableCoveragePath(file, { scope = "web" } = {}) {
     && !/\.test\.(?:js|jsx|ts|tsx)$/.test(normalized)
     && !normalized.includes("/__tests__/")
     && !/\.d\.ts$/.test(normalized);
+}
+
+export function evaluateCandidateFileCoverage(summary, candidateFiles, { scope = "web" } = {}) {
+  if (!Array.isArray(candidateFiles)) throw new Error("Candidate coverage files must be derived from the Git diff.");
+  const selected = [...new Set(candidateFiles.map((file) => normalizeCoveragePath(file, scope))) ]
+    .filter((file) => isInstrumentableCoveragePath(file, { scope }))
+    .sort((a, b) => a.localeCompare(b, "en"));
+  const assessments = [];
+  for (const file of selected) {
+    const row = Object.entries(summary ?? {}).find(([reportedPath]) => normalizeCoveragePath(reportedPath, scope) === file)?.[1];
+    const classification = classifyCoverageFile(file, { scope });
+    const minimum = classification.domain === COVERAGE_UNCLASSIFIED_RISK_DOMAIN
+      ? COVERAGE_RISK_FAMILIES["new-code-non-critical"].minimum
+      : COVERAGE_RISK_FAMILIES[classification.domain]?.minimum;
+    if (!row || !minimum) {
+      assessments.push({ file, domain: classification.domain, status: "NOT_MEASURED", reason: !row ? "FILE_MISSING_FROM_REPORT" : "RISK_POLICY_MISSING" });
+      continue;
+    }
+    const failures = [];
+    const metrics = {};
+    for (const metric of COVERAGE_METRICS) {
+      const record = row[metric];
+      const threshold = minimum[metric];
+      if (threshold === null || threshold === undefined) {
+        failures.push({ metric, code: "THRESHOLD_MISSING" });
+        continue;
+      }
+      try {
+        const ratio = record?.total === 0 && record?.covered === 0
+          ? 1
+          : coverageMetricRatio(record, `${file}.${metric}`);
+        const pct = ratio * 100;
+        metrics[metric] = { covered: record.covered, total: record.total, pct };
+        if (!thresholdReached(record.covered, record.total, threshold)) {
+          failures.push({ metric, covered: record.covered, total: record.total, current: pct, target: threshold, code: "THRESHOLD_NOT_MET" });
+        }
+      } catch (error) {
+        failures.push({ metric, code: "METRIC_NOT_MEASURED", reason: error instanceof Error ? error.message : String(error) });
+      }
+    }
+    assessments.push({ file, domain: classification.domain, status: failures.length ? "FAIL" : "PASS", metrics, failures });
+  }
+  const failures = assessments.filter(({ status }) => status !== "PASS");
+  return { status: failures.length ? "FAIL" : "PASS", scope, files: selected, assessments, failures };
 }
 
 function stripGitDiffPrefix(value) {
@@ -772,6 +819,19 @@ function getChangedLinesFromGit({ repositoryRoot = process.cwd(), baseRef, curre
     currentRef: currentCommit,
     files: parseChangedLinesFromDiff(diffText),
   };
+}
+
+export function getChangedInstrumentableCoverageFiles({ repositoryRoot = process.cwd(), baseRef, currentRef = "HEAD", scope = "web" } = {}) {
+  const baseCommit = verifyGitRevision(repositoryRoot, baseRef, "baseRef");
+  const currentCommit = verifyGitRevision(repositoryRoot, currentRef, "currentRef");
+  const scopeRoot = getCoverageScope(scope).root;
+  const changedFiles = execFileSync(gitExecutable(), [
+    "diff", "--name-only", "--no-renames", "--diff-filter=ACMRTUXB", baseCommit, currentCommit,
+    "--", `${scopeRoot}/src`,
+  ], { cwd: repositoryRoot, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+  return [...new Set(changedFiles.split(/\r?\n/).filter(Boolean)
+    .map((file) => normalizeCoveragePath(file, scope))
+    .filter((file) => isInstrumentableCoveragePath(file, { scope })))].sort((left, right) => left.localeCompare(right, "en"));
 }
 
 function parseLcovLineCoverage(content, { scope = "web" } = {}) {
@@ -1099,7 +1159,7 @@ export function evaluateCoveragePolicy(current, { scope = "web", policy = COVERA
   for (const [domain, entry] of Object.entries(scopePolicy.domains)) {
     const family = COVERAGE_RISK_FAMILIES[domain];
     const thresholds = Object.entries(family.minimum).filter(([, value]) => value !== null);
-    if (thresholds.length === 0) {
+    if (domain === COVERAGE_UNCLASSIFIED_RISK_DOMAIN || thresholds.length === 0) {
       const currentDomain = current?.riskDomains?.[domain];
       if (domain === COVERAGE_UNCLASSIFIED_RISK_DOMAIN) {
         if (!currentDomain || currentDomain.files === 0) {

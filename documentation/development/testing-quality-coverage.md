@@ -38,21 +38,27 @@ Une preuve est réutilisable uniquement pour le même SHA, la même configuratio
 et le même scope. `generate-module-test-metrics.mjs` applique la même règle aux
 deux scopes et classe une observation non attestée sans la convertir en PASS.
 
-## Politique de couverture fondée sur le risque — cibles futures
+## Politique ciblée de couverture runtime
 
-La politique canonique définit les familles de risque et leurs objectifs
-futurs dans `scripts/checks/coverage-policy.mjs`. Ces valeurs décrivent une
-cible de conception ; elles ne sont pas des résultats observés et ne sont pas
-encore utilisées comme seuils bloquants par `quality:coverage`.
+La politique canonique de `scripts/checks/coverage-policy.mjs` impose les
+seuils par fichier créé ou modifié dans le diff exact du candidat. La mesure
+historique globale conserve son statut actuel et n'active pas ces seuils sur
+tout le stock ancien.
 
 | Famille primaire | Instructions / lignes | Branches | Fonctions |
 | --- | ---: | ---: | ---: |
-| Sécurité, AuthN/AuthZ, validations sensibles (`security`) | 90 % | 85 % | 90 % |
-| Métier, environnement, géométrie, calculs (`business`) | 85 % | 80 % | 85 % |
-| API et persistance applicative sensibles (`api-persistence`) | 85 % | 80 % | 85 % |
-| UI purement présentative (`ui-presentational`) | aucun minimum uniforme | aucun minimum | aucun minimum |
-| Nouveau code non critique (`new-code-non-critical`) | minimum 80 % des lignes modifiées, cible 90 % | selon le risque | selon le risque |
-| Risque non encore qualifié (`unclassified`) | aucune conformité annoncée | aucune conformité annoncée | aucune conformité annoncée |
+| Sécurité (`security`) | 90 % | 80 % | 90 % |
+| Métier (`business`) | 80 % | 70 % | 80 % |
+| API et persistance (`api-persistence`) | 80 % | 70 % | 80 % |
+| UI présentative et autres modules (`ui-presentational`, `new-code-non-critical`, `unclassified`) | 70 % | 70 % | 70 % |
+
+Les seuils s'appliquent à chacune des quatre métriques : statements, lignes,
+fonctions et branches. Aucun taux moyen ou domaine agrégé ne compense un
+fichier insuffisant. La boucle obligatoire est : implémentation → tests
+comportementaux → mesure ciblée → inspection des éléments non couverts → tests
+utiles supplémentaires → nouvelle mesure jusqu'à conformité. Les tests
+artificiels, mocks excessifs, assertions tautologiques et changements de
+baseline, exclusion ou dénominateur sont interdits.
 
 L'implémentation attribue chaque fichier Web instrumentable à un owner primaire
 déterministe : sécurité d'abord, puis API/persistance, métier, UI explicitement
@@ -83,16 +89,9 @@ UI. Les services communautaires de pagination et de lecture sont attribués à
 `api-persistence`, tandis que la similarité relève de `business` selon leurs
 responsabilités exécutées.
 
-Les fichiers instrumentables non reconnus par une règle explicite sont
-comptabilisés dans `unclassified`, avec une attribution
-`requires-risk-qualification`. Ils restent présents dans les métriques et les
-diagnostics, mais ne reçoivent jamais par défaut le seuil
-`new-code-non-critical`. Une ligne modifiée non qualifiée conserve son ratio
-LCOV et son fichier dans le rapport, mais produit
-`RISK_CLASSIFICATION_REQUIRED` au lieu d'une mesure de conformité. Si un
-domaine est `ENFORCE`, la présence d'un fichier non qualifié est bloquante ;
-elle ne peut pas abaisser silencieusement le seuil actif. Les chemins réellement
-non critiques doivent être ajoutés explicitement aux règles après qualification.
+Les fichiers instrumentables non reconnus par une règle explicite restent
+dans `unclassified` et reçoivent le seuil générique de 70 % sur les quatre
+métriques. Ils ne sont ni omis ni traités comme non concernés.
 Les fichiers non instrumentables restent documentés par le périmètre technique
 existant : tests et `__tests__`, déclarations `.d.ts`, fichiers générés, points
 d'entrée App Router (`page`, `layout`, `loading`, `error`, `not-found`,
@@ -461,9 +460,8 @@ Le moteur unique porte aussi `COVERAGE_ENFORCEMENT_POLICY`, versionné dans
 `scripts/checks/coverage-policy.mjs`. Chaque périmètre possède un état explicite
 :
 
-- `OBSERVE` mesure, expose les quatre ratios exacts `covered / total` et
-  chiffre l'écart à l'objectif ; il ne constitue pas une conformité et ne fait
-  pas échouer la commande ;
+- `OBSERVE` mesure les historiques et affiche leurs quatre ratios exacts
+  `covered / total` sans activer de seuils sur tous les fichiers anciens ;
 - `ENFORCE` n'est applicable qu'après une modification explicite de la
   politique. Son entrée doit conserver sa `policyVersion` et une activation
   portant une version et le SHA complet du commit source. Une activation
@@ -481,8 +479,12 @@ neutralise jamais `COVERAGE_ENFORCEMENT_STATUS: FAIL`. Toute mesure obligatoire
 fait échouer le périmètre `ENFORCE` ; `NOT_MEASURED` n'est jamais un succès dans
 cet état. La commande retourne alors un code non nul. Une activation sans seuil
 numérique et mesure effectivement implémentée est refusée ; Node et Python
-restent donc `OBSERVE`. Tant que les objectifs actuels ne sont pas ratifiés et
-atteints, les familles restent `OBSERVE`.
+restent donc `OBSERVE`. Le périmètre Web `candidateFiles` est `ENFORCE` : chaque
+fichier instrumentable du diff exact base→candidat doit figurer dans le rapport
+et passer chaque seuil applicable. Une ligne candidate absente du rapport, une
+métrique incomplète ou un résultat inférieur bloque le gate et impose de
+poursuivre les tests puis de mesurer à nouveau. Les domaines historiques
+restent `OBSERVE` pour ne pas imposer les seuils au code ancien non modifié.
 
 Web et mobile sont contrôlés séparément. Les rapports Node (`scripts/coverage/`)
 et Python (`maintenance/python/coverage.xml`) restent des producteurs distincts
@@ -502,7 +504,10 @@ publication ; une simple empreinte de manifeste ne suffit donc pas. Une preuve `
 que si `HEAD`, `refs/heads/main` et le worktree sont cohérents ; une preuve
 `DYNAMIC_CANDIDATE` provient de l'arbre Git éphémère exact. Une preuve absente,
 illisible, falsifiée, périmée ou rattachée à un autre SHA échoue lorsqu'un
-domaine est `ENFORCE`.
+périmètre est `ENFORCE`. Pour Web, les fichiers concernés sont redérivés par
+Git depuis `baseRef` et le SHA candidat ; aucune allowlist transmise par un
+appelant ne peut réduire ce périmètre. Le résumé V8 est contrôlé pour chaque
+fichier candidat sans compensation par `total`.
 
 Les preuves sont écrites sous `artifacts/coverage-publication/<SHA>/<scope>/`
 et restent ignorées par Git. Elles sont réutilisées pour le même SHA et le
@@ -524,10 +529,13 @@ emplacements avant d'exécuter `quality:coverage`. Un changement de la
 politique ou du gate ne peut donc pas être utilisé pour éviter le contrôle
 actif par absence de fichier `apps/web/**`.
 
-Le flux durable est donc : changement exécutable → tests adaptés → rapport de
-couverture → correction d'une violation → validation → commit/push. `OBSERVE`
-reste un diagnostic chiffré ; il ne peut pas être présenté comme une
-conformité. `ENFORCE` est bloquant avant l'envoi normal. La CI post-push vérifie
+Le flux durable est donc : implémentation → tests comportementaux → mesure
+ciblée → analyse des éléments non couverts → tests manquants → nouvelle mesure
+jusqu'à conformité → validation → commit/push. `OBSERVE` reste un diagnostic
+historique chiffré ; il ne peut pas être présenté comme une conformité.
+`ENFORCE` est bloquant avant l'envoi normal. `NOT_MEASURED` n'est jamais PASS ;
+il exige une impossibilité réelle d'instrumentation motivée et des preuves
+comportementales compensatoires. La CI post-push vérifie
 le SHA publié et publie ses artefacts, mais ne peut pas empêcher
 rétroactivement un push ; une garantie serveur exige une protection GitHub
 appropriée activée séparément.

@@ -11,6 +11,8 @@ import {
   assertBaselineFresh,
   compareCoverage,
   evaluateCoveragePolicy,
+  evaluateCandidateFileCoverage,
+  getChangedInstrumentableCoverageFiles,
   formatCoverageGrace,
   getDefaultCoveragePaths,
   loadCoverageBaseline,
@@ -61,6 +63,8 @@ export function runCoverageCheck({
   enforcementPolicy = COVERAGE_ENFORCEMENT_POLICY,
   baseRef = null,
   currentRef = "HEAD",
+  candidateFiles = null,
+  candidateFilesRequired = false,
   setProcessExitCode = false,
 } = {}) {
   validateCoverageEnforcementPolicy(enforcementPolicy);
@@ -83,7 +87,8 @@ export function runCoverageCheck({
     console.log(`REUSED_EVIDENCE_SOURCE: ${scope === "mobile" ? "apps/mobile/coverage" : "apps/web/coverage/coverage-evidence.json"}`);
   }
 
-  const current = aggregateCoverage(loadCoverageSummary(paths.summary), { scope });
+  const rawSummary = loadCoverageSummary(paths.summary);
+  const current = aggregateCoverage(rawSummary, { scope });
   console.log(`COVERAGE_SCOPE: ${scope}`);
 
   const policy = evaluatePolicy(current, { scope, policy: enforcementPolicy });
@@ -123,9 +128,28 @@ export function runCoverageCheck({
   if (changedLineEnforcementFailure) {
     console.warn(`COVERAGE_CHANGED_LINES_FAILURE: ${changedLineCoverage.status} ${changedLineCoverage.reason ?? "THRESHOLD_NOT_MET"}`);
   }
-  const enforcementStatus = policyEnforcementFailure || changedLineEnforcementFailure
+  const candidateFilePolicyActive = scope === "web" && enforcementPolicy.scopes.web.candidateFiles?.state === "ENFORCE";
+  const resolvedCandidateFiles = candidateFiles ?? (candidateFilesRequired && baseRef
+    ? getChangedInstrumentableCoverageFiles({ repositoryRoot, baseRef, currentRef, scope })
+    : null);
+  const candidateFileCoverage = candidateFilePolicyActive
+    ? resolvedCandidateFiles === null
+      ? { status: "NOT_MEASURED", scope, files: [], assessments: [], failures: [{ code: "CANDIDATE_DIFF_REQUIRED" }] }
+      : evaluateCandidateFileCoverage(rawSummary, resolvedCandidateFiles, { scope })
+    : { status: "OBSERVE", scope, files: [], assessments: [], failures: [] };
+  console.log(`COVERAGE_CANDIDATE_FILES_STATUS: ${candidateFileCoverage.status}`);
+  for (const assessment of candidateFileCoverage.assessments) {
+    console.log(`COVERAGE_CANDIDATE_FILE: ${assessment.file} ${assessment.domain} ${assessment.status}`);
+    for (const failure of assessment.failures ?? []) {
+      console.warn(`COVERAGE_CANDIDATE_FILE_FAILURE: ${assessment.file} ${failure.metric ?? failure.reason ?? failure.code} ${failure.current ?? "NOT_MEASURED"}/${failure.target ?? "-"}`);
+    }
+  }
+  const candidateFileEnforcementFailure = candidateFilePolicyActive
+    && candidateFilesRequired
+    && (resolvedCandidateFiles === null || candidateFileCoverage.status !== "PASS");
+  const enforcementStatus = policyEnforcementFailure || changedLineEnforcementFailure || candidateFileEnforcementFailure
     ? "FAIL"
-    : enforceScope || enforceChangedLines
+    : enforceScope || enforceChangedLines || (candidateFilePolicyActive && candidateFilesRequired)
       ? "PASS"
       : "OBSERVE";
   console.log(`COVERAGE_ENFORCEMENT_STATUS: ${enforcementStatus}`);
@@ -149,6 +173,7 @@ export function runCoverageCheck({
       policyStatus: policy.status,
       enforcementStatus: unavailableEnforcementStatus,
       policy,
+      candidateFileCoverage,
       changedLineCoverage,
       current,
       failures: [],
@@ -177,6 +202,7 @@ export function runCoverageCheck({
     policyStatus: policy.status,
     enforcementStatus,
     policy,
+    candidateFileCoverage,
     changedLineCoverage,
     current,
     baseline,
@@ -193,7 +219,7 @@ if (isMainModule) {
   const currentRef = process.argv.find((argument) => argument.startsWith("--current-ref="))?.slice("--current-ref=".length) ?? "HEAD";
 
   try {
-    runCoverageCheck({ scope, fromExistingSummary, baseRef, currentRef, setProcessExitCode: true });
+    runCoverageCheck({ scope, fromExistingSummary, baseRef, currentRef, candidateFilesRequired: true, setProcessExitCode: true });
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;

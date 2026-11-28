@@ -198,8 +198,11 @@ commodité.
   d'entrée ; ne pas écrire d'abord un composant monolithique en prévoyant un
   chantier de découpage ultérieur ;
 - si aucune frontière naturelle n'est démontrée, conserver l'extension dans
-  l'owner existant ; les seuils préventifs restent informatifs et ne créent pas
-  automatiquement de nouveau fichier.
+  l'owner existant ; chaque fichier runtime instrumentable modifié doit suivre
+  la boucle de tests comportementaux et couverture ciblée de `AGENTS.md` et de
+  `documentation/development/testing-quality-coverage.md`. Une insuffisance
+  impose des tests supplémentaires avant publication ; elle ne justifie pas
+  d'ajouter artificiellement un fichier ou de réduire le seuil.
 
 La modularisation utile fait partie de l'implémentation de la fonctionnalité ;
 elle n'est pas un chantier facultatif à reporter après livraison lorsque les

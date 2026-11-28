@@ -261,6 +261,21 @@ terminé si un objectif important de cette matrice reste sans preuve.
 
 ## Seuils et qualité des assertions
 
+### Boucle de couverture runtime obligatoire
+
+Pour chaque fichier runtime Web instrumentable créé ou modifié, le cycle requis
+est : implémentation → tests comportementaux → mesure ciblée V8 → inspection
+des éléments non couverts → ajout des tests utiles manquants → nouvelle mesure,
+répétée jusqu'à conformité par fichier. Les seuils de risque sont définis dans
+[`testing-quality-coverage.md`](./testing-quality-coverage.md). Le périmètre est
+dérivé du diff Git exact base→candidat par `coverage-publication.mjs` ; aucun
+argument contenant une liste de fichiers ne peut l'autoriser ou le réduire.
+Un résultat global moyen ne compense pas un fichier sous seuil. `NOT_MEASURED`
+exige une impossibilité d'instrumentation démontrée, des tests comportementaux
+compensatoires et reste distinct d'un `PASS`. La preuve exacte et conforme est
+requise avant la publication normale du runtime concerné. Les preuves
+PostgreSQL/RLS, concurrence et E2E restent indépendantes de V8.
+
 Un test doit protéger un invariant identifiable et non reproduire la structure
 actuelle de l'implémentation. Rechercher l'élément par son ID, sa clé ou son
 prédicat métier ; `items[0]` ou `items[1]` n'est acceptable que lorsque l'ordre

@@ -437,10 +437,8 @@ test("manual invocation keeps the documented fallback visible", () => {
   assertNoCommand(result.log, "npm run lint");
 });
 
-test("coverage publication receives changed files as a JSON array", () => {
-  assert.match(
-    GUARD_SOURCE,
-    /ConvertTo-Json -InputObject @\(\$ChangedFiles \| Sort-Object -Unique\) -Compress/,
-  );
-  assert.doesNotMatch(GUARD_SOURCE, /@\(\$ChangedFiles \| Sort-Object -Unique\) \| ConvertTo-Json/);
+test("coverage publication receives Git refs and derives its own exact file set", () => {
+  assert.match(GUARD_SOURCE, /"--candidate-ref=\$CandidateRef"/);
+  assert.match(GUARD_SOURCE, /"--base-ref=\$BaseRef"/);
+  assert.doesNotMatch(GUARD_SOURCE, /changed-files-file/);
 });

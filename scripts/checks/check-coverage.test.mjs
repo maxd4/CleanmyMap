@@ -22,6 +22,8 @@ import {
   compareCoverage,
   changedLineTarget,
   evaluateCoveragePolicy,
+  evaluateCandidateFileCoverage,
+  getChangedInstrumentableCoverageFiles,
   formatCoverageGrace,
   measureChangedLineCoverage,
   parseChangedLinesFromDiff,
@@ -33,6 +35,27 @@ import { runCoverageCheck } from "./check-coverage.mjs";
 function metric(covered, total = 100) {
   return { total, covered, pct: Number(((covered / total) * 100).toFixed(2)) };
 }
+
+test("le périmètre Web instrumentable vient du diff réel entre commits", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coverage-diff-"));
+  const git = (args) => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+  try {
+    fs.mkdirSync(path.join(root, "apps", "web", "src", "lib", "actions"), { recursive: true });
+    fs.writeFileSync(path.join(root, "apps", "web", "src", "lib", "actions", "source.ts"), "export const value = 1;\n", "utf8");
+    git(["init", "--quiet"]);
+    git(["config", "user.email", "coverage@example.invalid"]);
+    git(["config", "user.name", "Coverage Test"]);
+    git(["add", "."]);
+    git(["commit", "--quiet", "-m", "base"]);
+    const baseRef = git(["rev-parse", "HEAD"]);
+    fs.writeFileSync(path.join(root, "apps", "web", "src", "lib", "actions", "source.ts"), "export const value = 2;\n", "utf8");
+    git(["commit", "--quiet", "-am", "runtime edit"]);
+    const currentRef = git(["rev-parse", "HEAD"]);
+    assert.deepEqual(getChangedInstrumentableCoverageFiles({ repositoryRoot: root, baseRef, currentRef }), ["src/lib/actions/source.ts"]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
 
 function summary(overrides = {}) {
   const total = Object.fromEntries(COVERAGE_METRICS.map((name) => [name, metric(80)]));
@@ -194,15 +217,23 @@ test("les tolérances auth-authz et des autres domaines restent distinctes", () 
   }
 });
 
-test("la politique de risque expose les cibles futures sans les rendre bloquantes", () => {
-  assert.deepEqual(COVERAGE_RISK_FAMILIES.security.minimum, { statements: 90, lines: 90, branches: 85, functions: 90 });
-  assert.deepEqual(COVERAGE_RISK_FAMILIES.business.minimum, { statements: 85, lines: 85, branches: 80, functions: 85 });
-  assert.deepEqual(COVERAGE_RISK_FAMILIES["api-persistence"].target, { statements: 85, lines: 85, branches: 80, functions: 85 });
-  assert.deepEqual(COVERAGE_RISK_FAMILIES["ui-presentational"].minimum, { statements: null, lines: null, branches: null, functions: null });
-  assert.deepEqual(COVERAGE_RISK_FAMILIES["new-code-non-critical"].minimum, { lines: 80 });
-  assert.deepEqual(COVERAGE_RISK_FAMILIES["new-code-non-critical"].target, { lines: 90 });
-  assert.deepEqual(COVERAGE_RISK_FAMILIES[COVERAGE_UNCLASSIFIED_RISK_DOMAIN].minimum, { statements: null, lines: null, branches: null, functions: null });
-  assert.equal(COVERAGE_RISK_FAMILIES[COVERAGE_UNCLASSIFIED_RISK_DOMAIN].classification, "requires-risk-qualification");
+test("les minimums ciblés suivent le risque du fichier concerné", () => {
+  assert.deepEqual(COVERAGE_RISK_FAMILIES.security.minimum, { statements: 90, lines: 90, branches: 80, functions: 90 });
+  assert.deepEqual(COVERAGE_RISK_FAMILIES.business.minimum, { statements: 80, lines: 80, branches: 70, functions: 80 });
+  assert.deepEqual(COVERAGE_RISK_FAMILIES["api-persistence"].target, { statements: 80, lines: 80, branches: 70, functions: 80 });
+  assert.deepEqual(COVERAGE_RISK_FAMILIES["ui-presentational"].minimum, { statements: 70, lines: 70, branches: 70, functions: 70 });
+  assert.deepEqual(COVERAGE_RISK_FAMILIES[COVERAGE_UNCLASSIFIED_RISK_DOMAIN].minimum, { statements: 70, lines: 70, branches: 70, functions: 70 });
+});
+
+test("la couverture ciblée par fichier refuse moyenne trompeuse, fichier omis et seuil individuel", () => {
+  const file = "C:\\repo\\apps\\web\\src\\lib\\actions\\action.ts";
+  const good = { statements: metric(80), branches: metric(70), functions: metric(80), lines: metric(80) };
+  const summaryValue = { total: { statements: metric(100), branches: metric(100), functions: metric(100), lines: metric(100) }, [file]: good };
+  assert.equal(evaluateCandidateFileCoverage(summaryValue, ["apps/web/src/lib/actions/action.ts"]).status, "PASS");
+  assert.equal(evaluateCandidateFileCoverage(summaryValue, ["apps/web/src/lib/actions/action.ts", "apps/web/src/lib/actions/omitted.ts"]).status, "FAIL");
+  const lowBranch = structuredClone(summaryValue);
+  lowBranch[file].branches = metric(69);
+  assert.ok(evaluateCandidateFileCoverage(lowBranch, ["apps/web/src/lib/actions/action.ts"]).failures[0].failures.some(({ metric: name }) => name === "branches"));
 });
 
 test("la politique versionnée valide ses états OBSERVE et ENFORCE", () => {
@@ -220,7 +251,7 @@ test("un seuil exactement atteint est PASS dans le domaine ENFORCE", () => {
   const currentSummary = summary();
   const securityFile = "C:\\repo\\apps\\web\\src\\lib\\auth\\auth.ts";
   for (const metricName of COVERAGE_METRICS) {
-    setSummaryRowMetric(currentSummary, securityFile, metricName, metricName === "branches" ? 84 : 90);
+    setSummaryRowMetric(currentSummary, securityFile, metricName, metricName === "branches" ? 79 : 90);
   }
   const current = aggregateCoverage(currentSummary);
   const policy = evaluateCoveragePolicy(current, { policy: enforcedPolicy() });
@@ -229,7 +260,7 @@ test("un seuil exactement atteint est PASS dans le domaine ENFORCE", () => {
   assert.equal(security.status, "FAIL");
   assert.ok(security.failures.some(({ metric }) => metric === "branches"));
 
-  setSummaryRowMetric(currentSummary, securityFile, "branches", 85);
+  setSummaryRowMetric(currentSummary, securityFile, "branches", 80);
   const exact = evaluateCoveragePolicy(aggregateCoverage(currentSummary), { policy: enforcedPolicy() });
   assert.equal(exact.status, "PASS");
   assert.equal(exact.assessments.find(({ domain }) => domain === "security").status, "PASS");

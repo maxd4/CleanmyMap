@@ -33,8 +33,10 @@ pas grossir un runner historique ni être déplacée intacte dans un helper.
 
 Après l'implémentation, relire les tailles avant/après, les fonctions et
 processus touchés, les imports et consommateurs, puis vérifier qu'aucune
-frontière autonome n'a été oubliée. Les seuils de qualité restent des signaux
-de revue : cette règle ne crée ni nouveau seuil bloquant ni nouvelle baseline.
+frontière autonome n'a été oubliée. Les scripts qui produisent une couverture
+suivent leur politique existante sans créer de rapport parallèle ni de
+baseline ; les fichiers Web runtime concernés sont contrôlés individuellement
+par le gate ciblé canonique de `AGENTS.md`.
 
 ## Modalités techniques du workflow canonique
 
@@ -160,12 +162,14 @@ projection offline.
   npm/Vercel utilisent explicitement `--dependency-mode=isolated`. Cette voie
   complète est opt-in avec `npm run prepush:guard -- -Full`; les validations
   larges restent disponibles via les commandes de release canoniques ;
-- la couverture suit la même frontière : le pré-push rapide vérifie seulement
-  la preuve `artifacts/coverage-publication/<sha>/<scope>/` lorsqu'un périmètre
-  `ENFORCE` est actif ; `-Full` peut produire les rapports Web, mobile, Node et
-  Python dans un `DYNAMIC_CANDIDATE` avant de vérifier le SHA exact. Une preuve
-  absente, périmée, falsifiée ou appartenant à un autre candidat est bloquante
-  pour `ENFORCE` et ne peut jamais être reclassée `PASS` ;
+- la couverture suit la même frontière : le pré-push rapide vérifie la preuve
+  `artifacts/coverage-publication/<sha>/<scope>/` liée au SHA exact. Pour Web,
+  le gate dérive lui-même les fichiers runtime instrumentables du diff Git
+  base→candidat et exige les quatre seuils individuellement ; aucun inventaire
+  fourni par l'appelant ne peut réduire ce périmètre. Une preuve absente,
+  périmée, falsifiée, incomplète ou sous seuil bloque la publication. `-Full`
+  peut produire les rapports Web, mobile, Node et Python dans un
+  `DYNAMIC_CANDIDATE` avant de vérifier le SHA exact ;
 - `work/` est interdit à la racine du dépôt, y compris pour les fichiers
   temporaires ; aucun générateur ne doit y écrire. `artifacts/` est la
   destination par défaut de tous les rapports, audits, preuves, exports, ZIP

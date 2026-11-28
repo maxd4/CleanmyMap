@@ -73,6 +73,7 @@ PERSISTENCE: NONE | REMOTE_READONLY | CI_EPHEMERAL
 - Le bypass ne doit modifier ni les permissions métier ni les contrôles centraux AuthN/AuthZ.
 - Distinguer problème de session, boot Clerk, AuthZ, permission navigateur et environnement hôte.
 - Tester les états pertinents : chargement, vide, erreur, accès refusé, succès et responsive selon le changement.
+- Pour un runtime UI instrumentable créé ou modifié, compléter les tests comportementaux et la mesure V8 ciblée jusqu'au minimum de 70 % sur statements, lignes, fonctions et branches, par fichier ; une moyenne globale ne remplace pas cette preuve.
 - Pour une cible UI fournie, comparer réellement le rendu aux largeurs pertinentes ; ne pas substituer une interprétation libre à la référence visuelle.
 - Une capture est une preuve visuelle, pas une preuve d'AuthZ ou de persistence.
 

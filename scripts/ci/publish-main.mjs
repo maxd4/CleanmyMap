@@ -252,15 +252,11 @@ function resolveSinglePushDestination(runGitCommand) {
 }
 
 function runPublicationCoverageGate({ candidateSha, baseRef, runGitCommand }) {
-  const changedFiles = baseRef
-    ? gitText(runGitCommand, ["diff", "--name-only", baseRef, candidateSha]).split(/\r?\n/).filter(Boolean)
-    : [];
   return runCoveragePublicationGate({
     repositoryRoot: process.cwd(),
     candidateSha,
     baseRef,
     currentRef: candidateSha,
-    changedFiles,
   });
 }
 

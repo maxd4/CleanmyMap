@@ -843,9 +843,8 @@ export async function runValidationMode(
         await coverageGate({
           repositoryRoot,
           candidateSha: committed.commitSha,
-          baseRef: finalScope.productionBaseSha,
+          baseRef: finalScope.publicationBaseSha,
           currentRef: committed.commitSha,
-          changedFiles: finalScope.changedFiles,
         });
         const publishedSha = await (runtime.publishMain ?? publishMain)({
           expectedRemoteSha: finalScope.publicationBaseSha,

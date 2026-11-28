@@ -507,27 +507,17 @@ function Invoke-GuardStep {
             [Parameter(Mandatory = $true)]
             [string]$CandidateRef,
             [Parameter(Mandatory = $false)]
-            [string]$BaseRef,
-            [Parameter(Mandatory = $true)]
-            [AllowEmptyCollection()]
-            [string[]]$ChangedFiles
+            [string]$BaseRef
         )
 
-        $changedFilesFile = [System.IO.Path]::GetTempFileName()
-        try {
-            ConvertTo-Json -InputObject @($ChangedFiles | Sort-Object -Unique) -Compress | Set-Content -LiteralPath $changedFilesFile -Encoding utf8
-            $coverageArguments = @(
-                "scripts/ci/coverage-publication.mjs",
-                "--candidate-ref=$CandidateRef",
-                "--changed-files-file=$changedFilesFile"
-            )
-            if (-not [string]::IsNullOrWhiteSpace($BaseRef)) {
-                $coverageArguments += "--base-ref=$BaseRef"
-            }
-            Invoke-GuardStep "coverage publication proof ($CandidateRef)" { & node @coverageArguments }
-        } finally {
-            Remove-Item -LiteralPath $changedFilesFile -Force -ErrorAction SilentlyContinue
+        $coverageArguments = @(
+            "scripts/ci/coverage-publication.mjs",
+            "--candidate-ref=$CandidateRef"
+        )
+        if (-not [string]::IsNullOrWhiteSpace($BaseRef)) {
+            $coverageArguments += "--base-ref=$BaseRef"
         }
+        Invoke-GuardStep "coverage publication proof ($CandidateRef)" { & node @coverageArguments }
     }
 
     function Invoke-DuplicationPublicationGuard {
@@ -678,7 +668,7 @@ function Invoke-GuardStep {
             $candidateRanges = @($candidates | Where-Object { $_.LocalSha -eq $candidateRef } | Select-Object -ExpandProperty Range -Unique)
             $candidateFiles = if ($candidateRanges.Count -gt 0) { @(Get-ChangedFilesFromRanges -Ranges $candidateRanges) } else { @($changedFiles) }
             Invoke-SqlSyntaxGuard -CandidateRef $candidateRef -ChangedFiles $candidateFiles
-            Invoke-CoveragePublicationGuard -CandidateRef $candidateRef -BaseRef ([string]$candidateBaseRef) -ChangedFiles $candidateFiles
+            Invoke-CoveragePublicationGuard -CandidateRef $candidateRef -BaseRef ([string]$candidateBaseRef)
         }
 
         Write-Host ""
@@ -802,7 +792,7 @@ function Invoke-GuardStep {
         }
 
         $candidateBaseRef = @($plan.Ranges | ForEach-Object { if ($_ -match "^([^\.]+)\.\.\.(.+)$") { $Matches[1] } } | Select-Object -First 1)
-        Invoke-CoveragePublicationGuard -CandidateRef $plan.CandidateRef -BaseRef ([string]$candidateBaseRef) -ChangedFiles $plan.ChangedFiles
+        Invoke-CoveragePublicationGuard -CandidateRef $plan.CandidateRef -BaseRef ([string]$candidateBaseRef)
         Invoke-DuplicationPublicationGuard -CandidateRef $plan.CandidateRef -BaseRef ([string]$candidateBaseRef) -ChangedFiles $plan.ChangedFiles
     }
 

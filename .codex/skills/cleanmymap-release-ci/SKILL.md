@@ -32,6 +32,7 @@ techniques de CI/release.
 3. Remonter au garde-fou et au scénario réel avant de changer un seuil, une baseline, un timeout ou une exclusion. Ne jamais rendre vert en affaiblissant le contrôle.
 4. Pour les intégrations externes, séparer Git publié, build terminé, déploiement actif et comportement de production observé.
 5. Tester les changements de garde-fou avec cas qui doit réussir et cas qui doit échouer, selon la gouvernance scoped.
+6. Pour toute publication Web runtime, exiger la preuve V8 liée au SHA et le gate ciblé par fichier dérivé du diff Git exact ; une couverture sous seuil ou `NOT_MEASURED` ne vaut jamais `PASS` et interdit la publication normale.
 
 ## Livraison
 
