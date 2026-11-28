@@ -316,6 +316,9 @@ test("root AGENTS owns delivery rules and scoped guidance does not contradict it
   const chatgpt = await readRepoFile("CHATGPT.md");
   const scriptsAgents = await readRepoFile("scripts/AGENTS.md");
   const testingGuide = await readRepoFile("documentation/development/TESTING.md");
+  const releaseSkill = await readRepoFile(".agents/skills/cleanmymap-release-ci/SKILL.md");
+  const releaseSkillMirror = await readRepoFile(".codex/skills/cleanmymap-release-ci/SKILL.md");
+  const supabaseRunbook = await readRepoFile("documentation/operations/runbook-supabase-convergence.md");
   for (let index = 1; index <= 12; index += 1) {
     const rule = `### R${String(index).padStart(2, "0")} —`;
     assert.equal(rootAgents.split(rule).length - 1, 1, `${rule} must have one owner`);
@@ -345,4 +348,9 @@ test("root AGENTS owns delivery rules and scoped guidance does not contradict it
   assert.match(scriptsAgents, /si aucun commit n'est en avance, constater la convergence sans push/);
   assert.match(testingGuide, /périmètre d'un commit.*périmètre d'un push/s);
   assert.match(testingGuide, /si aucun commit n'est en avance, constater la convergence sans lancer de push/);
+  assert.equal(releaseSkill, releaseSkillMirror);
+  assert.match(releaseSkill, /R11.*autorisation d'update explicitement accordée par un\s+ruleset à l'identité de publication/s);
+  assert.doesNotMatch(releaseSkill, /protections actives, sans bypass/i);
+  assert.match(supabaseRunbook, /Les règles R03\/R10 distinguent la publication Git de l'application DB/);
+  assert.doesNotMatch(supabaseRunbook, /deux états séparés selon\s+Les règles R03\/R10/);
 });

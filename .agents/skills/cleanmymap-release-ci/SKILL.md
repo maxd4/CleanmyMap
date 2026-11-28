@@ -21,7 +21,10 @@ Activer pour `.github/workflows`, hooks, `scripts/ci`, échec de check, candidat
 
 `AGENTS.md` racine est l'unique owner des règles universelles R01–R12. Avant
 toute publication, appliquer R03 (état et preuve distincts) et R11 (lecture
-des protections actives, sans bypass). Ce skill précise seulement les gardes
+des protections actives et autorisation d'update explicitement accordée par un
+ruleset à l'identité de publication). Seule cette exception d'update est
+recevable ; hooks, contrôles obligatoires, sécurité, suppression et
+non-fast-forward restent protégés. Ce skill précise seulement les gardes
 techniques de CI/release.
 
 1. Identifier SHA, candidat, environnement, trigger, condition `if`, permissions, job et artefact. `skipped`, `not run`, `failed` et `passed` sont des états différents.

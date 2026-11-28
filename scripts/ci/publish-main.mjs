@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { runCoveragePublicationGate } from "./coverage-publication.mjs";
+import { verifyGitHubPushAuthorization } from "./github-push-authorization.mjs";
 import { gitExecutable } from "./git-executable.mjs";
 
 const DEFAULT_MAX_ATTEMPTS = 3;
@@ -301,9 +302,12 @@ function reconcileRemoteFastForward(runGitCommand, candidateSha, remoteSha) {
 
 export function validatePushBypassAcknowledgement(output) {
   const text = String(output ?? "");
+  if (!/Bypassed rule violations/i.test(text)) return false;
   const headers = [...text.matchAll(/^\s*remote:\s*Bypassed rule violations for ([^\s:]+):\s*$/gim)];
-  if (headers.length === 0) return false;
-  if (headers.length !== 1 || headers[0][1] !== "refs/heads/main") {
+  if (headers.length !== 1 || [...text.matchAll(/Bypassed rule violations/gi)].length !== 1) {
+    throw new Error("PUSH_BYPASS_MALFORMED: bypass acknowledgement is present but malformed.");
+  }
+  if (headers[0][1] !== "refs/heads/main") {
     throw new Error("PUSH_BYPASS_UNEXPECTED_REF: bypass acknowledgement did not target exactly refs/heads/main.");
   }
   const violations = [...text.matchAll(/^\s*remote:\s*-\s*(.+?)\s*$/gim)].map((match) => match[1]);
@@ -320,15 +324,13 @@ export async function publishMain({
   backoffMs = DEFAULT_BACKOFF_MS,
   log = console.log,
   coverageGate = null,
+  verifyAuthorization = verifyGitHubPushAuthorization,
   expectedRemoteSha = "",
   attributedFiles = null,
 } = {}) {
   assertMain(runGitCommand);
   assertNoOperationInProgress(runGitCommand);
-  if (!Array.isArray(attributedFiles) || attributedFiles.length === 0) {
-    throw new Error("PUBLISH_ATTRIBUTION_REQUIRED: pass every path attributed to this publication.");
-  }
-  const attributedSet = new Set(sortedUnique(attributedFiles));
+  const attributedSet = new Set(Array.isArray(attributedFiles) ? sortedUnique(attributedFiles) : []);
 
   let candidateSha = null;
 
@@ -345,12 +347,12 @@ export async function publishMain({
     }
 
     const remoteSha = gitText(runGitCommand, ["rev-parse", "origin/main"]);
-    if (expectedRemoteSha && remoteSha !== expectedRemoteSha) {
-      throw new Error(`origin/main changed during DEPLOY publication: expected ${expectedRemoteSha}, found ${remoteSha}.`);
-    }
     if (candidateSha === remoteSha) {
       log(`main already converged at candidate ${candidateSha}.`);
       return candidateSha;
+    }
+    if (expectedRemoteSha && remoteSha !== expectedRemoteSha) {
+      throw new Error(`origin/main changed during DEPLOY publication: expected ${expectedRemoteSha}, found ${remoteSha}.`);
     }
 
     if (!isAncestor(runGitCommand, remoteSha, candidateSha)) {
@@ -365,6 +367,9 @@ export async function publishMain({
       }
     }
 
+    if (attributedSet.size === 0) {
+      throw new Error("PUBLISH_ATTRIBUTION_REQUIRED: pass every path attributed to this publication.");
+    }
     assertCandidateIsCurrent(runGitCommand, candidateSha, "immediately before push");
     const changedFilesResult = runGitCommand(["diff", "--name-only", `${remoteSha}..${candidateSha}`, "--"]);
     if (changedFilesResult.status !== 0) {
@@ -378,6 +383,9 @@ export async function publishMain({
       coverageGate({ candidateSha, baseRef: remoteSha, runGitCommand });
       log(`Coverage publication gate passed for candidate ${candidateSha}.`);
     }
+    const remoteUrl = gitText(runGitCommand, ["remote", "get-url", "origin"]);
+    await verifyAuthorization({ remoteUrl, candidateSha, remoteSha, targetRef: "refs/heads/main" });
+    assertCandidateIsCurrent(runGitCommand, candidateSha, "after GitHub authorization verification");
     const push = runGitCommand(["push", "origin", `${candidateSha}:refs/heads/main`]);
     const pushOutput = `${push.stdout ?? ""}\n${push.stderr ?? ""}`;
     const authorizedUpdateBypass = validatePushBypassAcknowledgement(pushOutput);

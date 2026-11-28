@@ -55,6 +55,7 @@ function fakeGit({
   const runGitCommand = (args) => {
     calls.push(args);
     if (args[0] === "branch") return { status: 0, stdout: "main\n", stderr: "" };
+    if (args[0] === "remote" && args[1] === "get-url") return { status: 0, stdout: "https://github.com/maxd4/CleanmyMap.git\n", stderr: "" };
     if (args[0] === "rev-parse" && args[1] === "--verify") return { status: 1, stdout: "", stderr: "" };
     if (args[0] === "fetch") return { status: 0, stdout: "", stderr: "" };
     if (args[0] === "rev-parse" && args[1] === "HEAD") {
@@ -92,7 +93,7 @@ function fakeGit({
 }
 
 function publishMain(options = {}) {
-  return publishMainImpl({ attributedFiles: ["AGENTS.md"], ...options });
+  return publishMainImpl({ attributedFiles: ["AGENTS.md"], verifyAuthorization: async () => ({ login: "publisher" }), ...options });
 }
 
 function pushCalls(fake) {
@@ -138,11 +139,18 @@ test("publishes validated commits from multiple attributed lots as one push rang
 
 test("records already converged refs without issuing an empty push", async () => {
   const fake = fakeGit({ local: "base", remote: "base", parents: { base: "root" } });
-  const published = await publishMain({ runGitCommand: fake.runGitCommand, sleep: async () => {} });
+  let authorizationCalls = 0;
+  const published = await publishMainImpl({
+    runGitCommand: fake.runGitCommand,
+    sleep: async () => {},
+    expectedRemoteSha: "outdated-reference",
+    verifyAuthorization: async () => { authorizationCalls += 1; },
+  });
 
   assert.equal(published, "base");
   assert.equal(pushCalls(fake).length, 0);
   assert.equal(fake.calls.filter((args) => args[0] === "fetch").length, 1);
+  assert.equal(authorizationCalls, 0);
 });
 
 test("blocks before push when the active coverage proof is absent", async () => {
@@ -171,10 +179,32 @@ test("blocks before push when the active coverage proof is absent", async () => 
 });
 
 test("accepts only the configured main update bypass and still verifies convergence", async () => {
-  const fake = fakeGit({ pushResults: [{ status: 0, stdout: "remote: Bypassed rule violations for refs/heads/main:\nremote: - Cannot update this protected ref.", stderr: "" }] });
-  const published = await publishMain({ runGitCommand: fake.runGitCommand, sleep: async () => {} });
+  let authorizationCalls = 0;
+  const fake = fakeGit({
+    pushResults: [{ status: 0, stdout: "remote: Bypassed rule violations for refs/heads/main:\nremote: - Cannot update this protected ref.", stderr: "" }],
+    onPush: () => assert.equal(authorizationCalls, 1, "authorization must be verified before push"),
+  });
+  const published = await publishMain({
+    runGitCommand: fake.runGitCommand,
+    sleep: async () => {},
+    verifyAuthorization: async ({ remoteUrl, targetRef }) => {
+      authorizationCalls += 1;
+      assert.equal(remoteUrl, "https://github.com/maxd4/CleanmyMap.git");
+      assert.equal(targetRef, "refs/heads/main");
+    },
+  });
   assert.equal(published, "candidate");
   assert.equal(fake.state.remote, "candidate");
+  assert.equal(authorizationCalls, 1);
+});
+
+test("authorization failure blocks before any effective push", async () => {
+  const fake = fakeGit();
+  await assert.rejects(publishMain({
+    runGitCommand: fake.runGitCommand,
+    verifyAuthorization: async () => { throw new Error("PUBLISH_AUTH_UPDATE_BYPASS_UNAUTHORIZED:25034548"); },
+  }), /PUBLISH_AUTH_UPDATE_BYPASS_UNAUTHORIZED/);
+  assert.equal(pushCalls(fake).length, 0);
 });
 
 test("rejects bypass acknowledgements for another rule, another ref, or additional violations", () => {
@@ -182,6 +212,9 @@ test("rejects bypass acknowledgements for another rule, another ref, or addition
   assert.throws(() => validatePushBypassAcknowledgement("remote: Bypassed rule violations for refs/heads/main:\nremote: - Cannot delete this branch."), /PUSH_BYPASS_UNEXPECTED_RULES/);
   assert.throws(() => validatePushBypassAcknowledgement("remote: Bypassed rule violations for refs/heads/main:\nremote: - Cannot update this protected ref.\nremote: - Required status check failed."), /PUSH_BYPASS_UNEXPECTED_RULES/);
   assert.throws(() => validatePushBypassAcknowledgement("remote: Bypassed rule violations for refs/heads/other:\nremote: - Cannot update this protected ref."), /PUSH_BYPASS_UNEXPECTED_REF/);
+  assert.throws(() => validatePushBypassAcknowledgement("Bypassed rule violations for refs/heads/main"), /PUSH_BYPASS_MALFORMED/);
+  assert.throws(() => validatePushBypassAcknowledgement("remote: Bypassed rule violations for refs/heads/main:\nremote: no violation details"), /PUSH_BYPASS_UNEXPECTED_RULES/);
+  assert.throws(() => validatePushBypassAcknowledgement("remote: Bypassed rule violations for refs/heads/main:\nremote: - Cannot update this protected ref.\nremote: Bypassed rule violations for refs/heads/main:\nremote: - Cannot update this protected ref."), /PUSH_BYPASS_MALFORMED/);
 });
 
 test("blocks a new local commit created between candidate capture and push", async () => {
@@ -258,7 +291,7 @@ test("does not silently adopt a local commit during a bounded retry", async () =
     pushResults: [{ status: 1, stdout: "", stderr: "rejected non-fast-forward" }],
     parents: { candidate: "base", local2: "candidate" },
     onHeadRead: ({ headReads, state }) => {
-      if (headReads === 3) {
+      if (headReads === 4) {
         state.local = "local2";
         state.branch = "local2";
       }
